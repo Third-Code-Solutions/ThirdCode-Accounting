@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_journal_form_thirdcode_controls" model="ir.ui.view">
+        <field name="name">account.journal.form.thirdcode.controls</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Third Code Controls" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator">
+                    <group>
+                        <field name="thirdcode_numbering_policy"/>
+                        <field name="thirdcode_numbering_owner"/>
+                        <field name="thirdcode_numbering_checked_at" readonly="1"/>
+                        <field name="has_sequence_holes" readonly="1"/>
+                        <field name="thirdcode_numbering_notes"/>
+                    </group>
+                    <button name="action_validate_thirdcode_numbering" type="object" string="Validate observed numbering" class="oe_highlight"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

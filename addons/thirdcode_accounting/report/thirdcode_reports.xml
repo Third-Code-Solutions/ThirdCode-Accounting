@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_thirdcode_invoice" model="ir.actions.report">
+        <field name="name">Third Code Invoice</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">thirdcode_accounting.report_thirdcode_invoice</field>
+        <field name="report_file">thirdcode_accounting.report_thirdcode_invoice</field>
+        <field name="print_report_name">'Invoice - %s' % (object.name or object.ref or '')</field>
+    </record>
+    <record id="action_report_thirdcode_receipt" model="ir.actions.report">
+        <field name="name">Third Code Official Receipt</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">thirdcode_accounting.report_thirdcode_receipt</field>
+        <field name="report_file">thirdcode_accounting.report_thirdcode_receipt</field>
+        <field name="print_report_name">'Official Receipt - %s' % (object.thirdcode_receipt_number or object.name or '')</field>
+    </record>
+    <record id="action_report_thirdcode_financial_statement" model="ir.actions.report">
+        <field name="name">Third Code Financial Statement</field>
+        <field name="model">thirdcode.financial.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">thirdcode_accounting.report_thirdcode_financial_statement</field>
+        <field name="report_file">thirdcode_accounting.report_thirdcode_financial_statement</field>
+        <field name="print_report_name">'Financial Statement - %s' % (object.report_type or '')</field>
+    </record>
+</odoo>

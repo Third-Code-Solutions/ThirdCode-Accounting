@@ -1,0 +1,744 @@
+// TCSI route system ---------------------------------------------------------
+// Shared presentation for native accounting routes. The shell keeps the
+// quiet Cloudflare-console rhythm: white navigation, cool gray workspace,
+// compact controls, and purple only for focus, selection, and primary action.
+
+body.tcsi-shell-active {
+    --tcsi-route-page: #f4f6f7;
+    --tcsi-route-surface: #ffffff;
+    --tcsi-route-surface-soft: #f8fafb;
+    --tcsi-route-surface-hover: #f2f5f6;
+    --tcsi-route-ink: #17232c;
+    --tcsi-route-text: #34434d;
+    --tcsi-route-muted: #697781;
+    --tcsi-route-subtle: #8b98a1;
+    --tcsi-route-line: #dfe6ea;
+    --tcsi-route-line-strong: #cbd5db;
+    --tcsi-route-purple: #6b48d8;
+    --tcsi-route-purple-deep: #5130b3;
+    --tcsi-route-purple-soft: #f1edff;
+    --tcsi-route-radius: 8px;
+    --tcsi-route-radius-sm: 6px;
+    --tcsi-route-content-gutter: clamp(18px, 3vw, 40px);
+
+    font-family: "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--tcsi-route-ink);
+    background: var(--tcsi-route-page);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+body.tcsi-shell-active,
+body.tcsi-shell-active .o_web_client,
+body.tcsi-shell-active .o_action_manager,
+body.tcsi-shell-active .o_view_controller,
+body.tcsi-shell-active .o_content,
+body.tcsi-shell-active .o_action {
+    background: var(--tcsi-route-page);
+}
+
+body.tcsi-shell-active .o_action_manager {
+    min-height: calc(100dvh - 56px);
+    overflow: auto;
+}
+
+body.tcsi-shell-active .o_view_controller,
+body.tcsi-shell-active .o_form_view,
+body.tcsi-shell-active .o_list_view,
+body.tcsi-shell-active .o_kanban_view {
+    min-width: 0;
+}
+
+// Navigation and top chrome ------------------------------------------------
+body.tcsi-shell-active .tcsi-workspace-sidebar {
+    background: var(--tcsi-route-surface);
+    border-right: 1px solid var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .tcsi-sidebar-link,
+body.tcsi-shell-active .tcsi-sidebar-group-title {
+    transition: background-color .16s ease, color .16s ease, border-color .16s ease;
+
+    &:hover,
+    &:focus-visible {
+        background: var(--tcsi-route-surface-hover);
+    }
+
+    &.is-active {
+        color: var(--tcsi-route-ink);
+        background: var(--tcsi-route-purple-soft);
+    }
+}
+
+body.tcsi-shell-active .tcsi-sidebar-link[aria-current="page"]::before {
+    background: var(--tcsi-route-purple);
+}
+
+body.tcsi-shell-active .o_main_navbar {
+    min-height: 56px;
+    background: var(--tcsi-route-surface);
+    border-bottom: 1px solid var(--tcsi-route-line);
+    box-shadow: none;
+}
+
+body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context {
+    border-right-color: var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-mark {
+    color: var(--tcsi-route-purple);
+    background: var(--tcsi-route-purple-soft);
+    border-color: #ddd4fa;
+}
+
+body.tcsi-shell-active .o_menu_systray .dropdown-toggle,
+body.tcsi-shell-active .o_menu_systray .o_user_menu .dropdown-toggle {
+    color: var(--tcsi-route-text);
+    border-color: transparent;
+    border-left-color: var(--tcsi-route-line);
+
+    &:hover,
+    &:focus-visible,
+    &[aria-expanded="true"] {
+        color: var(--tcsi-route-ink);
+        background: var(--tcsi-route-surface-hover);
+        outline: none;
+    }
+}
+
+body.tcsi-shell-active .o_menu_systray .o_avatar {
+    box-shadow: 0 0 0 2px #e4dcfb;
+}
+
+// Route header and search controls ----------------------------------------
+body.tcsi-shell-active .o_control_panel {
+    max-width: none;
+    margin: 0;
+    padding: 18px var(--tcsi-route-content-gutter) 14px;
+    color: var(--tcsi-route-ink);
+    background: var(--tcsi-route-page);
+    border-bottom: 1px solid var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .o_control_panel .o_control_panel_main {
+    min-width: 0;
+    gap: 12px 16px;
+}
+
+body.tcsi-shell-active .o_control_panel .o_cp_breadcrumb,
+body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs .breadcrumb,
+body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active,
+body.tcsi-shell-active .o_control_panel .o_cp_breadcrumbs .breadcrumb {
+    color: var(--tcsi-route-ink);
+    font-size: 22px;
+    font-weight: 720;
+    letter-spacing: -.035em;
+    line-height: 1.15;
+}
+
+body.tcsi-shell-active .o_control_panel .breadcrumb-item:not(.active) {
+    color: var(--tcsi-route-muted);
+    font-size: 12px;
+    font-weight: 540;
+}
+
+body.tcsi-shell-active .o_control_panel .breadcrumb-item + .breadcrumb-item::before {
+    color: var(--tcsi-route-subtle);
+    padding-right: 9px;
+    padding-left: 9px;
+}
+
+body.tcsi-shell-active .o_control_panel .o_cp_searchview,
+body.tcsi-shell-active .o_control_panel .o_searchview {
+    min-height: 38px;
+    color: var(--tcsi-route-text);
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line-strong);
+    border-radius: var(--tcsi-route-radius-sm);
+    box-shadow: none;
+
+    &:focus-within {
+        border-color: var(--tcsi-route-purple);
+        box-shadow: 0 0 0 3px rgba(107, 72, 216, .12);
+    }
+}
+
+body.tcsi-shell-active .o_searchview .o_searchview_input_container,
+body.tcsi-shell-active .o_searchview .o_searchview_input {
+    color: var(--tcsi-route-text);
+}
+
+body.tcsi-shell-active .o_control_panel .o_cp_buttons,
+body.tcsi-shell-active .o_control_panel .o_cp_action_menus,
+body.tcsi-shell-active .o_control_panel .o_cp_switch_buttons,
+body.tcsi-shell-active .o_control_panel .o_cp_pager {
+    gap: 8px;
+}
+
+body.tcsi-shell-active .o_control_panel .o_cp_pager {
+    color: var(--tcsi-route-muted);
+}
+
+// Buttons and fields --------------------------------------------------------
+body.tcsi-shell-active .btn,
+body.tcsi-shell-active button.btn,
+body.tcsi-shell-active .o_button {
+    min-height: 36px;
+    padding: 7px 13px;
+    color: var(--tcsi-route-text);
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line-strong);
+    border-radius: var(--tcsi-route-radius-sm);
+    box-shadow: none;
+    font-size: 12px;
+    font-weight: 650;
+    transition: color .16s ease, background-color .16s ease, border-color .16s ease, transform .16s ease;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--tcsi-route-ink);
+        background: var(--tcsi-route-surface-hover);
+        border-color: #aebbc3;
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+}
+
+body.tcsi-shell-active .btn-primary,
+body.tcsi-shell-active .oe_highlight,
+body.tcsi-shell-active .o_form_button_save,
+body.tcsi-shell-active .o_cp_buttons .btn-primary {
+    color: #fff;
+    background: var(--tcsi-route-purple);
+    border-color: var(--tcsi-route-purple);
+
+    &:hover,
+    &:focus-visible {
+        color: #fff;
+        background: var(--tcsi-route-purple-deep);
+        border-color: var(--tcsi-route-purple-deep);
+        box-shadow: 0 5px 12px rgba(81, 48, 179, .16);
+    }
+}
+
+body.tcsi-shell-active .btn-link,
+body.tcsi-shell-active .o_form_uri,
+body.tcsi-shell-active .o_form_view a {
+    color: var(--tcsi-route-purple-deep);
+
+    &:hover,
+    &:focus-visible {
+        color: var(--tcsi-route-purple);
+    }
+}
+
+body.tcsi-shell-active .form-control,
+body.tcsi-shell-active .form-select,
+body.tcsi-shell-active .o_input,
+body.tcsi-shell-active .o_field_widget .o_input,
+body.tcsi-shell-active .o_field_widget input,
+body.tcsi-shell-active .o_field_widget textarea,
+body.tcsi-shell-active .o_field_widget select,
+body.tcsi-shell-active .o_field_widget .o_input_dropdown {
+    min-height: 36px;
+    color: var(--tcsi-route-ink);
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line-strong) !important;
+    border-radius: var(--tcsi-route-radius-sm);
+    box-shadow: none;
+
+    &:focus,
+    &:focus-within {
+        border-color: var(--tcsi-route-purple) !important;
+        box-shadow: 0 0 0 3px rgba(107, 72, 216, .12) !important;
+        outline: none;
+    }
+
+    &:disabled,
+    &[readonly] {
+        color: #65737c;
+        background: #f8fafb;
+    }
+}
+
+body.tcsi-shell-active textarea.o_input,
+body.tcsi-shell-active .o_field_widget textarea {
+    min-height: 88px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+body.tcsi-shell-active .o_field_widget .o_field_many2one_selection,
+body.tcsi-shell-active .o_field_widget .o_field_many2many_tags {
+    min-height: 36px;
+    padding: 3px 6px;
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line-strong);
+    border-radius: var(--tcsi-route-radius-sm);
+}
+
+body.tcsi-shell-active .o_field_widget .badge,
+body.tcsi-shell-active .o_tag_badge,
+body.tcsi-shell-active .badge {
+    min-height: 24px;
+    padding: 4px 7px;
+    color: #4d3b9c;
+    background: var(--tcsi-route-purple-soft);
+    border: 1px solid #ded5fa;
+    border-radius: 5px;
+    font-weight: 650;
+}
+
+// Form routes --------------------------------------------------------------
+body.tcsi-shell-active .o_form_view {
+    background: var(--tcsi-route-page);
+}
+
+body.tcsi-shell-active .o_form_view .o_form_sheet_bg {
+    padding: 16px var(--tcsi-route-content-gutter) 48px;
+    background: var(--tcsi-route-page);
+}
+
+body.tcsi-shell-active .o_form_view .o_form_sheet {
+    width: 100%;
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 28px 32px 36px;
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+    box-shadow: none;
+}
+
+body.tcsi-shell-active .o_form_view .o_form_statusbar {
+    min-height: 48px;
+    margin: -28px -32px 24px;
+    padding: 8px 32px;
+    background: var(--tcsi-route-surface-soft);
+    border-bottom: 1px solid var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .o_form_view .o_form_statusbar .o_arrow_button {
+    min-height: 30px;
+    padding: 6px 12px;
+    color: var(--tcsi-route-muted);
+    background: var(--tcsi-route-surface);
+    border-color: var(--tcsi-route-line-strong);
+    border-radius: 5px;
+
+    &.btn-primary,
+    &.o_arrow_button_current {
+        color: #fff;
+        background: var(--tcsi-route-purple);
+        border-color: var(--tcsi-route-purple);
+    }
+}
+
+body.tcsi-shell-active .o_form_view .o_form_label,
+body.tcsi-shell-active .o_form_view .o_form_label.o_form_label_readonly {
+    color: var(--tcsi-route-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+body.tcsi-shell-active .o_form_view .o_group {
+    column-gap: 28px;
+    row-gap: 16px;
+}
+
+body.tcsi-shell-active .o_form_view .o_inner_group {
+    row-gap: 12px;
+    column-gap: 14px;
+}
+
+body.tcsi-shell-active .o_form_view .tcsi-form-sections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+    margin: 0 0 22px;
+}
+
+body.tcsi-shell-active .o_form_view .tcsi-form-section {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    padding: 18px;
+    background: var(--tcsi-route-surface-soft);
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+}
+
+body.tcsi-shell-active .o_form_view .tcsi-form-section-wide {
+    grid-column: 1 / -1;
+}
+
+body.tcsi-shell-active .o_form_view .tcsi-form-section > .o_horizontal_separator {
+    margin: 0 0 16px;
+    padding: 0 0 10px;
+    color: var(--tcsi-route-ink);
+    border-bottom: 1px solid var(--tcsi-route-line);
+    font-size: 12px;
+    font-weight: 720;
+    letter-spacing: .04em;
+    text-transform: none;
+}
+
+body.tcsi-shell-active .o_form_view .tcsi-form-section .o_inner_group {
+    grid-template-columns: minmax(104px, .42fr) minmax(0, 1fr);
+}
+
+body.tcsi-shell-active .o_form_view .tcsi-form-section .o_form_label {
+    align-self: center;
+    line-height: 1.3;
+}
+
+body.tcsi-shell-active .o_form_view .o_horizontal_separator,
+body.tcsi-shell-active .o_form_view .o_group > .o_form_label,
+body.tcsi-shell-active .o_form_view .o_form_sheet > .o_form_label {
+    color: var(--tcsi-route-ink);
+    border-color: var(--tcsi-route-line);
+    font-size: 12px;
+    font-weight: 720;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+body.tcsi-shell-active .o_form_view .o_horizontal_separator {
+    margin-top: 24px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+}
+
+body.tcsi-shell-active .o_form_view .o_notebook,
+body.tcsi-shell-active .o_notebook {
+    margin-top: 26px;
+}
+
+body.tcsi-shell-active .o_notebook .nav-tabs {
+    gap: 4px;
+    border-bottom: 1px solid var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .o_notebook .nav-tabs .nav-link {
+    padding: 10px 13px;
+    color: var(--tcsi-route-muted);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 650;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--tcsi-route-purple);
+        border-bottom-color: #d8cdf8;
+    }
+
+    &.active {
+        color: var(--tcsi-route-purple-deep);
+        border-bottom-color: var(--tcsi-route-purple);
+    }
+}
+
+body.tcsi-shell-active .o_form_view .o_form_sheet > .o_field_widget.o_field_one2many,
+body.tcsi-shell-active .o_form_view .o_form_sheet > .o_field_widget.o_field_many2many {
+    display: block;
+    margin-top: 20px;
+    padding: 0;
+    overflow: auto;
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+}
+
+// List and kanban routes ---------------------------------------------------
+body.tcsi-shell-active .o_list_view,
+body.tcsi-shell-active .o_kanban_view {
+    padding: 16px var(--tcsi-route-content-gutter) 44px;
+    background: var(--tcsi-route-page);
+}
+
+body.tcsi-shell-active .o_list_view .o_list_renderer {
+    overflow: auto;
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+}
+
+body.tcsi-shell-active .o_list_view .o_list_table {
+    min-width: 760px;
+    margin: 0;
+    overflow: hidden;
+    background: var(--tcsi-route-surface);
+    border: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    box-shadow: none;
+}
+
+body.tcsi-shell-active .o_list_view .o_list_table thead th {
+    height: 38px;
+    padding: 0 12px;
+    color: var(--tcsi-route-muted);
+    background: var(--tcsi-route-surface-soft);
+    border-bottom: 1px solid var(--tcsi-route-line);
+    font-size: 10px;
+    font-weight: 720;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+body.tcsi-shell-active .o_list_view .o_list_table tbody td,
+body.tcsi-shell-active .o_list_view .o_list_table tbody th {
+    height: 44px;
+    padding: 9px 12px;
+    color: var(--tcsi-route-text);
+    border-bottom: 1px solid #edf1f3;
+    vertical-align: middle;
+}
+
+body.tcsi-shell-active .o_list_view .o_list_table tbody tr {
+    transition: background-color .14s ease;
+
+    &:hover {
+        background: var(--tcsi-route-surface-hover);
+    }
+
+    &.o_data_row_selected,
+    &:has(input[type="checkbox"]:checked) {
+        background: var(--tcsi-route-purple-soft);
+    }
+}
+
+body.tcsi-shell-active .o_list_view .o_list_table tfoot {
+    color: var(--tcsi-route-ink);
+    background: var(--tcsi-route-surface-soft);
+    border-top: 1px solid var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .o_kanban_view .o_kanban_renderer {
+    gap: 14px;
+}
+
+body.tcsi-shell-active .o_kanban_view .o_kanban_record {
+    min-height: 132px;
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+    box-shadow: none;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+
+    &:hover,
+    &:focus-within {
+        border-color: #c7b9ef;
+        box-shadow: 0 8px 22px rgba(27, 43, 54, .08);
+        transform: translateY(-1px);
+    }
+}
+
+// Chatter and activity panel ------------------------------------------------
+body.tcsi-shell-active .o_form_view .oe_chatter,
+body.tcsi-shell-active .o-mail-Chatter {
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+    box-shadow: none;
+}
+
+body.tcsi-shell-active .o-mail-Chatter .o-mail-Chatter-top {
+    min-height: 54px;
+    padding: 8px 12px;
+    background: var(--tcsi-route-surface-soft);
+    border-bottom: 1px solid var(--tcsi-route-line);
+}
+
+body.tcsi-shell-active .o-mail-Chatter .o-mail-Chatter-top .btn {
+    min-height: 32px;
+}
+
+body.tcsi-shell-active .o-mail-Message {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+body.tcsi-shell-active .o-mail-Message-avatarContainer,
+body.tcsi-shell-active .o-mail-NotificationItem-avatarContainer {
+    border-radius: 7px;
+}
+
+body.tcsi-shell-active .o-mail-Message-bubble {
+    border-color: var(--tcsi-route-line) !important;
+    background: #f7f9fa !important;
+}
+
+body.tcsi-shell-active .o-mail-Composer {
+    margin: 12px;
+    padding: 4px;
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line-strong);
+    border-radius: var(--tcsi-route-radius);
+}
+
+// Menus, dialogs, toasts ---------------------------------------------------
+body.tcsi-shell-active .dropdown-menu,
+body.tcsi-shell-active .o-dropdown--menu,
+body.tcsi-shell-active .o_popover,
+body.tcsi-shell-active .popover,
+body.tcsi-shell-active .modal-content,
+body.tcsi-shell-active .o_dialog .modal-content {
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line);
+    border-radius: var(--tcsi-route-radius);
+    box-shadow: 0 16px 38px rgba(27, 43, 54, .14);
+}
+
+body.tcsi-shell-active .dropdown-item,
+body.tcsi-shell-active .o-dropdown--menu-item {
+    min-height: 32px;
+    padding: 7px 10px;
+    color: var(--tcsi-route-text);
+    border-radius: 5px;
+
+    &:hover,
+    &:focus,
+    &.active {
+        color: var(--tcsi-route-ink);
+        background: var(--tcsi-route-purple-soft);
+    }
+}
+
+body.tcsi-shell-active .o_notification_manager .o_notification {
+    background: var(--tcsi-route-surface);
+    border: 1px solid var(--tcsi-route-line);
+    border-left: 3px solid var(--tcsi-route-purple);
+    border-radius: var(--tcsi-route-radius);
+    box-shadow: 0 12px 28px rgba(27, 43, 54, .14);
+}
+
+// The legacy bot sometimes renders its avatar as a div with an inline
+// background-image. Keep the visual replacement independent of DOM timing.
+body.tcsi-shell-active .o-mail-ChatHub-bubbleBtn.tcsi-assistant-bubble,
+body.tcsi-shell-active .o-mail-ChatBubble.tcsi-assistant-bubble {
+    .o-mail-ChatBubble-avatar,
+    .o-mail-ThreadAvatar {
+        background: #e9f2f0 url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=3.0.0") center / cover no-repeat !important;
+        border: 1px solid #d2e3df;
+        box-shadow: 0 0 0 2px var(--tcsi-route-surface);
+    }
+
+    .o-mail-ChatBubble-avatar img,
+    .o-mail-ThreadAvatar img {
+        content: url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=3.0.0");
+    }
+
+    .fa-heart {
+        display: none !important;
+    }
+}
+
+body.tcsi-shell-active .o-mail-ChatHub-bubbleBtn:has(.fa-heart) {
+    .o-mail-ChatBubble-avatar,
+    .o-mail-ThreadAvatar {
+        background: #e9f2f0 url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=3.0.0") center / cover no-repeat !important;
+        border: 1px solid #d2e3df;
+    }
+
+    .o-mail-ChatBubble-avatar img,
+    .o-mail-ThreadAvatar img,
+    .fa-heart {
+        display: none !important;
+    }
+}
+
+body.tcsi-shell-active :focus-visible {
+    outline: 2px solid rgba(107, 72, 216, .72);
+    outline-offset: 2px;
+}
+
+// Responsive route rhythm --------------------------------------------------
+@media (max-width: 900px) {
+    body.tcsi-shell-active {
+        .o_control_panel,
+        .o_list_view,
+        .o_kanban_view,
+        .o_form_view .o_form_sheet_bg {
+            padding-right: 16px;
+            padding-left: 16px;
+        }
+
+        .o_form_view .o_form_sheet {
+            padding: 24px;
+        }
+
+        .o_form_view .o_form_statusbar {
+            margin-right: -24px;
+            margin-left: -24px;
+            padding-right: 24px;
+            padding-left: 24px;
+        }
+
+        .o_form_view .o_group {
+            column-gap: 18px;
+        }
+
+        .o_form_view .tcsi-form-sections {
+            gap: 16px;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    body.tcsi-shell-active {
+        .o_control_panel {
+            padding-top: 14px;
+            padding-bottom: 12px;
+        }
+
+        .o_control_panel .o_cp_breadcrumb,
+        .o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active {
+            font-size: 18px;
+        }
+
+        .o_form_view .o_form_sheet {
+            padding: 20px 16px 28px;
+            border-right: 0;
+            border-left: 0;
+            border-radius: 0;
+        }
+
+        .o_form_view .o_form_statusbar {
+            margin-right: -16px;
+            margin-left: -16px;
+            padding-right: 16px;
+            padding-left: 16px;
+        }
+
+        .o_form_view .o_group {
+            grid-template-columns: minmax(0, 1fr) !important;
+        }
+
+        .o_form_view .tcsi-form-sections {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .o_form_view .tcsi-form-section-wide {
+            grid-column: auto;
+        }
+
+        .o_form_view .tcsi-form-section {
+            padding: 15px;
+        }
+
+        .o_list_view .o_list_table {
+            min-width: 680px;
+        }
+
+        .o-mail-Composer {
+            margin-right: 8px;
+            margin-left: 8px;
+        }
+    }
+}

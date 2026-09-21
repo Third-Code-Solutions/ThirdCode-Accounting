@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_tcsi_dashboard" model="ir.actions.client">
+        <field name="name">Command center</field>
+        <field name="tag">tcsi_dashboard</field>
+    </record>
+</odoo>

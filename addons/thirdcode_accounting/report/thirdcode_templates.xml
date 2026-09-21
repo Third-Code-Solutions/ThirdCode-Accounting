@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_thirdcode_invoice">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-3">
+                            <div class="col-7"><h2>Invoice</h2><p t-if="o.company_id.thirdcode_report_samples_approved" class="text-muted">Approved layout revision: <span t-esc="o.company_id.thirdcode_invoice_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
+                            <div class="col-5 text-end"><strong>Document:</strong> <span t-esc="o.name"/><br/><strong>Date:</strong> <span t-esc="o.invoice_date or o.date"/><br/><strong>Control number:</strong> <span t-esc="o.company_id.thirdcode_bir_ack_control_number if o.company_id.thirdcode_bir_ack_approved else 'PENDING ACCOUNTANT CONFIGURATION'"/></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Bill to</strong><br/><span t-esc="o.partner_id.name"/><br/><span t-esc="o.partner_id.contact_address"/><br/><span t-if="o.partner_id.vat">TIN: <t t-esc="o.partner_id.vat"/></span></div>
+                            <div class="col-6 text-end"><strong>Reference</strong><br/><span t-esc="o.ref or ''"/><br/><span t-esc="o.currency_id.name"/></div>
+                        </div>
+                        <table class="table table-sm">
+                            <thead><tr><th>Description</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Tax</th><th class="text-end">Amount</th></tr></thead>
+                            <tbody><tr t-foreach="o.invoice_line_ids" t-as="line"><td><span t-esc="line.name"/></td><td class="text-end"><span t-esc="line.quantity"/></td><td class="text-end"><span t-esc="line.price_unit"/></td><td class="text-end"><span t-esc="', '.join(line.tax_ids.mapped('name'))"/></td><td class="text-end"><span t-esc="line.price_subtotal"/></td></tr></tbody>
+                        </table>
+                        <div class="row"><div class="col-7"><p t-if="o.narration"><strong>Notes</strong><br/><span t-field="o.narration"/></p></div><div class="col-5"><table class="table table-sm"><tr><td>Untaxed</td><td class="text-end"><span t-field="o.amount_untaxed"/></td></tr><tr><td>Tax</td><td class="text-end"><span t-field="o.amount_tax"/></td></tr><tr><th>Total</th><th class="text-end"><span t-field="o.amount_total"/></th></tr></table></div></div>
+                        <p class="mt-4">Corrections to posted entries are made by supported reversal or credit-note documents. This template is not a BIR acceptance claim.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_thirdcode_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="p">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center"><h2>OFFICIAL RECEIPT</h2><p t-if="p.company_id.thirdcode_report_samples_approved" class="text-muted">Approved layout revision: <span t-esc="p.company_id.thirdcode_receipt_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
+                        <table class="table table-sm mt-4"><tr><th>Receipt number</th><td><span t-esc="p.thirdcode_receipt_number"/></td><th>Date</th><td><span t-esc="p.date"/></td></tr><tr><th>Payer / TIN</th><td colspan="3"><span t-esc="p.partner_id.name"/> - <span t-esc="p.thirdcode_receipt_customer_tin or 'not configured'"/></td></tr><tr><th>Amount in figures</th><td colspan="3"><span t-field="p.amount"/></td></tr><tr><th>Amount in words</th><td colspan="3"><span t-esc="p.thirdcode_amount_in_words"/></td></tr><tr><th>VAT amount</th><td colspan="3"><span t-field="p.thirdcode_receipt_vat_amount"/></td></tr><tr><th>VAT breakdown</th><td colspan="3"><span t-esc="p.thirdcode_receipt_vat_breakdown"/></td></tr><tr><th>BIR acknowledgement control number</th><td colspan="3"><span t-esc="p.thirdcode_receipt_control_number if p.company_id.thirdcode_bir_ack_approved else 'PENDING ACCOUNTANT CONFIGURATION'"/></td></tr></table>
+                        <div class="row mt-5"><div class="col-6">VAT is derived only from configured invoice tax lines; accountant review remains required.</div><div class="col-6 text-end">____________________________<br/><span t-esc="p.company_id.thirdcode_receipt_signatory_name or 'Signatory not configured'"/><br/><span t-esc="p.company_id.thirdcode_receipt_signatory_title or ''"/></div></div>
+                        <p class="mt-5">This output is held behind the accountant-owned control-number configuration and is not a fabricated BIR acknowledgement.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_thirdcode_financial_statement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="data" t-value="o.get_report_data()"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center">
+                            <h2 t-esc="data['title']"/>
+                            <p><strong>Period:</strong> <span t-esc="data['date_from']"/> to <span t-esc="data['date_to']"/> | <span t-esc="data['target_move']"/></p>
+                            <p t-if="data['layout_status'] != 'Approved layout'" class="text-danger"><span t-esc="data['layout_status']"/></p>
+                            <p t-else="" class="text-muted">Approved layout sample status recorded</p>
+                        </div>
+                        <t t-foreach="data['sections']" t-as="section">
+                            <h4 class="mt-4"><span t-esc="section['name']"/></h4>
+                            <table class="table table-sm">
+                                <thead><tr><th>Account</th><th>Description</th><th class="text-end">Amount</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="section['lines']" t-as="line"><td><span t-esc="line['code']"/></td><td><span t-esc="line['name']"/></td><td class="text-end"><span t-esc="line['amount']"/></td></tr>
+                                    <tr><th colspan="2">Section total</th><th class="text-end"><span t-esc="section['total']"/></th></tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <p t-if="data['balance_check']" class="mt-4"><strong>Balance check:</strong> <span t-esc="data['balance_check']"/> — <span t-esc="'balanced' if data['balanced'] else 'review required'"/></p>
+                        <p t-if="data['net_result']" class="mt-4"><strong>Net result:</strong> <span t-esc="data['net_result']"/></p>
+                        <p class="mt-4">This generic financial-statement output is derived from posted ledger entries. Client layout, comparative periods, tax treatment, and sign-off remain pending.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

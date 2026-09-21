@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_payment_form_thirdcode" model="ir.ui.view">
+        <field name="name">account.payment.form.thirdcode.accounting</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_print_thirdcode_receipt" type="object" string="Official Receipt" class="btn-secondary" invisible="state not in ('in_process', 'paid')" groups="account.group_account_invoice"/>
+            </xpath>
+            <xpath expr="//field[@name='memo']" position="after">
+                <field name="thirdcode_receipt_number" readonly="1"/>
+                <field name="thirdcode_receipt_control_number" readonly="1"/>
+                <field name="thirdcode_amount_in_words" readonly="1"/>
+                <field name="thirdcode_receipt_customer_tin" readonly="1"/>
+                <field name="thirdcode_receipt_vat_amount" readonly="1"/>
+                <field name="thirdcode_receipt_vat_breakdown" readonly="1"/>
+                <field name="thirdcode_report_status" readonly="1"/>
+                <field name="thirdcode_payment_instrument"/>
+                <field name="thirdcode_instrument_reference"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

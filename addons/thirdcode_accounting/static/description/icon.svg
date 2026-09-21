@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Th/rd Code Solutions Inc.</title>
+  <desc id="desc">Third Code Solutions Inc. violet gradient mark</desc>
+  <defs>
+    <linearGradient id="tc-app-grad" x1="0" y1="1024" x2="1024" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5526AB"/>
+      <stop offset=".45" stop-color="#601BE6"/>
+      <stop offset="1" stop-color="#905AED"/>
+    </linearGradient>
+  </defs>
+  <rect x="72" y="72" width="880" height="880" rx="180" fill="url(#tc-app-grad)"/>
+  <polygon points="560,225 690,225 466,799 336,799" fill="#FFFFFF"/>
+</svg>

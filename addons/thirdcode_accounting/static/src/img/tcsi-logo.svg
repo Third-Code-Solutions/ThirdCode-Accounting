@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 112" role="img" aria-labelledby="title desc">
+  <title id="title">Th/rd Code Solutions Inc.</title>
+  <desc id="desc">Third Code Solutions Inc. official mark and wordmark</desc>
+  <defs>
+    <linearGradient id="tc-logo-grad" x1="0" y1="112" x2="112" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5526AB"/>
+      <stop offset=".45" stop-color="#601BE6"/>
+      <stop offset="1" stop-color="#905AED"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="104" height="104" rx="27" fill="url(#tc-logo-grad)"/>
+  <polygon points="65,28 79,28 56,84 42,84" fill="#FFFFFF"/>
+  <text x="132" y="57" fill="#140f1e" font-family="Segoe UI, Arial, sans-serif" font-size="36" font-weight="700" letter-spacing="-1.2">Th/rd Code</text>
+  <text x="134" y="82" fill="#756b85" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="2.4">SOLUTIONS INC.</text>
+  <text x="134" y="99" fill="#7a3ef0" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="1.8">TCSI ACCOUNTING</text>
+</svg>

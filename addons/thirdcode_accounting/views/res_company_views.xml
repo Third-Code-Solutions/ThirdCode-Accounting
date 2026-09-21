@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_thirdcode" model="ir.ui.view">
+        <field name="name">res.company.form.thirdcode.accounting</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="account.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Third Code Accounting" groups="thirdcode_accounting.group_thirdcode_administrator,thirdcode_accounting.group_thirdcode_accountant">
+                    <group string="Regulatory configuration">
+                        <field name="thirdcode_bir_ack_control_number"/>
+                        <field name="thirdcode_bir_ack_approved"/>
+                        <field name="thirdcode_eis_status"/>
+                        <button name="action_validate_thirdcode_configuration" type="object" string="Validate configuration" class="oe_highlight"/>
+                    </group>
+                    <group string="Report approval gates">
+                        <field name="thirdcode_report_samples_approved"/>
+                        <field name="thirdcode_invoice_layout_revision"/>
+                        <field name="thirdcode_statement_layout_revision"/>
+                        <field name="thirdcode_financial_statement_layout_revision"/>
+                        <field name="thirdcode_receipt_layout_revision"/>
+                        <field name="thirdcode_receipt_signatory_name"/>
+                        <field name="thirdcode_receipt_signatory_title"/>
+                        <field name="thirdcode_reconciliation_layout_revision"/>
+                        <field name="thirdcode_numbering_owner"/>
+                        <field name="thirdcode_retained_earnings_account_id"/>
+                        <field name="thirdcode_year_end_journal_id"/>
+                        <field name="thirdcode_reconciliation_definition"/>
+                    </group>
+                    <group string="Migration and operations">
+                        <field name="thirdcode_live_history_policy"/>
+                        <field name="thirdcode_statutory_retention_years"/>
+                        <field name="thirdcode_backup_owner"/>
+                        <field name="thirdcode_restore_owner"/>
+                    </group>
+                    <group string="Optional payment approval">
+                        <field name="thirdcode_payment_approval_enabled"/>
+                        <field name="thirdcode_payment_approval_threshold"/>
+                    </group>
+                    <group string="Configured records">
+                        <field name="thirdcode_tax_profile_ids" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="status"/>
+                                <field name="effective_date"/>
+                            </list>
+                        </field>
+                        <field name="thirdcode_report_sample_ids" readonly="1">
+                            <list>
+                                <field name="name"/>
+                                <field name="sample_type"/>
+                                <field name="revision"/>
+                                <field name="state"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

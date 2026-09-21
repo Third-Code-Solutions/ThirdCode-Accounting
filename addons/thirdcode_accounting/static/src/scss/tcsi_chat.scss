@@ -1,0 +1,58 @@
+// Dedicated asset boundary for the Orvexa assistant surface. Keeping this
+// bundle entry separate makes chat styling refresh independently from the
+// broader workspace shell during local development and upgrades.
+body.tcsi-shell-active .tcsi-chat-window {
+    isolation: isolate;
+}
+
+body.tcsi-shell-active .o-mail-NotificationItem.tcsi-assistant-notification {
+    .o-mail-NotificationItem-avatarContainer {
+        background: #e9f2f0;
+        border: 1px solid #d2e3df;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .o-mail-NotificationItem-avatarContainer img {
+        display: block;
+        border-radius: 8px !important;
+        object-fit: cover;
+    }
+
+    .o-mail-ImStatus .fa-heart {
+        display: none !important;
+    }
+
+    .o-mail-ImStatus::after {
+        display: block;
+        width: 8px;
+        height: 8px;
+        content: "";
+        background: #249b7b;
+        border: 2px solid #d8eee7;
+        border-radius: 999px;
+    }
+
+    .o-mail-NotificationItem-name {
+        color: var(--tcsi-rail-ink);
+    }
+}
+
+// Keep the replacement visible during the framework's image swap as well as
+// after the branding observer has finished. The selectors stay inside mail
+// surfaces so a legitimate customer's partner avatar is never rewritten.
+body.tcsi-shell-active {
+    .o-mail-Message img[src*="/res.partner/2/"],
+    .o-mail-Message img[src*="id=2"],
+    .o-mail-ChatBubble img[src*="/res.partner/2/"],
+    .o-mail-ChatBubble img[src*="id=2"],
+    .o-mail-ChatWindow img[src*="/res.partner/2/"],
+    .o-mail-ChatWindow img[src*="id=2"],
+    .o-mail-NotificationItem img[src*="/res.partner/2/"],
+    .o-mail-NotificationItem img[src*="id=2"],
+    .o-mail-DiscussSidebarChannel img[src*="/res.partner/2/"],
+    .o-mail-DiscussSidebarChannel img[src*="id=2"] {
+        content: url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=2.9.0");
+        background: #e9f2f0;
+    }
+}

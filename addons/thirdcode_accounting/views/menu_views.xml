@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_thirdcode_accounting_root" name="TCSI Accounting" action="action_tcsi_dashboard" sequence="80" web_icon="thirdcode_accounting,static/description/icon.svg" groups="base.group_user,thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_encoder,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator">
+        <menuitem id="menu_thirdcode_controls" name="Controls" sequence="10">
+            <menuitem id="menu_thirdcode_periods" name="Accounting periods" action="action_thirdcode_accounting_period" sequence="10"/>
+            <menuitem id="menu_thirdcode_recurring" name="Recurring journals" action="action_thirdcode_recurring_journal" sequence="20" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+            <menuitem id="menu_thirdcode_recurring_invoices" name="Recurring invoices and bills" action="action_thirdcode_recurring_invoice" sequence="25" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+            <menuitem id="menu_thirdcode_tax_profiles" name="Tax profiles" action="action_thirdcode_tax_profile" sequence="27" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+            <menuitem id="menu_thirdcode_report_samples" name="Report samples" action="action_thirdcode_report_sample" sequence="28" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+            <menuitem id="menu_thirdcode_year_end_close" name="Year-end retained earnings" action="action_thirdcode_year_end_close" sequence="29" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+        </menuitem>
+        <menuitem id="menu_thirdcode_payment_batches" name="Payment batches" action="action_thirdcode_payment_batch" sequence="30"/>
+        <menuitem id="menu_thirdcode_bank_reconciliations" name="Bank reconciliations" action="action_thirdcode_bank_reconciliation" sequence="35"/>
+        <menuitem id="menu_thirdcode_financial_reports" name="Financial statements" action="action_thirdcode_financial_report" sequence="37" groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+        <menuitem id="menu_thirdcode_migration" name="Migration batches" action="action_thirdcode_migration_batch" sequence="40" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+    </menuitem>
+</odoo>

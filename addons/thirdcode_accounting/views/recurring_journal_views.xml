@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_thirdcode_recurring_journal_tree" model="ir.ui.view">
+        <field name="name">thirdcode.recurring.journal.tree</field><field name="model">thirdcode.recurring.journal</field>
+        <field name="arch" type="xml"><list string="Recurring journals"><field name="name"/><field name="reference"/><field name="journal_id"/><field name="next_run"/><field name="interval_number"/><field name="interval_type"/><field name="active"/></list></field>
+    </record>
+    <record id="view_thirdcode_recurring_journal_form" model="ir.ui.view">
+        <field name="name">thirdcode.recurring.journal.form</field><field name="model">thirdcode.recurring.journal</field>
+        <field name="arch" type="xml">
+            <form string="Recurring journal">
+                <header><button name="action_run_now" type="object" string="Run now" class="oe_highlight" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/><button name="action_run_due" type="object" string="Run due periods" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/><field name="active" widget="boolean_toggle"/></header>
+                <sheet>
+                    <group col="2" class="tcsi-form-sections">
+                        <group string="Journal details" class="tcsi-form-section">
+                            <field name="name"/>
+                            <field name="reference"/>
+                            <field name="company_id"/>
+                            <field name="journal_id"/>
+                            <field name="date_start"/>
+                            <field name="next_run"/>
+                        </group>
+                        <group string="Schedule" class="tcsi-form-section">
+                            <field name="interval_number"/>
+                            <field name="interval_type"/>
+                            <field name="last_run"/>
+                            <field name="narration"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Journal lines"><field name="line_ids"><list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="account_id"/><field name="partner_id"/><field name="debit"/><field name="credit"/></list></field></page>
+                        <page string="Generated entries"><field name="generated_move_ids" readonly="1"><list><field name="name"/><field name="date"/><field name="state"/><field name="amount_total"/></list></field></page>
+                    </notebook>
+                    <chatter/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_thirdcode_recurring_journal" model="ir.actions.act_window"><field name="name">Recurring journals</field><field name="res_model">thirdcode.recurring.journal</field><field name="view_mode">list,form</field></record>
+</odoo>

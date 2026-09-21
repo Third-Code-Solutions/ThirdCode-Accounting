@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_thirdcode_bank_reconciliation_list" model="ir.ui.view">
+        <field name="name">thirdcode.bank.reconciliation.list</field>
+        <field name="model">thirdcode.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <list string="Bank reconciliations">
+                <field name="name"/>
+                <field name="statement_reference"/>
+                <field name="journal_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="closing_balance"/>
+                <field name="difference"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_thirdcode_bank_reconciliation_form" model="ir.ui.view">
+        <field name="name">thirdcode.bank.reconciliation.form</field>
+        <field name="model">thirdcode.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <form string="Manual bank reconciliation">
+                <header>
+                    <button name="action_compute_ledger_balance" type="object" string="Compute ledger balance" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+                    <button name="action_reconcile" type="object" string="Sign off reconciliation" class="oe_highlight" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator" invisible="state == 'reconciled'"/>
+                    <button name="action_reopen" type="object" string="Reopen" groups="thirdcode_accounting.group_thirdcode_administrator" invisible="state != 'reconciled'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,reconciled"/>
+                </header>
+                <sheet>
+                    <group col="2" class="tcsi-form-sections">
+                        <group string="Reconciliation details" class="tcsi-form-section">
+                            <field name="name"/>
+                            <field name="company_id"/>
+                            <field name="journal_id"/>
+                            <field name="statement_reference"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="owner_id"/>
+                        </group>
+                        <group string="Balances" class="tcsi-form-section">
+                            <field name="opening_balance"/>
+                            <field name="closing_balance"/>
+                            <field name="ledger_balance" readonly="1"/>
+                            <field name="outstanding_deposits"/>
+                            <field name="outstanding_payments"/>
+                            <field name="expected_bank_balance" readonly="1"/>
+                            <field name="difference" readonly="1"/>
+                        </group>
+                        <group string="Paper/PDF evidence" class="tcsi-form-section tcsi-form-section-wide">
+                            <field name="evidence_filename"/>
+                            <field name="evidence_file" filename="evidence_filename"/>
+                            <field name="definition"/>
+                        </group>
+                    </group>
+                    <field name="bank_statement_line_ids">
+                        <list editable="bottom">
+                            <field name="date"/>
+                            <field name="payment_ref"/>
+                            <field name="amount"/>
+                            <field name="thirdcode_reconciliation_status" readonly="1"/>
+                        </list>
+                    </field>
+                    <chatter/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_thirdcode_bank_reconciliation" model="ir.actions.act_window">
+        <field name="name">Bank reconciliations</field>
+        <field name="res_model">thirdcode.bank.reconciliation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

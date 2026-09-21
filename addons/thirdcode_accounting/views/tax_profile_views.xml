@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_thirdcode_tax_profile_list" model="ir.ui.view">
+        <field name="name">thirdcode.tax.profile.list</field>
+        <field name="model">thirdcode.tax.profile</field>
+        <field name="arch" type="xml">
+            <list string="Tax profiles">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="status" widget="badge"/>
+                <field name="vat_registered"/>
+                <field name="effective_date"/>
+                <field name="accountant_owner"/>
+                <field name="approved_by"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_thirdcode_tax_profile_form" model="ir.ui.view">
+        <field name="name">thirdcode.tax.profile.form</field>
+        <field name="model">thirdcode.tax.profile</field>
+        <field name="arch" type="xml">
+            <form string="Tax profile">
+                <header>
+                    <button name="action_configure" type="object" string="Configure" class="oe_highlight" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator" invisible="status == 'configured'"/>
+                    <button name="action_reset_to_assessment" type="object" string="Reset to assessment" groups="thirdcode_accounting.group_thirdcode_administrator" invisible="status != 'configured'"/>
+                    <field name="status" widget="statusbar" statusbar_visible="assessment_required,configured"/>
+                </header>
+                <sheet>
+                    <group col="2" class="tcsi-form-sections">
+                        <group string="Profile details" class="tcsi-form-section">
+                            <field name="name"/>
+                            <field name="company_id"/>
+                            <field name="effective_date"/>
+                            <field name="accountant_owner"/>
+                            <field name="vat_registered"/>
+                        </group>
+                        <group string="Approved native tax mappings" class="tcsi-form-section">
+                            <field name="output_vat_tax_id"/>
+                            <field name="input_vat_tax_id"/>
+                            <field name="withholding_tax_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Notes" class="tcsi-form-section tcsi-form-section-wide">
+                            <field name="notes" placeholder="Record the approved tax basis; rates are not inferred by this module."/>
+                        </group>
+                    </group>
+                    <chatter/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_thirdcode_tax_profile" model="ir.actions.act_window">
+        <field name="name">Tax profiles</field>
+        <field name="res_model">thirdcode.tax.profile</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

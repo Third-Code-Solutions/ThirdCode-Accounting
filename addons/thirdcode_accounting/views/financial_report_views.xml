@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_thirdcode_financial_report_wizard_form" model="ir.ui.view">
+        <field name="name">thirdcode.financial.report.wizard.form</field>
+        <field name="model">thirdcode.financial.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Financial statement report">
+                <header>
+                    <button name="action_export_pdf" type="object" string="Export PDF" class="oe_highlight" groups="base.group_system,thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert">This generic output is provisional until the client-approved report sample is attached and approved.</div>
+                    <group col="2" class="tcsi-form-sections">
+                        <group string="Report parameters" class="tcsi-form-section">
+                            <field name="report_type"/>
+                            <field name="company_id"/>
+                            <field name="target_move"/>
+                        </group>
+                        <group string="Reporting period" class="tcsi-form-section">
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="report_status" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_thirdcode_financial_report" model="ir.actions.act_window">
+        <field name="name">Financial statements</field>
+        <field name="res_model">thirdcode.financial.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

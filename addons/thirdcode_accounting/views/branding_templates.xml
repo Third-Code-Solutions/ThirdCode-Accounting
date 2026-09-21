@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="tcsi_web_layout" inherit_id="web.layout" name="TCSI web layout">
+        <xpath expr="//title" position="replace">
+            <title t-esc="title or 'TCSI Accounting'"/>
+        </xpath>
+        <xpath expr="//link[@rel='shortcut icon']" position="replace">
+            <link type="image/svg+xml" rel="shortcut icon" href="/thirdcode_accounting/static/src/img/tcsi-mark.svg?v=2.5.0"/>
+        </xpath>
+    </template>
+
+    <template id="tcsi_webclient_bootstrap" inherit_id="web.webclient_bootstrap" name="TCSI webclient bootstrap">
+        <xpath expr="//meta[@name='theme-color']" position="attributes">
+            <attribute name="content">#1f0a52</attribute>
+        </xpath>
+        <xpath expr="//link[@rel='apple-touch-icon']" position="replace">
+            <link rel="apple-touch-icon" href="/thirdcode_accounting/static/src/img/tcsi-mark.svg?v=2.5.0"/>
+        </xpath>
+    </template>
+
+    <template id="tcsi_webclient_offline" inherit_id="web.webclient_offline" name="TCSI offline page">
+        <xpath expr="//img" position="replace">
+            <img src="/thirdcode_accounting/static/src/img/tcsi-mark.svg?v=2.5.0" alt="Th/rd Code Solutions Inc. mark"/>
+        </xpath>
+        <xpath expr="//p" position="replace">
+            <p>Check your network connection and return to TCSI Accounting. The workspace will load when you are back online.</p>
+        </xpath>
+    </template>
+
+    <template id="tcsi_frontend_layout" inherit_id="web.frontend_layout" name="TCSI frontend layout">
+        <xpath expr="//t[@t-call='web.brand_promotion']" position="replace">
+            <div class="tcsi-frontend-brand">
+                <a href="https://www.thirdcodesolutions.com" target="_blank" rel="noopener">Th/rd Code Solutions Inc.</a>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="tcsi_login_layout" inherit_id="web.login_layout" name="TCSI login layout">
+        <xpath expr="//div[hasclass('container', 'py-5')]" position="attributes">
+            <attribute name="class">tcsi-login-shell container py-5</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('text-center', 'pb-3', 'border-bottom', 'mb-4')]" position="replace">
+            <div class="tcsi-login-brand">
+                <div class="tcsi-login-brand-top">
+                    <div class="tcsi-login-mark-shell">
+                        <img src="/thirdcode_accounting/static/src/img/tcsi-mark.svg?v=2.5.0" alt="Third Code Solutions Inc. mark"/>
+                    </div>
+                    <div class="tcsi-login-wordmark">
+                        <strong>Th/rd Code</strong>
+                        <span>Solutions Inc.</span>
+                        <small>TCSI Accounting</small>
+                    </div>
+                </div>
+                <div class="tcsi-login-copy">
+                    <div class="tcsi-login-kicker">PRIVATE FINANCE WORKSPACE</div>
+                    <h1>Clear books.<br/><em>Confident decisions.</em></h1>
+                    <p>Keep every transaction, approval, and report moving in one considered workspace.</p>
+                </div>
+                <div class="tcsi-login-visual" aria-hidden="true">
+                    <div class="tcsi-login-visual-header"><span>Financial control</span><span class="tcsi-login-visual-live"><i></i> Live ledger</span></div>
+                    <svg viewBox="0 0 420 150" role="presentation">
+                        <path class="tcsi-login-grid-line" d="M0 28H420M0 75H420M0 122H420"/>
+                        <path class="tcsi-login-chart-fill" d="M0 116C34 110 46 93 76 101S121 115 148 88s44-36 69-17 38 26 60 2 33-44 61-30 42 4 82-18v125H0Z"/>
+                        <path class="tcsi-login-chart-line" d="M0 116C34 110 46 93 76 101S121 115 148 88s44-36 69-17 38 26 60 2 33-44 61-30 42 4 82-18"/>
+                        <circle cx="338" cy="43" r="5" class="tcsi-login-chart-point"/>
+                    </svg>
+                    <div class="tcsi-login-visual-footer"><span>Post</span><span>Review</span><span>Close</span></div>
+                </div>
+                <div class="tcsi-login-brand-foot"><span>THIRD CODE SOLUTIONS INC.</span><span>Role-based access</span></div>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('tcsi-login-brand')]" position="after">
+            <div class="tcsi-login-panel-header">
+                <t t-if="request.httprequest.path == '/web/signup'">
+                    <span class="tcsi-login-panel-eyebrow">New workspace access</span>
+                    <h2>Create your TCSI account</h2>
+                    <p>Set up your secure workspace profile to get started.</p>
+                </t>
+                <t t-elif="request.httprequest.path == '/web/reset_password'">
+                    <span class="tcsi-login-panel-eyebrow">Account recovery</span>
+                    <h2>Reset your password</h2>
+                    <p>Recover access to your TCSI finance workspace securely.</p>
+                </t>
+                <t t-else="">
+                    <span class="tcsi-login-panel-eyebrow">Welcome back</span>
+                    <h2>Sign in to TCSI Accounting</h2>
+                    <p>Use your workspace credentials to continue.</p>
+                </t>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('text-center', 'small', 'mt-4', 'pt-3', 'border-top')]" position="replace">
+            <div class="tcsi-login-footer text-center mt-4 pt-3 border-top">
+                <div class="tcsi-login-footer-status"><i></i> Private finance workspace</div>
+                <div class="tcsi-login-footer-company">
+                    <strong>Th/rd Code Solutions Inc.</strong>
+                    <a href="https://www.thirdcodesolutions.com" target="_blank" rel="noopener">thirdcodesolutions.com</a>
+                </div>
+                <small>Access follows your assigned role and permissions.</small>
+            </div>
+        </xpath>
+    </template>
+</odoo>
