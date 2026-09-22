@@ -2109,6 +2109,43 @@ body.tcsi-shell-active {
 .tcsi-login-panel-header {
     padding: 58px 64px 0;
 
+    .tcsi-login-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        margin-bottom: 20px;
+        padding: 8px 11px;
+        border: 1px solid var(--tcsi-line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--tcsi-muted);
+        font-size: 11px;
+        font-weight: 650;
+        letter-spacing: .01em;
+        line-height: 1.2;
+        text-decoration: none;
+        transition: border-color .2s ease, background-color .2s ease, color .2s ease;
+
+        span:first-child {
+            color: var(--tcsi-violet);
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--tcsi-violet);
+            background: #faf9ff;
+            color: var(--tcsi-violet-deep);
+        }
+
+        &:focus-visible {
+            outline: 2px solid rgba(96, 27, 230, .28);
+            outline-offset: 3px;
+        }
+    }
+
     .tcsi-login-panel-eyebrow {
         color: var(--tcsi-violet);
         font-size: 10px;
