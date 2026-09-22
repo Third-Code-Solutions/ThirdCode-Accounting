@@ -55,6 +55,29 @@ retention/RPO/RTO. Do not import real company records until those gates pass.
 
 ## Future standalone architecture (not released)
 
+### Verified pilot infrastructure — 2026-09-22
+
+Railway's GitHub-linked engine deployment and GitHub quality gates passed.
+Administrator authentication passed on the fresh pilot database. The separate
+portal returned healthy responses; unfinished ledger APIs returned 404 and
+unfinished pages redirected to the portal. Eight portal-boundary tests cover
+the hosted restrictions, including missing preview configuration.
+
+Both Railway volumes have DAILY backups with six-day retention, and manual
+`Pilot launch baseline` snapshots exist. A logical database dump was restored
+to an isolated database with the TCSI module installed and zero accounting
+entries. A filestore archive was extracted and byte-compared successfully.
+Only the disposable verification database and scratch files were removed.
+The temporary deployment SSH key was revoked and deleted after verification.
+These checks do not constitute a full on-premise recovery rehearsal or client
+accounting acceptance.
+
+The release author email must match an authorized Vercel team identity. The
+owner confirmed `kurtgavin.design@gmail.com` for release commits; do not rewrite
+shared Git history to change older authors. Keep concurrent frontend debugging
+changes out of deployment until reviewed and tested. Customer acceptance and
+the reported local interaction-freeze fix remain separate release gates.
+
 The planned standalone product path is:
 
 ```text
