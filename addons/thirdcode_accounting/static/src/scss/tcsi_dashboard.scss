@@ -845,9 +845,9 @@ body.tcsi-shell-active .tcsi-dashboard {
 // A restrained, data-dense layout inspired by mature infrastructure consoles:
 // neutral surfaces, compact hierarchy, and one deliberate action accent.
 body.tcsi-shell-active.tcsi-route-dashboard {
-    --tcsi-dashboard-accent: #c35e31;
-    --tcsi-dashboard-accent-deep: #99421f;
-    --tcsi-dashboard-accent-soft: #fff1ea;
+    --tcsi-dashboard-accent: #6b48d8;
+    --tcsi-dashboard-accent-deep: #5130b3;
+    --tcsi-dashboard-accent-soft: #f1edff;
     --tcsi-dashboard-ink: #1d2a34;
     --tcsi-dashboard-muted: #64727d;
     --tcsi-dashboard-subtle: #8c98a1;
@@ -886,8 +886,8 @@ body.tcsi-shell-active.tcsi-route-dashboard {
 
     .tcsi-sidebar-app-switcher-icon,
     .tcsi-app-switcher-icon {
-        color: #f1b59b;
-        background: rgba(195, 94, 49, .18);
+        color: #b4a4eb;
+        background: rgba(107, 72, 216, .14);
     }
 
     .tcsi-sidebar-app-copy small,
@@ -1034,7 +1034,7 @@ body.tcsi-shell-active .tcsi-dashboard {
         &:hover,
         &:focus-visible {
             color: var(--tcsi-dashboard-accent);
-            border-color: #d9a18a;
+            border-color: #bcaee9;
             box-shadow: 0 5px 14px rgba(92, 49, 30, .10);
         }
     }
@@ -1238,7 +1238,7 @@ body.tcsi-shell-active .tcsi-dashboard {
 
     .tcsi-panel-link {
         padding: 0;
-        color: #f0ad92;
+        color: #9079d8;
         font-size: 10px;
         font-weight: 680;
         background: transparent;
@@ -1576,8 +1576,8 @@ body.tcsi-shell-active.tcsi-route-dashboard {
     }
 
     .tcsi-sidebar-app-switcher-icon {
-        color: #8b4b32;
-        background: #fff0e9;
+        color: #5f42b6;
+        background: #f1edff;
     }
 
     .tcsi-sidebar-app-copy strong {
@@ -1596,7 +1596,7 @@ body.tcsi-shell-active.tcsi-route-dashboard {
         }
 
         &.is-active::before {
-            background: #c35e31;
+            background: #6b48d8;
         }
     }
 
@@ -1610,7 +1610,7 @@ body.tcsi-shell-active.tcsi-route-dashboard {
     }
 
     .tcsi-sidebar-link.is-active .tcsi-sidebar-icon {
-        color: #c35e31;
+        color: #6b48d8;
     }
 
     .tcsi-sidebar-footer {
@@ -1649,7 +1649,7 @@ body.tcsi-shell-active.tcsi-route-dashboard {
     --tcsi-dashboard-subtle: #8b98a1;
     --tcsi-dashboard-line: #dfe6ea;
     --tcsi-dashboard-surface: #ffffff;
-    --tcsi-dashboard-page: #f5f7f8;
+    --tcsi-dashboard-page: #fbfbfd;
 
     .tcsi-workspace-sidebar {
         color: var(--tcsi-dashboard-ink);
@@ -2091,15 +2091,15 @@ body.tcsi-shell-active .tcsi-dashboard {
 // board. Keep the information architecture while making the visual rhythm
 // match the route-level console surfaces.
 body.tcsi-shell-active.tcsi-route-dashboard {
-    --tcsi-dashboard-accent: #c85b2e;
-    --tcsi-dashboard-accent-deep: #a94721;
-    --tcsi-dashboard-accent-soft: #fff1ea;
+    --tcsi-dashboard-accent: #6b48d8;
+    --tcsi-dashboard-accent-deep: #5130b3;
+    --tcsi-dashboard-accent-soft: #f1edff;
     --tcsi-dashboard-ink: #1d2b33;
     --tcsi-dashboard-muted: #6e7c84;
     --tcsi-dashboard-subtle: #8d999f;
     --tcsi-dashboard-line: #e1e7ea;
     --tcsi-dashboard-surface: #ffffff;
-    --tcsi-dashboard-page: #f5f7f8;
+    --tcsi-dashboard-page: #fbfbfd;
 }
 
 body.tcsi-shell-active .tcsi-dashboard {
@@ -2169,7 +2169,7 @@ body.tcsi-shell-active .tcsi-dashboard {
         &:focus-visible {
             color: var(--tcsi-dashboard-accent-deep);
             border-color: var(--tcsi-dashboard-accent);
-            box-shadow: 0 0 0 2px rgba(200, 91, 46, .12);
+            box-shadow: 0 0 0 2px rgba(107, 72, 216, .12);
             transform: none;
         }
     }
@@ -2266,12 +2266,30 @@ body.tcsi-shell-active .tcsi-dashboard {
         background: var(--tcsi-dashboard-surface);
         border: 1px solid var(--tcsi-dashboard-line);
         border-left: 1px solid var(--tcsi-dashboard-line);
+
+        .tcsi-panel-header h2,
+        .tcsi-balance-value {
+            color: var(--tcsi-dashboard-ink);
+        }
+
+        .tcsi-panel-eyebrow {
+            color: var(--tcsi-dashboard-accent);
+        }
+
+        > p {
+            color: var(--tcsi-dashboard-muted);
+        }
+
+        .tcsi-balance-footer {
+            color: var(--tcsi-dashboard-subtle);
+            border-top-color: var(--tcsi-dashboard-line);
+        }
     }
 
     .tcsi-panel-status {
         color: var(--tcsi-dashboard-muted);
         background: var(--tcsi-dashboard-accent-soft);
-        border: 1px solid #f0d6c9;
+        border: 1px solid #ded5f7;
         border-radius: 4px;
     }
 

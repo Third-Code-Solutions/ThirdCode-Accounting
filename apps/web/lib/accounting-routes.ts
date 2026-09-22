@@ -9,7 +9,7 @@ export const accountingRoutePrefixes = [
 export function isAccountingRoute(pathname: string): boolean {
   return accountingRoutePrefixes.some((prefix) =>
     pathname === `/${prefix}` || pathname.startsWith(`/${prefix}/`),
-  ) || /^\/[a-zA-Z0-9_]+\/static\//.test(pathname) || pathname === "/logo.png";
+  ) || /^\/[a-zA-Z0-9][a-zA-Z0-9_]*\/static\//.test(pathname) || pathname === "/logo.png";
 }
 
 export const accountingOrigin = "https://tcsi-accounting-production.up.railway.app";

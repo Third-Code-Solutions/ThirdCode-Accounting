@@ -1117,7 +1117,7 @@ body.tcsi-shell-active .o_dialog .modal-content {
 // unchanged; only the visible chrome is normalized here.
 body.tcsi-shell-active {
     --tcsi-shell-sidebar-width: 248px;
-    --tcsi-console-page: #f5f7f8;
+    --tcsi-console-page: #fbfbfd;
     --tcsi-console-surface: #ffffff;
     --tcsi-console-surface-soft: #f8fafb;
     --tcsi-console-ink: #1d2b33;
@@ -1126,9 +1126,9 @@ body.tcsi-shell-active {
     --tcsi-console-subtle: #8d999f;
     --tcsi-console-line: #e1e7ea;
     --tcsi-console-line-strong: #cbd5da;
-    --tcsi-console-accent: #c85b2e;
-    --tcsi-console-accent-deep: #a94721;
-    --tcsi-console-accent-soft: #fff1ea;
+    --tcsi-console-accent: #6b48d8;
+    --tcsi-console-accent-deep: #5130b3;
+    --tcsi-console-accent-soft: #f1edff;
     --tcsi-console-success: #247d61;
     --tcsi-console-shadow: 0 10px 28px rgba(29, 43, 51, .10);
     color: var(--tcsi-console-ink);
@@ -1235,7 +1235,7 @@ body.tcsi-shell-active .tcsi-workspace-sidebar {
         &:focus-within {
             background: var(--tcsi-console-surface);
             border-color: var(--tcsi-console-accent);
-            box-shadow: 0 0 0 2px rgba(200, 91, 46, .12);
+            box-shadow: 0 0 0 2px rgba(107, 72, 216, .12);
         }
 
         input {
@@ -1354,7 +1354,7 @@ body.tcsi-shell-active .o_main_navbar {
         height: 29px;
         color: var(--tcsi-console-accent);
         background: var(--tcsi-console-accent-soft);
-        border-color: #f0d6c9;
+        border-color: #ded5f7;
         border-radius: 5px;
     }
 
@@ -1393,7 +1393,7 @@ body.tcsi-shell-active .o_main_navbar {
     }
 
     .o_menu_systray .o_avatar {
-        box-shadow: 0 0 0 2px #f0d6c9;
+        box-shadow: 0 0 0 2px #ded5f7;
     }
 
     .tcsi-systray-icon {
@@ -1805,7 +1805,7 @@ body.tcsi-shell-active {
     overflow: hidden;
     box-sizing: border-box;
     padding: clamp(32px, 6vw, 72px) 24px !important;
-    background: #ebe8f1;
+    background: #fbfbfd;
 }
 
 .tcsi-login-shell::before,
@@ -1818,6 +1818,7 @@ body.tcsi-shell-active {
 }
 
 .tcsi-login-shell::before {
+    display: none;
     width: 62vw;
     max-width: 760px;
     height: 62vw;
@@ -1828,6 +1829,7 @@ body.tcsi-shell-active {
 }
 
 .tcsi-login-shell::after {
+    display: none;
     width: 52vw;
     max-width: 620px;
     height: 52vw;
@@ -1841,10 +1843,10 @@ body.tcsi-shell-active {
     width: 100%;
     max-width: 1120px !important;
     overflow: hidden;
-    border: 1px solid rgba(20, 15, 30, .10) !important;
+    border: 1px solid var(--tcsi-line) !important;
     border-radius: 24px;
     background: #fff !important;
-    box-shadow: 0 30px 90px rgba(20, 15, 30, .18), 0 8px 24px rgba(96, 27, 230, .08);
+    box-shadow: 0 24px 70px rgba(20, 15, 30, .09);
 }
 
 .tcsi-login-shell .o_database_list .card-body {
@@ -1899,11 +1901,9 @@ body.tcsi-shell-active {
     min-height: 640px;
     overflow: hidden;
     padding: 42px 44px 36px;
-    color: #fff;
-    background:
-        radial-gradient(circle at 105% 8%, rgba(144, 90, 237, .44), transparent 36%),
-        radial-gradient(circle at 8% 88%, rgba(96, 27, 230, .28), transparent 42%),
-        #171127;
+    color: var(--tcsi-ink);
+    background: #fff;
+    border-right: 1px solid var(--tcsi-line);
 }
 
 .tcsi-login-brand::before,
@@ -1919,12 +1919,13 @@ body.tcsi-shell-active {
     height: 360px;
     right: -190px;
     bottom: -165px;
-    border: 1px solid rgba(255, 255, 255, .14);
+    border: 1px solid #ded5f7;
     border-radius: 50%;
-    box-shadow: 0 0 0 34px rgba(255, 255, 255, .025), 0 0 0 68px rgba(255, 255, 255, .018);
+    box-shadow: 0 0 0 34px rgba(107, 72, 216, .035), 0 0 0 68px rgba(107, 72, 216, .018);
 }
 
 .tcsi-login-brand::after {
+    display: none;
     inset: 0;
     opacity: .26;
     background-image: radial-gradient(rgba(255, 255, 255, .22) .7px, transparent .7px);
@@ -1944,10 +1945,10 @@ body.tcsi-shell-active {
     height: 54px;
     flex: 0 0 auto;
     place-items: center;
-    border: 1px solid rgba(255, 255, 255, .24);
+    border: 1px solid #ded5f7;
     border-radius: 16px;
-    background: rgba(255, 255, 255, .08);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, .24);
+    background: var(--tcsi-console-accent-soft, #f1edff);
+    box-shadow: none;
 
     img {
         width: 42px;
@@ -1961,14 +1962,14 @@ body.tcsi-shell-active {
     line-height: 1;
 
     strong {
-        color: #fff;
+        color: var(--tcsi-ink);
         font-size: 18px;
         font-weight: 720;
         letter-spacing: -.04em;
     }
 
     span {
-        color: rgba(255, 255, 255, .64);
+        color: var(--tcsi-muted);
         font-size: 9px;
         font-weight: 700;
         letter-spacing: .20em;
@@ -1977,7 +1978,7 @@ body.tcsi-shell-active {
 
     small {
         margin-top: 4px;
-        color: #c9b3fb;
+        color: var(--tcsi-violet);
         font-size: 9px;
         font-weight: 700;
         letter-spacing: .16em;
@@ -1990,7 +1991,7 @@ body.tcsi-shell-active {
 
     .tcsi-login-kicker {
         margin-bottom: 20px;
-        color: #c9b3fb;
+        color: var(--tcsi-violet);
         font-size: 10px;
         font-weight: 760;
         letter-spacing: .18em;
@@ -1998,7 +1999,7 @@ body.tcsi-shell-active {
 
     h1 {
         margin: 0;
-        color: #fff;
+        color: var(--tcsi-ink);
         font-size: clamp(2.35rem, 4vw, 4.2rem);
         font-weight: 720;
         letter-spacing: -.065em;
@@ -2006,7 +2007,7 @@ body.tcsi-shell-active {
         text-wrap: balance;
 
         em {
-            color: #c9b3fb;
+            color: var(--tcsi-violet);
             font-style: normal;
         }
     }
@@ -2014,7 +2015,7 @@ body.tcsi-shell-active {
     p {
         max-width: 35ch;
         margin: 22px 0 0;
-        color: rgba(255, 255, 255, .66);
+        color: var(--tcsi-muted);
         font-size: 14px;
         line-height: 1.7;
     }
@@ -2022,10 +2023,10 @@ body.tcsi-shell-active {
 
 .tcsi-login-visual {
     padding: 17px 18px 13px;
-    border: 1px solid rgba(255, 255, 255, .14);
+    border: 1px solid var(--tcsi-line);
     border-radius: 15px;
-    background: rgba(255, 255, 255, .055);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+    background: #fbfaff;
+    box-shadow: none;
 
     svg {
         display: block;
@@ -2040,7 +2041,7 @@ body.tcsi-shell-active {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: rgba(255, 255, 255, .62);
+    color: var(--tcsi-muted);
     font-size: 10px;
     font-weight: 650;
     letter-spacing: .06em;
@@ -2051,7 +2052,7 @@ body.tcsi-shell-active {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: rgba(255, 255, 255, .86);
+    color: var(--tcsi-ink);
 
     i,
     .tcsi-login-footer-status i {
@@ -2066,31 +2067,31 @@ body.tcsi-shell-active {
 
 .tcsi-login-visual-footer {
     margin-top: -3px;
-    color: rgba(255, 255, 255, .42);
+    color: var(--tcsi-muted);
     font-size: 9px;
     letter-spacing: .10em;
 }
 
 .tcsi-login-grid-line {
     fill: none;
-    stroke: rgba(255, 255, 255, .11);
+    stroke: #e6e0f2;
     stroke-width: 1;
 }
 
 .tcsi-login-chart-fill {
-    fill: rgba(144, 90, 237, .18);
+    fill: #f1edff;
 }
 
 .tcsi-login-chart-line {
     fill: none;
-    stroke: #c9b3fb;
+    stroke: var(--tcsi-violet);
     stroke-linecap: round;
     stroke-width: 2.5;
 }
 
 .tcsi-login-chart-point {
     fill: #72dec8;
-    stroke: #171127;
+    stroke: #fff;
     stroke-width: 4;
 }
 
@@ -2098,7 +2099,7 @@ body.tcsi-shell-active {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    color: rgba(255, 255, 255, .38);
+    color: var(--tcsi-muted);
     font-size: 9px;
     font-weight: 700;
     letter-spacing: .12em;
@@ -3391,7 +3392,7 @@ body.tcsi-shell-active {
     --tcsi-rail-ink: #1d2730;
     --tcsi-rail-muted: #68757e;
     --tcsi-rail-soft: #f3f5f6;
-    --tcsi-rail-accent: #c35e31;
+    --tcsi-rail-accent: #6b48d8;
     overflow: hidden;
     background: #f7f8f9;
 
@@ -3488,8 +3489,8 @@ body.tcsi-shell-active .tcsi-workspace-sidebar {
     .tcsi-sidebar-app-switcher-icon {
         width: 27px;
         height: 27px;
-        color: #8b4b32;
-        background: #fff0e9;
+        color: #5f42b6;
+        background: #f1edff;
         border-radius: 5px;
     }
 
@@ -3537,7 +3538,7 @@ body.tcsi-shell-active .tcsi-workspace-sidebar {
         &:focus-within {
             background: #fff;
             border-color: #bdc9d0;
-            box-shadow: 0 0 0 3px rgba(195, 94, 49, .10);
+            box-shadow: 0 0 0 3px rgba(107, 72, 216, .10);
         }
 
         input {
@@ -3682,7 +3683,7 @@ body.tcsi-shell-active .tcsi-workspace-sidebar {
 
     .tcsi-app-switcher-icon {
         color: var(--tcsi-rail-accent);
-        background: var(--tcsi-dashboard-accent-soft, #fff0e9);
+        background: var(--tcsi-dashboard-accent-soft, #f1edff);
     }
 }
 
@@ -3721,9 +3722,9 @@ body.tcsi-shell-active .o_main_navbar {
     .tcsi-navbar-context-mark {
         width: 30px;
         height: 30px;
-        color: #8b4b32;
-        background: #fff0e9;
-        border-color: #f0d8cc;
+        color: #5f42b6;
+        background: #f1edff;
+        border-color: #ded5f7;
         border-radius: 6px;
     }
 
@@ -4931,7 +4932,7 @@ body.tcsi-shell-active.tcsi-route-discuss {
 // the former purple application chrome after the console bundle is rebuilt.
 body.tcsi-shell-active {
     --tcsi-shell-sidebar-width: 248px;
-    --tcsi-console-page: #f5f7f8;
+    --tcsi-console-page: #fbfbfd;
     --tcsi-console-surface: #ffffff;
     --tcsi-console-surface-soft: #f8fafb;
     --tcsi-console-ink: #1d2b33;
@@ -4940,9 +4941,9 @@ body.tcsi-shell-active {
     --tcsi-console-subtle: #8d999f;
     --tcsi-console-line: #e1e7ea;
     --tcsi-console-line-strong: #cbd5da;
-    --tcsi-console-accent: #c85b2e;
-    --tcsi-console-accent-deep: #a94721;
-    --tcsi-console-accent-soft: #fff1ea;
+    --tcsi-console-accent: #6b48d8;
+    --tcsi-console-accent-deep: #5130b3;
+    --tcsi-console-accent-soft: #f1edff;
     background: var(--tcsi-console-page);
     color: var(--tcsi-console-ink);
 }
@@ -5025,7 +5026,7 @@ body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context {
 body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-mark {
     color: var(--tcsi-console-accent) !important;
     background: var(--tcsi-console-accent-soft) !important;
-    border-color: #f0d6c9 !important;
+    border-color: #ded5f7 !important;
 }
 
 body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-copy strong,

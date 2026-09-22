@@ -748,7 +748,7 @@ body.tcsi-shell-active :focus-visible {
 // It keeps every route on one neutral console system without changing the
 // underlying actions, records, permissions, or renderer behavior.
 body.tcsi-shell-active {
-    --tcsi-route-page: #f5f7f8;
+    --tcsi-route-page: #fbfbfd;
     --tcsi-route-surface: #ffffff;
     --tcsi-route-surface-soft: #f8fafb;
     --tcsi-route-surface-hover: #f3f6f7;
@@ -758,9 +758,9 @@ body.tcsi-shell-active {
     --tcsi-route-subtle: #8d999f;
     --tcsi-route-line: #e1e7ea;
     --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #c85b2e;
-    --tcsi-route-accent-deep: #a94721;
-    --tcsi-route-accent-soft: #fff1ea;
+    --tcsi-route-accent: #6b48d8;
+    --tcsi-route-accent-deep: #5130b3;
+    --tcsi-route-accent-soft: #f1edff;
     --tcsi-route-radius: 6px;
     --tcsi-route-radius-sm: 4px;
 }
@@ -811,7 +811,7 @@ body.tcsi-shell-active .o_control_panel .o_searchview_input_container {
 body.tcsi-shell-active .o_control_panel .o_searchview:focus-within,
 body.tcsi-shell-active .o_control_panel .o_cp_searchview:focus-within {
     border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(200, 91, 46, .12) !important;
+    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
 }
 
 body.tcsi-shell-active .o_control_panel .o_cp_buttons .btn-primary,
@@ -906,7 +906,7 @@ body.tcsi-shell-active .o_field_widget input:focus,
 body.tcsi-shell-active .o_field_widget textarea:focus,
 body.tcsi-shell-active .o_field_widget select:focus {
     border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(200, 91, 46, .12) !important;
+    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
 }
 
 body.tcsi-shell-active .tcsi-view-list .o_list_view,
@@ -1186,7 +1186,7 @@ body.tcsi-shell-active .badge.bg-danger {
 // intentionally flat and compact: content is separated by rules and spacing,
 // not by Odoo-style color bars, gradients, or oversized floating cards.
 body.tcsi-shell-active {
-    --tcsi-route-page: #f5f7f8;
+    --tcsi-route-page: #fbfbfd;
     --tcsi-route-surface: #ffffff;
     --tcsi-route-surface-soft: #f8fafb;
     --tcsi-route-surface-hover: #f3f6f7;
@@ -1196,9 +1196,9 @@ body.tcsi-shell-active {
     --tcsi-route-subtle: #8d999f;
     --tcsi-route-line: #e1e7ea;
     --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #c85b2e;
-    --tcsi-route-accent-deep: #a94721;
-    --tcsi-route-accent-soft: #fff1ea;
+    --tcsi-route-accent: #6b48d8;
+    --tcsi-route-accent-deep: #5130b3;
+    --tcsi-route-accent-soft: #f1edff;
     --tcsi-route-success: #247d61;
     --tcsi-route-warning: #9a6c16;
     --tcsi-route-danger: #b24b4b;
@@ -1274,7 +1274,7 @@ body.tcsi-shell-active .o_control_panel .o_searchview_input_container {
 body.tcsi-shell-active .o_control_panel .o_cp_searchview:focus-within,
 body.tcsi-shell-active .o_control_panel .o_searchview:focus-within {
     border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(200, 91, 46, .12) !important;
+    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
 }
 
 body.tcsi-shell-active .o_control_panel .o_cp_buttons,
@@ -1364,7 +1364,7 @@ body.tcsi-shell-active .o_field_widget select {
 
     &:focus {
         border-color: var(--tcsi-route-accent) !important;
-        box-shadow: 0 0 0 2px rgba(200, 91, 46, .12) !important;
+        box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
         outline: none;
     }
 }
@@ -1928,7 +1928,7 @@ body.tcsi-shell-active.tcsi-route-discuss .o-mail-DiscussSidebarChannel {
 // Native records keep their accounting behavior, but their presentation is
 // intentionally rebuilt around TCSI's quieter command-center language.
 body.tcsi-shell-active {
-    --tcsi-route-page: #f2f5f6;
+    --tcsi-route-page: #fbfbfd;
     --tcsi-route-surface: #ffffff;
     --tcsi-route-surface-soft: #f7f9fa;
     --tcsi-route-surface-hover: #f0f4f5;
@@ -2332,7 +2332,7 @@ body.tcsi-shell-active.tcsi-view-form .o_form_view a:not(.btn):focus-visible {
 // The legacy route block ends above; these selectors are deliberately last so
 // the browser resolves one visual contract for every workspace renderer.
 body.tcsi-shell-active {
-    --tcsi-route-page: #f5f7f8;
+    --tcsi-route-page: #fbfbfd;
     --tcsi-route-surface: #ffffff;
     --tcsi-route-surface-soft: #f8fafb;
     --tcsi-route-surface-hover: #f3f6f7;
@@ -2341,9 +2341,9 @@ body.tcsi-shell-active {
     --tcsi-route-muted: #6e7c84;
     --tcsi-route-line: #e1e7ea;
     --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #c85b2e;
-    --tcsi-route-accent-deep: #a94721;
-    --tcsi-route-accent-soft: #fff1ea;
+    --tcsi-route-accent: #6b48d8;
+    --tcsi-route-accent-deep: #5130b3;
+    --tcsi-route-accent-soft: #f1edff;
     --tcsi-route-radius: 6px;
     --tcsi-route-radius-sm: 4px;
 }
@@ -2394,7 +2394,7 @@ body.tcsi-shell-active .o_control_panel .o_searchview_input_container {
 body.tcsi-shell-active .o_control_panel .o_searchview:focus-within,
 body.tcsi-shell-active .o_control_panel .o_cp_searchview:focus-within {
     border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(200, 91, 46, .12) !important;
+    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
 }
 
 body.tcsi-shell-active .o_control_panel .o_cp_buttons .btn-primary,
@@ -2490,7 +2490,7 @@ body.tcsi-shell-active .o_field_widget input:focus,
 body.tcsi-shell-active .o_field_widget textarea:focus,
 body.tcsi-shell-active .o_field_widget select:focus {
     border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(200, 91, 46, .12) !important;
+    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
 }
 
 body.tcsi-shell-active .tcsi-view-list .o_list_view,

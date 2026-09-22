@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 import { accountingOrigin, accountingRoutePrefixes } from "./lib/accounting-routes";
 
+const accountingAddonStaticPattern = "[a-zA-Z0-9][a-zA-Z0-9_]*";
+
 const accountingSources = [
   ...accountingRoutePrefixes.filter((prefix) => prefix !== "websocket").map((prefix) => `/${prefix}/:path*`),
   "/websocket/:path+",
-  "/:addon([a-zA-Z0-9_]+)/static/:path*",
+  `/:addon(${accountingAddonStaticPattern})/static/:path*`,
   "/logo.png",
 ];
 
@@ -33,7 +35,7 @@ const nextConfig: NextConfig = {
     if (process.env.VERCEL !== "1" && process.env.TCSI_PORTAL_ONLY !== "true") return [];
     return { beforeFiles: accountingSources.map((source) => ({
       source,
-      destination: `${accountingOrigin}${source.replace("([a-zA-Z0-9_]+)", "")}`,
+      destination: `${accountingOrigin}${source.replace(`(${accountingAddonStaticPattern})`, "")}`,
     })) };
   },
 };
