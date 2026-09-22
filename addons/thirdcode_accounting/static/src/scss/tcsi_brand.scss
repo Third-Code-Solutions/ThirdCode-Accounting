@@ -1111,6 +1111,333 @@ body.tcsi-shell-active .o_dialog .modal-content {
     }
 }
 
+// TCSI console system ------------------------------------------------------
+// Final shell layer: a light, flat workspace with the density and restraint
+// expected from a serious operations console. The accounting engine remains
+// unchanged; only the visible chrome is normalized here.
+body.tcsi-shell-active {
+    --tcsi-shell-sidebar-width: 248px;
+    --tcsi-console-page: #f5f7f8;
+    --tcsi-console-surface: #ffffff;
+    --tcsi-console-surface-soft: #f8fafb;
+    --tcsi-console-ink: #1d2b33;
+    --tcsi-console-text: #3d4d56;
+    --tcsi-console-muted: #6e7c84;
+    --tcsi-console-subtle: #8d999f;
+    --tcsi-console-line: #e1e7ea;
+    --tcsi-console-line-strong: #cbd5da;
+    --tcsi-console-accent: #c85b2e;
+    --tcsi-console-accent-deep: #a94721;
+    --tcsi-console-accent-soft: #fff1ea;
+    --tcsi-console-success: #247d61;
+    --tcsi-console-shadow: 0 10px 28px rgba(29, 43, 51, .10);
+    color: var(--tcsi-console-ink);
+    background: var(--tcsi-console-page);
+    font-size: 13px;
+}
+
+body.tcsi-shell-active .o_web_client,
+body.tcsi-shell-active .o_action_manager,
+body.tcsi-shell-active .o_view_controller,
+body.tcsi-shell-active .o_content {
+    color: var(--tcsi-console-ink);
+    background: var(--tcsi-console-page);
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar {
+    width: var(--tcsi-shell-sidebar-width);
+    padding: 0 12px 12px;
+    color: var(--tcsi-console-text);
+    background: var(--tcsi-console-surface);
+    border-right: 1px solid var(--tcsi-console-line);
+    box-shadow: none;
+
+    .tcsi-sidebar-header {
+        min-height: 56px;
+        margin: 0 -12px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--tcsi-console-line);
+    }
+
+    .tcsi-sidebar-brand {
+        color: var(--tcsi-console-ink);
+
+        img {
+            width: 27px;
+            height: 27px;
+            border-radius: 6px;
+            box-shadow: none;
+        }
+
+        strong {
+            color: var(--tcsi-console-ink);
+            font-size: 12px;
+            font-weight: 720;
+            letter-spacing: -.01em;
+        }
+
+        small {
+            color: var(--tcsi-console-muted);
+            font-size: 8px;
+            letter-spacing: .12em;
+        }
+    }
+
+    .tcsi-sidebar-app-switcher {
+        min-height: 44px;
+        margin: 12px 0 9px;
+        padding: 7px 9px;
+        color: var(--tcsi-console-ink);
+        background: var(--tcsi-console-surface);
+        border: 1px solid var(--tcsi-console-line);
+        border-radius: 5px;
+        box-shadow: none;
+
+        &:hover,
+        &:focus-visible,
+        &[aria-expanded="true"] {
+            background: var(--tcsi-console-surface-soft);
+            border-color: var(--tcsi-console-line-strong);
+            outline: none;
+        }
+    }
+
+    .tcsi-sidebar-app-switcher-icon,
+    .tcsi-app-switcher-icon {
+        width: 26px;
+        height: 26px;
+        color: var(--tcsi-console-accent);
+        background: var(--tcsi-console-accent-soft);
+        border-radius: 5px;
+    }
+
+    .tcsi-sidebar-app-copy {
+        small {
+            color: var(--tcsi-console-muted);
+            font-size: 9px;
+        }
+
+        strong {
+            color: var(--tcsi-console-ink);
+            font-size: 11px;
+        }
+    }
+
+    .tcsi-sidebar-search {
+        min-height: 34px;
+        margin-bottom: 10px;
+        color: var(--tcsi-console-muted);
+        background: var(--tcsi-console-surface-soft);
+        border: 1px solid var(--tcsi-console-line);
+        border-radius: 5px;
+        box-shadow: none;
+
+        &:focus-within {
+            background: var(--tcsi-console-surface);
+            border-color: var(--tcsi-console-accent);
+            box-shadow: 0 0 0 2px rgba(200, 91, 46, .12);
+        }
+
+        input {
+            color: var(--tcsi-console-ink);
+
+            &::placeholder {
+                color: var(--tcsi-console-subtle);
+            }
+        }
+
+        kbd {
+            color: var(--tcsi-console-muted);
+            background: var(--tcsi-console-surface);
+            border-color: var(--tcsi-console-line);
+        }
+    }
+
+    .tcsi-sidebar-section-label {
+        margin: 15px 10px 6px;
+        color: var(--tcsi-console-muted);
+        font-size: 10px;
+        font-weight: 650;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .tcsi-sidebar-link,
+    .tcsi-sidebar-group-title {
+        min-height: 33px;
+        gap: 9px;
+        padding: 7px 10px;
+        color: var(--tcsi-console-text);
+        border-radius: 5px;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--tcsi-console-ink);
+            background: var(--tcsi-console-surface-soft);
+            outline: none;
+        }
+
+        &.is-active {
+            color: var(--tcsi-console-ink);
+            background: var(--tcsi-console-accent-soft);
+        }
+
+        &.is-active::before {
+            top: 7px;
+            bottom: 7px;
+            width: 2px;
+            background: var(--tcsi-console-accent);
+            border-radius: 0 1px 1px 0;
+        }
+    }
+
+    .tcsi-sidebar-icon {
+        color: #7d8990;
+    }
+
+    .tcsi-sidebar-link.is-active .tcsi-sidebar-icon,
+    .tcsi-sidebar-group[open] > .tcsi-sidebar-group-title .tcsi-sidebar-icon {
+        color: var(--tcsi-console-accent);
+    }
+
+    .tcsi-sidebar-group-children {
+        border-left-color: var(--tcsi-console-line);
+    }
+
+    .tcsi-sidebar-footer {
+        color: var(--tcsi-console-muted);
+        border-top-color: var(--tcsi-console-line);
+    }
+
+    .tcsi-sidebar-status-dot {
+        background: var(--tcsi-console-success);
+        box-shadow: 0 0 0 3px rgba(36, 125, 97, .10);
+    }
+
+    .tcsi-app-switcher-list {
+        background: var(--tcsi-console-surface);
+        border-color: var(--tcsi-console-line);
+        border-radius: 5px;
+        box-shadow: var(--tcsi-console-shadow);
+    }
+
+    .tcsi-app-switcher-item {
+        color: var(--tcsi-console-text);
+        border-radius: 4px;
+
+        &:hover,
+        &:focus-visible,
+        &.is-current {
+            color: var(--tcsi-console-ink);
+            background: var(--tcsi-console-accent-soft);
+        }
+    }
+}
+
+body.tcsi-shell-active .o_main_navbar {
+    min-height: 56px;
+    padding: 7px 18px;
+    color: var(--tcsi-console-ink);
+    background: var(--tcsi-console-surface);
+    border-bottom: 1px solid var(--tcsi-console-line);
+    box-shadow: none;
+
+    .tcsi-navbar-context {
+        min-width: 232px;
+        margin-left: 0;
+        padding: 2px 18px 2px 0;
+        border-right-color: var(--tcsi-console-line);
+    }
+
+    .tcsi-navbar-context-mark {
+        width: 29px;
+        height: 29px;
+        color: var(--tcsi-console-accent);
+        background: var(--tcsi-console-accent-soft);
+        border-color: #f0d6c9;
+        border-radius: 5px;
+    }
+
+    .tcsi-navbar-context-copy {
+        small {
+            color: var(--tcsi-console-muted);
+        }
+
+        strong {
+            color: var(--tcsi-console-ink);
+            font-size: 12px;
+        }
+    }
+
+    .o_navbar_breadcrumbs,
+    .o_navbar_breadcrumbs .btn,
+    .o_menu_systray .dropdown-toggle,
+    .tcsi-sidebar-mobile-toggle {
+        color: var(--tcsi-console-text);
+    }
+
+    .o_menu_systray .dropdown-toggle {
+        border-radius: 4px;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--tcsi-console-ink);
+            background: var(--tcsi-console-surface-soft);
+            outline: none;
+        }
+    }
+
+    .o_menu_systray .o_user_menu .dropdown-toggle {
+        color: var(--tcsi-console-ink);
+        border-left-color: var(--tcsi-console-line);
+    }
+
+    .o_menu_systray .o_avatar {
+        box-shadow: 0 0 0 2px #f0d6c9;
+    }
+
+    .tcsi-systray-icon {
+        color: var(--tcsi-console-muted);
+    }
+}
+
+body.tcsi-shell-active .o_main_navbar .dropdown-menu,
+body.tcsi-shell-active .dropdown-menu {
+    color: var(--tcsi-console-text);
+    background: var(--tcsi-console-surface);
+    border: 1px solid var(--tcsi-console-line);
+    border-radius: 5px;
+    box-shadow: var(--tcsi-console-shadow);
+
+    .dropdown-item {
+        color: inherit;
+        border-radius: 3px;
+
+        &:hover,
+        &:focus {
+            color: var(--tcsi-console-ink);
+            background: var(--tcsi-console-surface-soft);
+        }
+    }
+}
+
+@media (max-width: 900px) {
+    body.tcsi-shell-active .o_main_navbar {
+        padding-right: 12px;
+        padding-left: 12px;
+
+        .tcsi-navbar-context {
+            min-width: 0;
+            flex: 1 1 auto;
+            padding-right: 10px;
+        }
+
+        .tcsi-navbar-context-copy strong {
+            max-width: 38vw;
+        }
+    }
+}
+
 // Orvexa assistant chat -----------------------------------------------------
 body.tcsi-shell-active {
     .o-mail-ChatWindow.tcsi-chat-window {
@@ -4352,5 +4679,380 @@ body.tcsi-shell-active :focus-visible {
 
     body.tcsi-shell-active .o-mail-DiscussSidebar {
         width: 208px;
+    }
+}
+
+// Discuss sidebar polish -----------------------------------------------------
+// Keep the native Discuss interactions, but give the workspace rail a clearer
+// hierarchy: one strong action, quiet navigation rows, and compact category
+// controls that do not look like form fields.
+body.tcsi-shell-active.tcsi-route-discuss {
+    .o-mail-DiscussSidebar {
+        flex: 0 0 264px !important;
+        width: 264px !important;
+        padding: 0 12px 18px !important;
+        background: var(--tcsi-ui-surface-soft);
+        border-right: 1px solid var(--tcsi-ui-line);
+        box-shadow: none;
+        scrollbar-color: var(--tcsi-ui-line-strong) transparent;
+        scrollbar-width: thin;
+    }
+
+    .o-mail-DiscussSidebar-top {
+        position: relative;
+        margin: 0 -12px 12px !important;
+        padding: 14px 12px 12px !important;
+        background: var(--tcsi-ui-surface);
+        border-bottom: 1px solid var(--tcsi-ui-line);
+    }
+
+    .o-mail-DiscussSidebar-top > .d-flex {
+        width: 100%;
+        justify-content: flex-start !important;
+        gap: 8px;
+    }
+
+    .o-mail-DiscussSidebar-top .o-mail-DiscussSidebar-optionsBtn {
+        position: absolute !important;
+        top: 14px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        margin: 0 !important;
+        color: var(--tcsi-ui-muted) !important;
+        background: var(--tcsi-ui-surface) !important;
+        border: 1px solid var(--tcsi-ui-line) !important;
+        border-radius: 8px !important;
+        opacity: 1 !important;
+        transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--tcsi-ui-purple-deep) !important;
+            background: var(--tcsi-ui-purple-soft) !important;
+            border-color: var(--tcsi-ui-purple-line) !important;
+        }
+    }
+
+    .o-mail-DiscussSidebar-top .btn.btn-primary {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+        min-height: 40px;
+        margin: 0 42px 0 0 !important;
+        padding: 0 14px !important;
+        justify-content: center;
+        color: #fff !important;
+        background: var(--tcsi-ui-purple) !important;
+        border: 1px solid var(--tcsi-ui-purple) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 7px 16px rgba(107, 72, 216, .16);
+        font-size: 13px;
+        font-weight: 680;
+        white-space: nowrap;
+        transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+
+        &:hover,
+        &:focus-visible {
+            background: var(--tcsi-ui-purple-deep) !important;
+            border-color: var(--tcsi-ui-purple-deep) !important;
+            box-shadow: 0 9px 20px rgba(81, 48, 179, .22);
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+
+    .o-mail-Mailbox,
+    .o-mail-DiscussSidebar-item {
+        width: 100% !important;
+        min-height: 38px;
+        margin: 2px 0 !important;
+        padding: 8px 10px !important;
+        color: var(--tcsi-ui-muted) !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+        font-size: 13px;
+        transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+
+        &:hover,
+        &:focus-visible,
+        &.o-active {
+            color: var(--tcsi-ui-ink) !important;
+            background: var(--tcsi-ui-purple-soft) !important;
+            border-color: var(--tcsi-ui-purple-line) !important;
+            outline: none !important;
+        }
+    }
+
+    .o-mail-Mailbox {
+        justify-content: flex-start !important;
+        gap: 8px;
+
+        .o-mail-ThreadIcon {
+            margin: 0 !important;
+            color: var(--tcsi-ui-subtle);
+        }
+
+        .small {
+            margin: 0 !important;
+            color: inherit;
+            font-size: 13px;
+            line-height: 1.4 !important;
+        }
+    }
+
+    .o-mail-DiscussSidebarCategory {
+        min-height: 28px;
+        margin: 18px 0 6px !important;
+        padding: 0 4px;
+    }
+
+    .o-mail-DiscussSidebarCategory-toggler {
+        min-height: 28px;
+        padding: 0 2px !important;
+        color: var(--tcsi-ui-subtle) !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 6px !important;
+        box-shadow: none !important;
+        font-size: 10px;
+        font-weight: 760;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--tcsi-ui-ink) !important;
+            background: var(--tcsi-ui-surface) !important;
+            outline: none !important;
+        }
+    }
+
+    .o-mail-DiscussSidebarCategory-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+
+        .btn {
+            display: grid;
+            width: 28px;
+            height: 28px;
+            margin: 0 !important;
+            padding: 0 !important;
+            place-items: center;
+            color: var(--tcsi-ui-subtle) !important;
+            background: transparent !important;
+            border: 1px solid transparent !important;
+            border-radius: 7px !important;
+
+            &:hover,
+            &:focus-visible {
+                color: var(--tcsi-ui-purple-deep) !important;
+                background: var(--tcsi-ui-purple-soft) !important;
+                border-color: var(--tcsi-ui-purple-line) !important;
+                outline: none !important;
+            }
+        }
+    }
+
+    .o-mail-DiscussSidebarChannel {
+        width: 100% !important;
+        min-height: 38px;
+        margin: 1px 0 !important;
+        padding: 6px 8px !important;
+        color: var(--tcsi-ui-muted) !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 8px !important;
+
+        &:hover,
+        &:focus-visible,
+        &.o-active {
+            color: var(--tcsi-ui-ink) !important;
+            background: var(--tcsi-ui-purple-soft) !important;
+            border-color: var(--tcsi-ui-purple-line) !important;
+            outline: none !important;
+        }
+
+        .o-mail-DiscussSidebarChannel-itemMain {
+            min-width: 0;
+        }
+
+        .o-mail-DiscussSidebarChannel-itemName {
+            margin-right: 8px !important;
+            margin-left: 8px !important;
+            color: inherit !important;
+            font-size: 13px;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    body.tcsi-shell-active.tcsi-route-discuss {
+        .o-mail-DiscussSidebar {
+            flex-basis: 264px !important;
+            width: 264px !important;
+        }
+
+        .o-mail-DiscussSidebar-top .btn.btn-primary {
+            min-height: 38px;
+        }
+    }
+}
+
+// Keep the rail off-canvas on narrow screens so the workspace remains usable.
+@media (max-width: 900px) {
+    body.tcsi-shell-active {
+        --tcsi-shell-sidebar-width: 0px;
+
+        .tcsi-workspace-sidebar {
+            width: 280px;
+            max-width: 88vw;
+            transform: translateX(-100%);
+        }
+
+        &.tcsi-sidebar-mobile-open .tcsi-workspace-sidebar {
+            transform: translateX(0);
+        }
+
+        .o_main_navbar,
+        .o_action_manager {
+            margin-left: 0;
+        }
+    }
+}
+
+// TCSI final shell cascade -------------------------------------------------
+// Keep this last so the legacy compatibility layers above cannot reintroduce
+// the former purple application chrome after the console bundle is rebuilt.
+body.tcsi-shell-active {
+    --tcsi-shell-sidebar-width: 248px;
+    --tcsi-console-page: #f5f7f8;
+    --tcsi-console-surface: #ffffff;
+    --tcsi-console-surface-soft: #f8fafb;
+    --tcsi-console-ink: #1d2b33;
+    --tcsi-console-text: #3d4d56;
+    --tcsi-console-muted: #6e7c84;
+    --tcsi-console-subtle: #8d999f;
+    --tcsi-console-line: #e1e7ea;
+    --tcsi-console-line-strong: #cbd5da;
+    --tcsi-console-accent: #c85b2e;
+    --tcsi-console-accent-deep: #a94721;
+    --tcsi-console-accent-soft: #fff1ea;
+    background: var(--tcsi-console-page);
+    color: var(--tcsi-console-ink);
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar {
+    color: var(--tcsi-console-text) !important;
+    background: var(--tcsi-console-surface) !important;
+    border-right: 1px solid var(--tcsi-console-line) !important;
+    box-shadow: none !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-brand,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-brand strong,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-app-copy strong {
+    color: var(--tcsi-console-ink) !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-brand small,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-app-copy small,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-section-label,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-chevron,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-footer {
+    color: var(--tcsi-console-muted) !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-app-switcher,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-search {
+    color: var(--tcsi-console-text) !important;
+    background: var(--tcsi-console-surface) !important;
+    border-color: var(--tcsi-console-line) !important;
+    box-shadow: none !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-app-switcher-icon,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-app-switcher-icon {
+    color: var(--tcsi-console-accent) !important;
+    background: var(--tcsi-console-accent-soft) !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-group-title {
+    color: var(--tcsi-console-text) !important;
+    background: transparent !important;
+    border-radius: 5px;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link:hover,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link:focus-visible,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-group-title:hover,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-group-title:focus-visible {
+    color: var(--tcsi-console-ink) !important;
+    background: var(--tcsi-console-surface-soft) !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active {
+    color: var(--tcsi-console-ink) !important;
+    background: var(--tcsi-console-accent-soft) !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active::before {
+    background: var(--tcsi-console-accent) !important;
+}
+
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active .tcsi-sidebar-icon,
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-group[open] > .tcsi-sidebar-group-title .tcsi-sidebar-icon {
+    color: var(--tcsi-console-accent) !important;
+}
+
+body.tcsi-shell-active .o_main_navbar {
+    color: var(--tcsi-console-ink) !important;
+    background: var(--tcsi-console-surface) !important;
+    border-bottom: 1px solid var(--tcsi-console-line) !important;
+    box-shadow: none !important;
+}
+
+body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context {
+    border-right-color: var(--tcsi-console-line) !important;
+}
+
+body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-mark {
+    color: var(--tcsi-console-accent) !important;
+    background: var(--tcsi-console-accent-soft) !important;
+    border-color: #f0d6c9 !important;
+}
+
+body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-copy strong,
+body.tcsi-shell-active .o_main_navbar .o_user_menu .dropdown-toggle {
+    color: var(--tcsi-console-ink) !important;
+}
+
+body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-copy small,
+body.tcsi-shell-active .o_main_navbar .o_navbar_breadcrumbs,
+body.tcsi-shell-active .o_main_navbar .o_menu_systray .dropdown-toggle,
+body.tcsi-shell-active .o_main_navbar .tcsi-systray-icon {
+    color: var(--tcsi-console-muted) !important;
+}
+
+body.tcsi-shell-active .o_main_navbar .o_menu_systray .dropdown-toggle:hover,
+body.tcsi-shell-active .o_main_navbar .o_menu_systray .dropdown-toggle:focus-visible {
+    color: var(--tcsi-console-ink) !important;
+    background: var(--tcsi-console-surface-soft) !important;
+}
+
+body.tcsi-shell-active .o_main_navbar .o_menu_systray .o_user_menu .dropdown-toggle {
+    border-left-color: var(--tcsi-console-line) !important;
+}
+
+@media (max-width: 900px) {
+    body.tcsi-shell-active .tcsi-workspace-sidebar {
+        width: 280px;
+        max-width: 88vw;
     }
 }

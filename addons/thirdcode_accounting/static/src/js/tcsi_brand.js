@@ -9,6 +9,43 @@ const USER_MENU_ITEMS_TO_REMOVE = ["documentation", "support", "odoo_account"];
 const TCSI_APP_XMLID = "thirdcode_accounting.menu_thirdcode_accounting_root";
 const userMenuItems = registry.category("user_menuitems");
 
+const TCSI_LABELS = Object.freeze({
+    discuss: "Workspace",
+    dashboards: "Insights",
+    dashboard: "Insights",
+    invoicing: "Revenue",
+    employees: "People",
+    employee: "People",
+    expenses: "Spend",
+    expense: "Spend",
+    "employee expenses": "People & spend",
+    contacts: "Directory",
+    contact: "Directory",
+    accounting: "Ledger",
+    reporting: "Reports",
+    configuration: "Controls",
+    "oca accounting reports": "Reporting library",
+    "reconcile bank statement lines": "Bank reconciliation",
+});
+
+function brandedLabel(label = "") {
+    const trimmed = label.trim();
+    if (!trimmed) {
+        return label;
+    }
+    const directMatch = TCSI_LABELS[trimmed.toLowerCase()];
+    if (directMatch) {
+        return directMatch;
+    }
+    return trimmed
+        .replace(/\bDashboards?\b/gi, "Insights")
+        .replace(/\bDiscuss\b/gi, "Workspace")
+        .replace(/\bInvoicing\b/gi, "Revenue")
+        .replace(/\bEmployees?\b/gi, "People")
+        .replace(/\bExpenses?\b/gi, "Spend")
+        .replace(/\bContacts?\b/gi, "Directory");
+}
+
 const frameworkStateToUrl = router.stateToUrl;
 const frameworkUrlToState = router.urlToState;
 router.stateToUrl = (state) =>
@@ -43,23 +80,296 @@ if (currentPath === INTERNAL_WEB_PREFIX || currentPath.startsWith(`${INTERNAL_WE
 }
 
 const ROUTE_CLASSES = [
+    "tcsi-route-accounting-dashboard",
     "tcsi-route-dashboard",
     "tcsi-route-discuss",
     "tcsi-route-contacts",
+    "tcsi-route-reconciliation",
     "tcsi-view-list",
     "tcsi-view-form",
     "tcsi-view-kanban",
+    "tcsi-view-graph",
+    "tcsi-view-pivot",
+    "tcsi-view-calendar",
+    "tcsi-view-hierarchy",
+    "tcsi-view-gantt",
+    "tcsi-view-activity",
+    "tcsi-view-dialog",
     "tcsi-view-other",
 ];
+
+const NATIVE_ROUTE_COPY = Object.freeze({
+    "accounting-dashboard": {
+        eyebrow: "TCSI FINANCE WORKSPACE",
+        title: "Finance command center",
+        description: "Keep invoices, bills, banks, and cash moving from one operational view.",
+    },
+    invoices: {
+        eyebrow: "REVENUE OPERATIONS",
+        title: "Invoices",
+        description: "Track outgoing billing, due dates, and payment status in one place.",
+    },
+    "credit notes": {
+        eyebrow: "REVENUE OPERATIONS",
+        title: "Credit notes",
+        description: "Review credits issued against customer invoices before they reach the ledger.",
+    },
+    "customer payments": {
+        eyebrow: "REVENUE OPERATIONS",
+        title: "Customer payments",
+        description: "Monitor incoming settlements and posting status across your accounts.",
+    },
+    "vendor bills": {
+        eyebrow: "SPEND OPERATIONS",
+        title: "Vendor bills",
+        description: "Review supplier costs, approvals, and due dates before posting.",
+    },
+    customers: {
+        eyebrow: "RELATIONSHIP OPERATIONS",
+        title: "Customers",
+        description: "Manage customer relationships, contact details, and account activity.",
+    },
+    "bank reconciliation": {
+        eyebrow: "LEDGER CONTROLS",
+        title: "Bank reconciliation",
+        description: "Clear imported bank activity against the ledger with confidence.",
+    },
+    "analytic reporting": {
+        eyebrow: "REPORTING",
+        title: "Analytic reporting",
+        description: "Read operational performance without losing the underlying ledger context.",
+    },
+    "spend analysis": {
+        eyebrow: "PEOPLE & SPEND",
+        title: "Spend analysis",
+        description: "Review employee spend and approval activity in one focused view.",
+    },
+    "financial statements": {
+        eyebrow: "REPORTING",
+        title: "Financial statements",
+        description: "Open the statements your team uses to understand financial position and movement.",
+    },
+});
+
+const ROUTE_PATH_TITLES = Object.freeze({
+    "/accounting": "Finance command center",
+    "/customer-invoices": "Invoices",
+    "/credit-notes": "Credit notes",
+    "/customer-payments": "Customer payments",
+    "/vendor-bills": "Vendor bills",
+    "/vendor-payments": "Vendor payments",
+    "/customers": "Customers",
+    "/vendors": "Vendors",
+    "/employees": "People",
+    "/expenses": "My spend",
+    "/my-expense-reports": "My reports",
+    "/expense-reports": "Spend reports",
+    "/org-chart": "Org chart",
+    "/bank-reconciliations": "Bank reconciliation",
+});
+
+function getNativeBreadcrumbText(actionManager) {
+    const breadcrumb = actionManager?.querySelector(
+        ".o_control_panel .o_last_breadcrumb_item span, " +
+            ".o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active span, " +
+            ".o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active",
+    );
+    return breadcrumb?.textContent?.replace(/\s+/g, " ").trim() || "";
+}
+
+function getNativeRouteTitle(actionManager) {
+    const title = getNativeBreadcrumbText(actionManager);
+    const isForm = Boolean(actionManager?.querySelector(".o_form_view"));
+    const formType = actionManager?.querySelector(".o_form_view .oe_title .o_form_label")?.textContent;
+    const formTitle = actionManager?.querySelector(
+        ".o_form_view .o_form_sheet h1, .o_form_view .o_form_sheet .o_form_title",
+    )?.textContent;
+    const rawTitle = ((isForm ? formType || formTitle : title) || "").replace(/\s+/g, " ").trim();
+    if (!rawTitle) {
+        const pathTitle = Object.entries(ROUTE_PATH_TITLES).find(([path]) =>
+            window.location.pathname.endsWith(path) || window.location.pathname.includes(`${path}/`),
+        )?.[1];
+        return pathTitle || "Finance workspace";
+    }
+    const normalized = rawTitle.toLowerCase();
+    if (normalized === "dashboard") {
+        return "Finance command center";
+    }
+    if (window.location.pathname.includes("/vendor-bills") || normalized === "bills") {
+        return "Vendor bills";
+    }
+    if (normalized.includes("reconcile bank statement")) {
+        return "Bank reconciliation";
+    }
+    if (isForm && normalized.includes("vendor bill")) {
+        return "Vendor bill";
+    }
+    if (isForm && normalized.includes("customer invoice")) {
+        return "Customer invoice";
+    }
+    if (isForm && normalized.includes("customer payment")) {
+        return "Customer payment";
+    }
+    if (isForm && normalized.includes("credit note")) {
+        return "Credit note";
+    }
+    return brandedLabel(rawTitle);
+}
+
+function getNativeView(actionManager) {
+    if (!actionManager) {
+        return "other";
+    }
+    if (actionManager.querySelector(".o_form_view")) {
+        return "form";
+    }
+    if (actionManager.querySelector(".o_kanban_view")) {
+        return "kanban";
+    }
+    if (actionManager.querySelector(".o_list_view")) {
+        return "list";
+    }
+    if (actionManager.querySelector(".o_graph_view")) {
+        return "graph";
+    }
+    if (actionManager.querySelector(".o_pivot_view")) {
+        return "pivot";
+    }
+    if (actionManager.querySelector(".o_calendar_view")) {
+        return "calendar";
+    }
+    if (actionManager.querySelector(".o_hierarchy_view")) {
+        return "hierarchy";
+    }
+    if (actionManager.querySelector(".o_gantt_view")) {
+        return "gantt";
+    }
+    if (actionManager.querySelector(".o_activity_view")) {
+        return "activity";
+    }
+    if (actionManager.querySelector(".modal-dialog, .o_dialog")) {
+        return "dialog";
+    }
+    return "other";
+}
+
+function getNativeRouteDetails(actionManager) {
+    if (!actionManager) {
+        return null;
+    }
+    if (actionManager.querySelector(".o_account_dashboard_kanban_view")) {
+        return { key: "accounting-dashboard", view: "kanban", ...NATIVE_ROUTE_COPY["accounting-dashboard"] };
+    }
+
+    const title = getNativeRouteTitle(actionManager);
+    const normalizedTitle = title.toLowerCase();
+    const copyKey = Object.keys(NATIVE_ROUTE_COPY).find(
+        (key) => normalizedTitle === key || normalizedTitle.includes(key),
+    );
+    const view = getNativeView(actionManager);
+    const copy = NATIVE_ROUTE_COPY[copyKey] || {
+        eyebrow: "TCSI FINANCE WORKSPACE",
+        title,
+        description: "Work with your accounting records in a focused TCSI workspace.",
+    };
+    return { key: copyKey || view, view, ...copy };
+}
+
+function ensureNativeRouteHeader(actionManager, details) {
+    if (!details || details.view === "form" || details.view === "dialog") {
+        return;
+    }
+    const action = actionManager.querySelector(".o_action") || actionManager.firstElementChild;
+    if (!action || action.classList.contains("tcsi-dashboard") || action.querySelector(":scope > .tcsi-native-route-header")) {
+        return;
+    }
+    const header = document.createElement("header");
+    header.className = "tcsi-native-route-header";
+    header.dataset.tcsiRouteKey = details.key;
+
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "tcsi-native-route-eyebrow";
+    eyebrow.textContent = details.eyebrow;
+    const title = document.createElement("h1");
+    title.className = "tcsi-native-route-title";
+    title.textContent = details.title;
+    const description = document.createElement("p");
+    description.className = "tcsi-native-route-description";
+    description.textContent = details.description;
+    header.append(eyebrow, title, description);
+
+    const controlPanel = action.querySelector(":scope > .o_control_panel") || action.querySelector(".o_control_panel");
+    action.insertBefore(header, controlPanel || action.firstChild);
+}
+
+function brandNativeChrome(actionManager, details) {
+    if (!actionManager || !details) {
+        return;
+    }
+    const breadcrumbItems = actionManager.querySelectorAll(
+        ".o_control_panel .o_last_breadcrumb_item span, " +
+            ".o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active span, " +
+            ".o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active",
+    );
+    breadcrumbItems.forEach((item) => {
+        const raw = item.textContent.replace(/\s+/g, " ").trim();
+        if (!raw || item.children.length > 0) {
+            return;
+        }
+        const next = raw.toLowerCase() === "dashboard"
+            ? details.title
+            : brandedLabel(raw);
+        if (next !== raw) {
+            item.textContent = next;
+        }
+    });
+
+    actionManager.querySelectorAll(".o_account_dashboard_kanban_view .o_facet_value").forEach((facet) => {
+        if (facet.textContent.trim().toLowerCase() === "favorites") {
+            facet.textContent = "Saved views";
+            facet.setAttribute("title", "Saved views");
+        }
+    });
+
+    const formHeading = actionManager.querySelector(".o_form_view .o_form_sheet h1");
+    const formTitle = formHeading?.textContent?.replace(/\s+/g, " ").trim();
+    const formTitleMap = {
+        "VENDOR BILL": "Vendor bill",
+        "CUSTOMER INVOICE": "Customer invoice",
+        "CREDIT NOTE": "Credit note",
+        "CUSTOMER PAYMENT": "Customer payment",
+    };
+    if (formHeading && formTitleMap[formTitle]) {
+        formHeading.textContent = formTitleMap[formTitle];
+    }
+    ensureNativeRouteHeader(actionManager, details);
+}
 
 function applyRouteContext() {
     const actionManager = document.querySelector(".o_action_manager");
     const path = window.location.pathname;
     const routeClasses = new Set();
     document.title = "TCSI Accounting | Third Code Solutions Inc.";
+    const nativeRoute = getNativeRouteDetails(actionManager);
 
-    if (path === "/dashboards" || path.endsWith("/action-425")) {
+    if (
+        path === "/dashboards" ||
+        path === "/workspace/dashboards" ||
+        path.endsWith("/action-425") ||
+        actionManager?.querySelector(".tcsi-dashboard, .o_spreadsheet_dashboard_action")
+    ) {
         routeClasses.add("tcsi-route-dashboard");
+    }
+    if (nativeRoute?.key === "accounting-dashboard") {
+        routeClasses.add("tcsi-route-accounting-dashboard");
+    }
+    if (
+        nativeRoute?.key === "bank reconciliation" ||
+        path.includes("action-421") ||
+        path.includes("bank-reconciliation") ||
+        path.includes("bank-reconciliations")
+    ) {
+        routeClasses.add("tcsi-route-reconciliation");
     }
     if (path.includes("/discuss")) {
         routeClasses.add("tcsi-route-discuss");
@@ -71,20 +381,24 @@ function applyRouteContext() {
     if (actionManager?.querySelector(".o-mail-Discuss")) {
         routeClasses.add("tcsi-route-discuss");
     }
-    if (actionManager?.querySelector(".o_kanban_view")) {
-        routeClasses.add("tcsi-view-kanban");
-    } else if (actionManager?.querySelector(".o_list_view")) {
-        routeClasses.add("tcsi-view-list");
-    } else if (actionManager?.querySelector(".o_form_view")) {
-        routeClasses.add("tcsi-view-form");
+    const viewClass = nativeRoute?.view ? `tcsi-view-${nativeRoute.view}` : "tcsi-view-other";
+    if (ROUTE_CLASSES.includes(viewClass)) {
+        routeClasses.add(viewClass);
     } else if (actionManager) {
         routeClasses.add("tcsi-view-other");
     }
+
+    if (document.querySelector(".modal.show, .o_dialog_container .modal-dialog, .o_dialog .modal-dialog")) {
+        routeClasses.add("tcsi-view-dialog");
+    }
+
+    brandNativeChrome(actionManager, nativeRoute);
 
     for (const className of ROUTE_CLASSES) {
         document.body.classList.toggle(className, routeClasses.has(className));
     }
     document.body.dataset.tcsiRoute = [...routeClasses].find((className) => className.startsWith("tcsi-route-")) || "workspace";
+    document.body.dataset.tcsiView = nativeRoute?.view || "other";
     updateNavbarContext();
     syncSidebarActiveState();
 }
@@ -148,6 +462,9 @@ function updateNavbarContext() {
         return;
     }
     const route = document.body.dataset.tcsiRoute;
+    const nativeRoute = typeof getNativeRouteDetails === "function"
+        ? getNativeRouteDetails(document.querySelector(".o_action_manager"))
+        : null;
     let pageLabel = "Finance workspace";
     if (route === "tcsi-route-dashboard") {
         pageLabel = "Financial overview";
@@ -155,12 +472,18 @@ function updateNavbarContext() {
         pageLabel = "Workspace inbox";
     } else if (route === "tcsi-route-contacts") {
         pageLabel = "Contact directory";
+    } else if (route === "tcsi-route-accounting-dashboard") {
+        pageLabel = "Finance command center";
+    } else if (route === "tcsi-route-reconciliation") {
+        pageLabel = "Bank reconciliation";
+    } else if (nativeRoute?.title && nativeRoute.view !== "other") {
+        pageLabel = nativeRoute.title;
     } else {
         const breadcrumb = document.querySelector(
             ".o_control_panel .o_cp_breadcrumb, .o_control_panel .o_control_panel_breadcrumbs .o_back_button a, .o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active",
         );
         if (breadcrumb?.textContent?.trim()) {
-            pageLabel = breadcrumb.textContent.trim();
+            pageLabel = brandedLabel(breadcrumb.textContent.trim());
         }
     }
     const page = context.querySelector(".tcsi-navbar-context-page");
@@ -191,12 +514,14 @@ function syncSidebarActiveState() {
 
     const links = [...sidebar.querySelectorAll(".tcsi-sidebar-link[data-tcsi-menu-name]")];
     let activeLink = null;
-    if (route === "tcsi-route-dashboard") {
+    if (route === "tcsi-route-dashboard" || route === "tcsi-route-accounting-dashboard") {
         activeLink = sidebar.querySelector(".tcsi-sidebar-overview");
     } else if (pageText) {
         activeLink = links.find((link) => {
-            const label = link.dataset.tcsiMenuName || "";
-            return label && (pageText.includes(label) || label.includes(pageText));
+            const labels = [link.dataset.tcsiMenuName, link.dataset.tcsiDisplayName]
+                .filter(Boolean)
+                .map((label) => label.toLowerCase());
+            return labels.some((label) => pageText.includes(label) || label.includes(pageText));
         });
     }
 
@@ -479,12 +804,14 @@ function normalizeInternalLinks() {
 }
 
 function makeSidebarLink(menu, menuService) {
+    const displayName = brandedLabel(menu.name);
     const link = document.createElement("button");
     link.type = "button";
     link.className = "tcsi-sidebar-link";
-    link.title = menu.name;
-    link.dataset.tcsiSearchLabel = menu.name.toLowerCase();
+    link.title = displayName;
+    link.dataset.tcsiSearchLabel = `${menu.name} ${displayName}`.toLowerCase();
     link.dataset.tcsiMenuName = menu.name.toLowerCase();
+    link.dataset.tcsiDisplayName = displayName.toLowerCase();
     if (menu.xmlid) {
         link.dataset.tcsiMenuXmlid = menu.xmlid;
     }
@@ -495,7 +822,7 @@ function makeSidebarLink(menu, menuService) {
 
     const label = document.createElement("span");
     label.className = "tcsi-sidebar-link-label";
-    label.textContent = menu.name;
+    label.textContent = displayName;
     link.append(label);
 
     link.addEventListener("click", async () => {
@@ -514,18 +841,20 @@ function makeSidebarGroup(menu, menuService) {
         return makeSidebarLink(menu, menuService);
     }
 
+    const displayName = brandedLabel(menu.name);
     const group = document.createElement("details");
     group.className = "tcsi-sidebar-group";
-    group.dataset.tcsiSearchLabel = menu.name.toLowerCase();
+    group.dataset.tcsiSearchLabel = `${menu.name} ${displayName}`.toLowerCase();
     group.dataset.tcsiMenuName = menu.name.toLowerCase();
+    group.dataset.tcsiDisplayName = displayName.toLowerCase();
 
     const summary = document.createElement("summary");
     summary.className = "tcsi-sidebar-group-title";
-    summary.title = menu.name;
+    summary.title = displayName;
     summary.append(makeIcon(menu.name));
     const label = document.createElement("span");
     label.className = "tcsi-sidebar-link-label";
-    label.textContent = menu.name;
+    label.textContent = displayName;
     summary.append(label);
     group.append(summary);
 
@@ -546,13 +875,15 @@ function makeSectionHeading(label) {
 }
 
 function makeAppButton(app, menuService, currentApp) {
+    const displayName = brandedLabel(app.name);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "tcsi-app-switcher-item";
     button.classList.toggle("is-current", app.id === currentApp?.id);
+    button.title = displayName;
     button.append(makeIcon(app.name, "tcsi-app-switcher-icon"));
     const label = document.createElement("span");
-    label.textContent = app.name;
+    label.textContent = displayName;
     button.append(label);
     button.addEventListener("click", async () => {
         const sidebar = document.querySelector(".tcsi-workspace-sidebar");
@@ -582,7 +913,7 @@ function renderSidebar(sidebar, menuService) {
         return;
     }
 
-    currentLabel.textContent = selectedApp.name;
+    currentLabel.textContent = brandedLabel(selectedApp.name);
     nav.replaceChildren();
 
     const overview = document.createElement("button");
@@ -737,6 +1068,9 @@ const tcsiBrandingService = {
 
     start(env) {
         let routeContextFrame = 0;
+        let observerPassTimer = 0;
+        let observerPassRunning = false;
+        let lastObserverPassAt = 0;
         const scheduleRouteContext = () => {
             if (routeContextFrame) {
                 return;
@@ -773,22 +1107,56 @@ const tcsiBrandingService = {
 
         apply();
         env.bus.addEventListener("MENUS:APP-CHANGED", onAppChanged);
-        const observer = new MutationObserver(() => {
-            if (!document.querySelector(".tcsi-workspace-sidebar")) {
-                apply();
-            } else {
-                removeOdooPromotions();
-                sanitizeBrandingAttributes();
-                normalizeInternalLinks();
-                decorateSystrayIcons();
-                brandAssistantChat();
-                scheduleRouteContext();
+        const runObserverPass = () => {
+            if (observerPassRunning) {
+                return;
+            }
+            observerPassRunning = true;
+            lastObserverPassAt = Date.now();
+            try {
+                if (!document.querySelector(".tcsi-workspace-sidebar")) {
+                    apply();
+                } else {
+                    removeOdooPromotions();
+                    sanitizeBrandingAttributes();
+                    normalizeInternalLinks();
+                    decorateSystrayIcons();
+                    brandAssistantChat();
+                    scheduleRouteContext();
+                }
+            } finally {
+                observerPassRunning = false;
+            }
+        };
+        const scheduleObserverPass = () => {
+            if (observerPassTimer) {
+                return;
+            }
+            const wait = Math.max(0, 200 - (Date.now() - lastObserverPassAt));
+            observerPassTimer = window.setTimeout(() => {
+                observerPassTimer = 0;
+                runObserverPass();
+            }, wait);
+        };
+        const observer = new MutationObserver((records) => {
+            const needsBrandingPass = records.some((record) => {
+                const target = record.target instanceof Element ? record.target : record.target.parentElement;
+                return (
+                    target === document.body ||
+                    target?.closest(".o_action_manager, .o_main_navbar, .tcsi-workspace-sidebar")
+                );
+            });
+            if (needsBrandingPass) {
+                scheduleObserverPass();
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
         return () => {
             env.bus.removeEventListener("MENUS:APP-CHANGED", onAppChanged);
             observer.disconnect();
+            if (observerPassTimer) {
+                window.clearTimeout(observerPassTimer);
+            }
             if (routeContextFrame) {
                 window.cancelAnimationFrame(routeContextFrame);
             }

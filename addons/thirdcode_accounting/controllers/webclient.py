@@ -22,6 +22,11 @@ class TCSIWebClient(Home):
         """Keep the product-facing dashboard URL useful for bookmarks and deep links."""
         return request.redirect("/workspace/action-425")
 
+    @http.route("/workspace/dashboards", type="http", auth="none", readonly=False)
+    def workspace_dashboards_alias(self, **kw):
+        """Redirect the legacy native dashboard path to the TCSI overview."""
+        return request.redirect("/workspace/action-425")
+
     @http.route("/action-307", type="http", auth="none", readonly=False)
     def action_307_alias(self, **kw):
         """Keep the legacy action shortcut inside the branded workspace shell."""

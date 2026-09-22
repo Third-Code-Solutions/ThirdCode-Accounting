@@ -72,68 +72,70 @@
                     </article>
                 </section>
 
-                <section class="tcsi-dashboard-main-grid">
-                    <article class="tcsi-dashboard-panel tcsi-activity-panel">
-                        <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Ledger activity</span><h2>Sales and costs</h2></div><span class="tcsi-panel-note">Last 6 months</span></header>
-                        <div class="tcsi-chart-legend"><span><i class="tcsi-legend-dot tcsi-legend-sales"></i>Sales</span><span><i class="tcsi-legend-dot tcsi-legend-costs"></i>Costs</span></div>
-                        <div class="tcsi-bar-chart" role="img" aria-label="Six-month sales and costs bar chart">
-                            <div class="tcsi-chart-y-axis"><span>High</span><span>Mid</span><span>Low</span></div>
-                            <div class="tcsi-chart-plot">
-                                <div class="tcsi-chart-gridline tcsi-chart-gridline-top"></div><div class="tcsi-chart-gridline tcsi-chart-gridline-mid"></div><div class="tcsi-chart-gridline tcsi-chart-gridline-bottom"></div>
-                                <div class="tcsi-chart-columns">
-                                    <t t-foreach="state.data.monthly_activity" t-as="point" t-key="point.key">
-                                        <div class="tcsi-chart-column">
-                                            <div class="tcsi-chart-bars"><span class="tcsi-bar tcsi-bar-sales" t-att-style="'height: ' + this.chartHeight(point.sales) + '%'"/><span class="tcsi-bar tcsi-bar-costs" t-att-style="'height: ' + this.chartHeight(point.costs) + '%'"/></div>
-                                            <span class="tcsi-chart-label"><t t-esc="point.label"/></span>
-                                        </div>
-                                    </t>
+                <section class="tcsi-dashboard-content-grid">
+                    <div class="tcsi-dashboard-content-column">
+                        <article class="tcsi-dashboard-panel tcsi-activity-panel">
+                            <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Ledger activity</span><h2>Sales and costs</h2></div><span class="tcsi-panel-note">Last 6 months</span></header>
+                            <div class="tcsi-chart-legend"><span><i class="tcsi-legend-dot tcsi-legend-sales"></i>Sales</span><span><i class="tcsi-legend-dot tcsi-legend-costs"></i>Costs</span></div>
+                            <div class="tcsi-bar-chart" role="img" aria-label="Six-month sales and costs bar chart">
+                                <div class="tcsi-chart-y-axis"><span>High</span><span>Mid</span><span>Low</span></div>
+                                <div class="tcsi-chart-plot">
+                                    <div class="tcsi-chart-gridline tcsi-chart-gridline-top"></div><div class="tcsi-chart-gridline tcsi-chart-gridline-mid"></div><div class="tcsi-chart-gridline tcsi-chart-gridline-bottom"></div>
+                                    <div class="tcsi-chart-columns">
+                                        <t t-foreach="state.data.monthly_activity" t-as="point" t-key="point.key">
+                                            <div class="tcsi-chart-column">
+                                                <div class="tcsi-chart-bars"><span class="tcsi-bar tcsi-bar-sales" t-att-style="'height: ' + this.chartHeight(point.sales) + '%'"/><span class="tcsi-bar tcsi-bar-costs" t-att-style="'height: ' + this.chartHeight(point.costs) + '%'"/></div>
+                                                <span class="tcsi-chart-label"><t t-esc="point.label"/></span>
+                                            </div>
+                                        </t>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div t-if="!state.data.has_posted_activity" class="tcsi-chart-empty">Post an invoice or journal entry to bring your activity pulse to life.</div>
-                    </article>
+                            <div t-if="!state.data.has_posted_activity" class="tcsi-chart-empty">Post an invoice or journal entry to bring your activity pulse to life.</div>
+                        </article>
 
-                    <article class="tcsi-dashboard-panel tcsi-attention-panel">
-                        <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Work queue</span><h2>Needs attention</h2></div><span class="tcsi-panel-note"><t t-esc="state.data.attention.length"/> open</span></header>
-                        <div t-if="state.data.attention.length" class="tcsi-attention-list">
-                            <t t-foreach="state.data.attention" t-as="item" t-key="item.id">
-                                <button class="tcsi-attention-item" type="button" t-on-click="() => this.openRecord(item.id)">
-                                    <span class="tcsi-attention-mark" t-att-class="'tcsi-attention-mark tcsi-attention-' + item.tone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5h12v15H6zM9 8h6M9 12h6M9 16h3"/></svg></span>
-                                    <span class="tcsi-attention-copy"><strong><t t-esc="item.partner"/></strong><small><t t-esc="item.label"/> · due <t t-esc="this.formatDate(item.date)"/></small></span>
-                                    <span class="tcsi-attention-amount"><t t-esc="this.formatMoney(item.amount)"/><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
-                                </button>
-                            </t>
-                        </div>
-                        <div t-else="" class="tcsi-dashboard-empty tcsi-dashboard-empty-compact"><div class="tcsi-empty-mark tcsi-empty-mark-success">✓</div><strong>You're caught up</strong><span>No open receivables or payables need attention.</span></div>
-                    </article>
-                </section>
+                        <article class="tcsi-dashboard-panel tcsi-recent-panel">
+                            <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Ledger activity</span><h2>Recent entries</h2></div><button class="tcsi-text-button" type="button" t-on-click="() => this.openModel('account.move', null, [['company_id', '=', state.data.company_id]])">View ledger <span>→</span></button></header>
+                            <div t-if="state.data.recent.length" class="tcsi-recent-table-head" aria-hidden="true"><span>Entry</span><span>Date</span><span>Amount</span></div>
+                            <div t-if="state.data.recent.length" class="tcsi-recent-list">
+                                <t t-foreach="state.data.recent" t-as="item" t-key="item.id">
+                                    <button class="tcsi-recent-row" type="button" t-on-click="() => this.openRecord(item.id)">
+                                        <span class="tcsi-recent-avatar"><t t-esc="item.partner.slice(0, 1)"/></span>
+                                        <span class="tcsi-recent-copy"><strong><t t-esc="item.reference"/></strong><small><t t-esc="item.label"/> · <t t-esc="item.partner"/></small></span>
+                                        <span class="tcsi-recent-date"><t t-esc="this.formatDate(item.date)"/></span>
+                                        <strong class="tcsi-recent-total"><t t-esc="this.formatMoney(item.amount)"/></strong>
+                                    </button>
+                                </t>
+                            </div>
+                            <div t-else="" class="tcsi-dashboard-empty tcsi-dashboard-empty-compact"><div class="tcsi-empty-mark">＋</div><strong>No posted activity yet</strong><span>Your first posted transaction will appear here.</span></div>
+                        </article>
+                    </div>
 
-                <section class="tcsi-dashboard-lower-grid">
-                    <article class="tcsi-dashboard-panel tcsi-recent-panel">
-                        <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Ledger activity</span><h2>Recent entries</h2></div><button class="tcsi-text-button" type="button" t-on-click="() => this.openModel('account.move', null, [['company_id', '=', state.data.company_id]])">View ledger <span>→</span></button></header>
-                        <div t-if="state.data.recent.length" class="tcsi-recent-table-head" aria-hidden="true"><span>Entry</span><span>Date</span><span>Amount</span></div>
-                        <div t-if="state.data.recent.length" class="tcsi-recent-list">
-                            <t t-foreach="state.data.recent" t-as="item" t-key="item.id">
-                                <button class="tcsi-recent-row" type="button" t-on-click="() => this.openRecord(item.id)">
-                                    <span class="tcsi-recent-avatar"><t t-esc="item.partner.slice(0, 1)"/></span>
-                                    <span class="tcsi-recent-copy"><strong><t t-esc="item.reference"/></strong><small><t t-esc="item.label"/> · <t t-esc="item.partner"/></small></span>
-                                    <span class="tcsi-recent-date"><t t-esc="this.formatDate(item.date)"/></span>
-                                    <strong class="tcsi-recent-total"><t t-esc="this.formatMoney(item.amount)"/></strong>
-                                </button>
-                            </t>
-                        </div>
-                        <div t-else="" class="tcsi-dashboard-empty tcsi-dashboard-empty-compact"><div class="tcsi-empty-mark">＋</div><strong>No posted activity yet</strong><span>Your first posted transaction will appear here.</span></div>
-                    </article>
+                    <div class="tcsi-dashboard-content-column">
+                        <article class="tcsi-dashboard-panel tcsi-attention-panel">
+                            <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Work queue</span><h2>Needs attention</h2></div><span class="tcsi-panel-note"><t t-esc="state.data.attention.length"/> open</span></header>
+                            <div t-if="state.data.attention.length" class="tcsi-attention-list">
+                                <t t-foreach="state.data.attention" t-as="item" t-key="item.id">
+                                    <button class="tcsi-attention-item" type="button" t-on-click="() => this.openRecord(item.id)">
+                                        <span class="tcsi-attention-mark" t-att-class="'tcsi-attention-mark tcsi-attention-' + item.tone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5h12v15H6zM9 8h6M9 12h6M9 16h3"/></svg></span>
+                                        <span class="tcsi-attention-copy"><strong><t t-esc="item.partner"/></strong><small><t t-esc="item.label"/> · due <t t-esc="this.formatDate(item.date)"/></small></span>
+                                        <span class="tcsi-attention-amount"><t t-esc="this.formatMoney(item.amount)"/><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
+                                    </button>
+                                </t>
+                            </div>
+                            <div t-else="" class="tcsi-dashboard-empty tcsi-dashboard-empty-compact"><div class="tcsi-empty-mark tcsi-empty-mark-success">✓</div><strong>You're caught up</strong><span>No open receivables or payables need attention.</span></div>
+                        </article>
 
-                    <article class="tcsi-dashboard-panel tcsi-quick-panel">
-                        <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Common tasks</span><h2>Move faster</h2></div></header>
-                        <div class="tcsi-quick-grid">
-                            <button t-if="state.data.can_create" type="button" class="tcsi-quick-action" t-on-click="() => this.openNewDocument('out_invoice')"><span class="tcsi-quick-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6zM14 3.5v4h4M9 12h6M12 9v6"/></svg></span><span><strong>Customer invoice</strong><small>Record a sale</small></span><span>→</span></button>
-                            <button t-if="state.data.can_create" type="button" class="tcsi-quick-action" t-on-click="() => this.openNewDocument('in_invoice')"><span class="tcsi-quick-icon tcsi-quick-icon-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6zM14 3.5v4h4M9 12h6M12 9v6"/></svg></span><span><strong>Supplier bill</strong><small>Capture a cost</small></span><span>→</span></button>
-                            <button type="button" class="tcsi-quick-action" t-on-click="() => this.openModel('account.payment', null)"><span class="tcsi-quick-icon tcsi-quick-icon-teal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v11H4zM4 10h16M8 15h3"/></svg></span><span><strong>Payments</strong><small>Review settlements</small></span><span>→</span></button>
-                            <button t-if="state.data.can_report" type="button" class="tcsi-quick-action" t-on-click="() => this.openModel(null, 'thirdcode_accounting.action_thirdcode_financial_report')"><span class="tcsi-quick-icon tcsi-quick-icon-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V5h14v14zM8 16v-4M12 16V8M16 16v-6"/></svg></span><span><strong>Financial reports</strong><small>Read the numbers</small></span><span>→</span></button>
-                        </div>
-                    </article>
+                        <article class="tcsi-dashboard-panel tcsi-quick-panel">
+                            <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Common tasks</span><h2>Move faster</h2></div></header>
+                            <div class="tcsi-quick-grid">
+                                <button t-if="state.data.can_create" type="button" class="tcsi-quick-action" t-on-click="() => this.openNewDocument('out_invoice')"><span class="tcsi-quick-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6zM14 3.5v4h4M9 12h6M12 9v6"/></svg></span><span><strong>Customer invoice</strong><small>Record a sale</small></span><span>→</span></button>
+                                <button t-if="state.data.can_create" type="button" class="tcsi-quick-action" t-on-click="() => this.openNewDocument('in_invoice')"><span class="tcsi-quick-icon tcsi-quick-icon-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h9l3 3v14H6zM14 3.5v4h4M9 12h6M12 9v6"/></svg></span><span><strong>Supplier bill</strong><small>Capture a cost</small></span><span>→</span></button>
+                                <button type="button" class="tcsi-quick-action" t-on-click="() => this.openModel('account.payment', null)"><span class="tcsi-quick-icon tcsi-quick-icon-teal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v11H4zM4 10h16M8 15h3"/></svg></span><span><strong>Payments</strong><small>Review settlements</small></span><span>→</span></button>
+                                <button t-if="state.data.can_report" type="button" class="tcsi-quick-action" t-on-click="() => this.openModel(null, 'thirdcode_accounting.action_thirdcode_financial_report')"><span class="tcsi-quick-icon tcsi-quick-icon-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V5h14v14zM8 16v-4M12 16V8M16 16v-6"/></svg></span><span><strong>Financial reports</strong><small>Read the numbers</small></span><span>→</span></button>
+                            </div>
+                        </article>
+                    </div>
                 </section>
             </t>
         </main>

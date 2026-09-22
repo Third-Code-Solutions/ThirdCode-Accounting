@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="action_tcsi_dashboard" model="ir.actions.client">
-        <field name="name">Command center</field>
+        <field name="name">Finance overview</field>
         <field name="tag">tcsi_dashboard</field>
+    </record>
+
+    <!--
+        The native spreadsheet dashboard is an implementation detail of the
+        accounting engine, not the TCSI customer experience. Keep its menu
+        records available for compatibility, but route the visible dashboard
+        entry points to the TCSI finance overview.
+    -->
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu">
+        <field name="name">Insights</field>
+        <field name="action" ref="action_tcsi_dashboard"/>
+    </record>
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_dashboard" model="ir.ui.menu">
+        <field name="name">Insights</field>
+        <field name="action" ref="action_tcsi_dashboard"/>
+    </record>
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_configuration_dashboards" model="ir.ui.menu">
+        <field name="name">Insight setup</field>
     </record>
 </odoo>

@@ -9,6 +9,7 @@
     "depends": [
         "account",
         "account_payment",
+        "spreadsheet_dashboard",
         "contacts",
         "auth_signup",
         "portal",
