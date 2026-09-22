@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
   transpilePackages: ["@tcsi/contracts"],
+  async redirects() {
+    if (process.env.VERCEL !== "1" && process.env.TCSI_PORTAL_ONLY !== "true") return [];
+    return [{ source: "/odoo/:path*", destination: "/workspace/:path*", permanent: true }];
+  },
   async headers() {
     return [
       { source: "/(.*)", headers: securityHeaders },

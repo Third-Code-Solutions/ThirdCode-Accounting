@@ -36,6 +36,12 @@ the authorization and subscription authority. This uses Vercel's beta WebSocket
 API and requires Fluid Compute; verify a real handshake and notification delivery
 after each runtime/provider change. `/websocket/*` HTTP endpoints still use rewrites.
 The Railway URL remains available for operational recovery if Vercel is unavailable.
+Legacy `/odoo` bookmarks redirect to `/workspace` at both the Vercel edge and
+the accounting controller. Client-generated workspace links use the same prefix,
+including query-only URLs. Routing/branding regression tests protect these paths.
+Production `web.base.url` is `https://tcsi-accounting-portal.vercel.app` and
+`web.base.url.freeze` is `True` so administrative origin logins do not change
+generated customer links back to Railway.
 
 Railway uses `docker/odoo/Dockerfile` and start command
 `python3 /opt/tcsi/cloud_start.py`, with `/web/login` as its health check.

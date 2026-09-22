@@ -14,6 +14,17 @@ exec(compile(ast.Module(body=[function], type_ignores=[]), "branding.py", "exec"
 
 
 class BrandingTests(unittest.TestCase):
+    def test_workspace_redirects_preserve_deep_link_and_parameters(self):
+        controller = ast.parse((ADDON / "controllers/webclient.py").read_text())
+        helper = next(node for node in controller.body if isinstance(node, ast.FunctionDef))
+        scope = {"re": re}
+        exec(compile(ast.Module(body=[helper], type_ignores=[]), "webclient.py", "exec"), scope)
+        brand = scope["branded_workspace_url"]
+        for suffix in ("", "?debug=1", "#menu_id=4", "/action-408?lang=en_US#tab"):
+            self.assertEqual(brand("/odoo" + suffix), "/workspace" + suffix)
+        for path in ("/odoo-other", "/web/login", "https://other.example/odoo"):
+            self.assertEqual(brand(path), path)
+
     def test_invitation_preserves_dynamic_fields_and_is_idempotent(self):
         body = ('Welcome to Odoo <t t-out="object.name"/> '
                 '<a t-att-href="object.partner_id._get_signup_url()">Accept</a> '

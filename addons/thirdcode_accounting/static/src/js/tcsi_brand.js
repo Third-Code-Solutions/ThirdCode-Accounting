@@ -50,7 +50,7 @@ const frameworkStateToUrl = router.stateToUrl;
 const frameworkUrlToState = router.urlToState;
 router.stateToUrl = (state) =>
     frameworkStateToUrl(state).replace(
-        new RegExp(`^${INTERNAL_WEB_PREFIX}(?=/|$)`),
+        new RegExp(`^${INTERNAL_WEB_PREFIX}(?=[/?#]|$)`),
         TCSI_WEB_PREFIX,
     );
 router.urlToState = (urlObject) => {
@@ -541,6 +541,14 @@ function syncSidebarActiveState() {
 }
 
 function removeOdooPromotions() {
+    document.querySelectorAll("a[href]").forEach((anchor) => {
+        // Native anchor properties also tolerate malformed user-entered links.
+        if (anchor.origin !== window.location.origin) return;
+        const brandedPath = anchor.pathname.replace(/^\/odoo(?=\/|$)/, TCSI_WEB_PREFIX);
+        if (brandedPath !== anchor.pathname) {
+            anchor.setAttribute("href", `${brandedPath}${anchor.search}${anchor.hash}`);
+        }
+    });
     document.querySelectorAll(".o_brand_promotion, a[href*='odoo.com']").forEach((element) => {
         const container = element.closest(".dropdown-item, .o_brand_promotion, p") || element;
         container.classList.add("d-none");

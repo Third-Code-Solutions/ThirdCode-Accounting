@@ -9,7 +9,13 @@ import { accountingRoutePrefixes } from "./lib/accounting-routes";
 afterEach(() => vi.unstubAllEnvs());
 
 describe("hosted pilot boundary", () => {
-  it.each(accountingRoutePrefixes)("rewrites /%s without middleware buffering or shared caching", async (prefix) => {
+  it.each(["/odoo", "/odoo/action-408", "/odoo/account.move/42"])("canonicalizes legacy bookmark %s before proxying", async (path) => {
+    vi.stubEnv("VERCEL", "1");
+    const response = await unstable_getResponseFromNextConfig({ url: `https://portal.example${path}?debug=1`, nextConfig });
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(`https://portal.example${path.replace("/odoo", "/workspace")}?debug=1`);
+  });
+  it.each(accountingRoutePrefixes.filter((prefix) => prefix !== "odoo"))("rewrites /%s without middleware buffering or shared caching", async (prefix) => {
     vi.stubEnv("VERCEL", "1");
     const url = `https://portal.example/${prefix}/test?lang=en_US`;
     expect(unstable_doesMiddlewareMatch({ config, url, nextConfig })).toBe(false);
