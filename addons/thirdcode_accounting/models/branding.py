@@ -1,7 +1,7 @@
 import base64
 import re
 
-from odoo import api, models
+from odoo import api, fields, models
 from odoo.tools import file_open
 
 
@@ -39,3 +39,13 @@ class CompanyBranding(models.Model):
             branded = brand_invitation(body)
             if branded != body:
                 template.with_context(lang="en_US").write({"body_html": branded})
+
+
+class UserBranding(models.Model):
+    _inherit = "res.users"
+
+    notification_type = fields.Selection(
+        selection_add=[("inbox", "Handle in TCSI")],
+        help="Choose email delivery or notifications in your TCSI workspace inbox.",
+    )
+    odoobot_state = fields.Selection(string="Workspace Assistant Status")

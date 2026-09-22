@@ -93,4 +93,14 @@
     <template id="tcsi_digest_mobile" inherit_id="digest.digest_section_mobile">
         <xpath expr="/t/td" position="replace"><td colspan="3"><p>Access TCSI Accounting from your workspace URL on desktop or mobile.</p></td></xpath>
     </template>
+    <record id="tcsi_profile_api_help" model="ir.ui.view">
+        <field name="name">TCSI profile API help</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[widget[@name='documentation_link']]" position="replace">
+                <div class="text-muted" colspan="2">API keys let external tools connect to your TCSI account. Keep them private and revoke keys you no longer use.</div>
+            </xpath>
+        </field>
+    </record>
 </odoo>

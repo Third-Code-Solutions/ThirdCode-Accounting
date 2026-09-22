@@ -1,7 +1,7 @@
 {
     "name": "TCSI Accounting",
     "summary": "Third Code Solutions Inc. accounting workspace",
-    "version": "18.0.2.5.4",
+    "version": "18.0.2.5.5",
     "category": "Accounting/Accounting",
     "author": "Third Code Solutions Inc.",
     "license": "AGPL-3",
@@ -13,6 +13,7 @@
         "auth_signup",
         "portal",
         "digest",
+        "mail_bot",
         "hr_expense",
         "auditlog",
         "date_range",
