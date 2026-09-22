@@ -164,7 +164,7 @@ function updateNavbarContext() {
         }
     }
     const page = context.querySelector(".tcsi-navbar-context-page");
-    if (page) {
+    if (page && page.textContent !== pageLabel) {
         page.textContent = pageLabel;
     }
 }
@@ -403,7 +403,7 @@ function brandAssistantChat() {
         if (avatar) {
             replaceAssistantAvatar(avatar);
         }
-        if (name) {
+        if (name && name.textContent !== TCSI_ASSISTANT.displayName) {
             name.textContent = TCSI_ASSISTANT.displayName;
         }
         const itemMain = channel.querySelector(".o-mail-DiscussSidebarChannel-itemMain");
@@ -411,6 +411,13 @@ function brandAssistantChat() {
     });
 
     document.querySelectorAll(".o-mail-ChatWindow").forEach((chatWindow) => {
+        const assistantAvatar = [...chatWindow.querySelectorAll("img")].some(
+            (avatar) => avatar.classList.contains("tcsi-assistant-avatar") ||
+                isAssistantAvatarSource(avatar.getAttribute("src") || ""),
+        );
+        if (!assistantAvatar) {
+            return;
+        }
         chatWindow.classList.add("tcsi-chat-window");
         chatWindow.dataset.tcsiAssistant = TCSI_ASSISTANT.displayName.toLowerCase();
 
