@@ -28,6 +28,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build pinned accounting runtime
         run: docker build -f docker/odoo/Dockerfile -t tcsi-orvexa-ci .
+      - name: Compile app launcher styles with the production Sass runtime
+        run: >-
+          docker run --rm --entrypoint python3 tcsi-orvexa-ci -c
+          "import sass; from pathlib import Path; sass.compile(string=Path('/opt/extra-addons/thirdcode_accounting/static/src/scss/tcsi_apps.scss').read_text())"
       - name: Install accounting in a disposable database
         run: >-
           docker run --rm --network host --entrypoint odoo tcsi-orvexa-ci
@@ -65,6 +69,7 @@ jobs:
         run: |
           node --test scripts/test-branding.mjs
           node --test scripts/test-orvexa-chat.mjs
+          node --test scripts/test-apps.mjs
           python scripts/test-branding.py
 
       - name: Lint

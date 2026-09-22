@@ -1,7 +1,7 @@
 {
     "name": "TCSI Accounting",
     "summary": "Third Code Solutions Inc. accounting workspace",
-    "version": "18.0.2.6.2",
+    "version": "18.0.2.7.0",
     "category": "Accounting/Accounting",
     "author": "Third Code Solutions Inc.",
     "license": "AGPL-3",
@@ -29,6 +29,9 @@
     ],
     "assets": {
         "web.assets_backend": [
+            "thirdcode_accounting/static/src/js/tcsi_apps.js",
+            "thirdcode_accounting/static/src/xml/tcsi_apps.xml",
+            "thirdcode_accounting/static/src/scss/tcsi_apps.scss",
             "thirdcode_accounting/static/src/scss/tcsi_brand.scss",
             "thirdcode_accounting/static/src/scss/tcsi_chat.scss",
             "thirdcode_accounting/static/src/js/tcsi_brand.js",
@@ -70,6 +73,7 @@
         "views/year_end_close_views.xml",
         "views/financial_report_views.xml",
         "views/menu_views.xml",
+        "views/apps_views.xml",
         "report/thirdcode_reports.xml",
         "report/thirdcode_templates.xml",
     ],

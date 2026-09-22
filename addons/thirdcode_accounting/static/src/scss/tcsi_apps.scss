@@ -1,0 +1,29 @@
+.tcsi-app-catalog {
+    --apps-ink: #20352f; --apps-muted: #586761; --apps-line: #dfe6e2;
+    padding: clamp(1.25rem, 4vw, 3rem); overflow-y: auto; height: 100%; background: #f8faf9; color: var(--apps-ink);
+    font-family: inherit;
+    .tcsi-apps-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; max-width: 76rem; margin: 0 auto 2rem; }
+    h1 { font: inherit; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; letter-spacing: -.04em; margin: .5rem 0; }
+    p { color: var(--apps-muted); line-height: 1.6; }
+    .tcsi-apps-kicker { font-size: .8rem; margin: 0; }
+    .tcsi-apps-count { white-space: nowrap; font-size: .85rem; color: var(--apps-muted); }
+    .tcsi-apps-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; max-width: 76rem; margin: auto; }
+    label { display: block; font-size: .8rem; margin-bottom: .5rem; }
+    input { width: Min(100%, 22rem); min-width: 15rem; padding: .75rem 1rem; border: 1px solid var(--apps-line); border-radius: .375rem; background: white; color: var(--apps-ink); }
+    .tcsi-apps-filters { display: flex; flex-wrap: wrap; gap: .25rem; }
+    .tcsi-apps-filters button { border: 0; background: transparent; padding: .65rem .85rem; border-radius: .375rem; color: var(--apps-muted); }
+    .tcsi-apps-filters button[aria-pressed="true"] { background: #e5ede8; color: #254e3e; }
+    button:focus-visible, input:focus-visible { outline: 2px solid #337457; outline-offset: 3px; }
+    .tcsi-apps-results { max-width: 76rem; margin: 1.5rem auto .75rem; font-size: .8rem; }
+    .tcsi-apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(Min(100%, 16rem), 1fr)); gap: 1rem; max-width: 76rem; margin: auto; }
+    .tcsi-app-card { display: flex; flex-direction: column; align-items: start; padding: 1.5rem; background: white; border: 1px solid var(--apps-line); border-radius: .5rem; }
+    .tcsi-app-category { margin: 1.25rem 0 .4rem; font-size: .7rem; letter-spacing: .04em; color: var(--apps-muted); }
+    h2 { font: inherit; font-size: 1.15rem; font-weight: 600; margin: 0 0 .65rem; }
+    .tcsi-app-card p { font-size: .875rem; margin-bottom: 1.5rem; }
+    .tcsi-app-card button { margin-top: auto; display: flex; justify-content: space-between; width: 100%; border: 0; border-top: 1px solid var(--apps-line); padding: 1rem 0 0; background: transparent; color: #245b43; font-weight: 600; }
+    .tcsi-app-card button:hover { color: #112e22; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .tcsi-apps-empty { max-width: 76rem; margin: 2rem auto; padding: 2rem 0; }
+    .tcsi-apps-note { max-width: 76rem; margin: 2rem auto 0; color: var(--apps-muted); font-size: .8rem; line-height: 1.6; }
+}
+@media(max-width: 575px) { .tcsi-app-catalog .tcsi-apps-heading { align-items: start; flex-direction: column; } }

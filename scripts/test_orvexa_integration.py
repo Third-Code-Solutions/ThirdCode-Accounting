@@ -8,10 +8,10 @@ odoo.tools.config.parse_config(sys.argv[1:])
 database = odoo.tools.config["db_name"]
 if not database or not database.startswith("tcsi_orvexa_"):
     raise SystemExit("Refusing to run synthetic writes outside a disposable tcsi_orvexa_ database")
-odoo.tools.config["test_tags"] = "/thirdcode_accounting:TestOrvexa"
+odoo.tools.config["test_tags"] = "/thirdcode_accounting:TestOrvexa,/thirdcode_accounting:TestAppLauncher"
 odoo.modules.registry.Registry(database)
 suite = make_suite(["thirdcode_accounting"], "post_install")
-if suite.countTestCases() < 7:
+if suite.countTestCases() < 13:
     raise SystemExit("ORVEXA tests were not discovered")
 result = run_suite(suite)
 print(f"ORVEXA: {result.testsRun} tests, {result.failures_count} failures, {result.errors_count} errors")

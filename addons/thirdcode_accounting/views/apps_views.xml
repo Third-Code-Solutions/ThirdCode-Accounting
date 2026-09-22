@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_invoice_list_no_samples" model="ir.ui.view">
+        <field name="name">TCSI invoice list without synthetic records</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml"><xpath expr="//list" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_journal_list_no_samples" model="ir.ui.view">
+        <field name="name">TCSI journal list without synthetic records</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_tree"/>
+        <field name="arch" type="xml"><xpath expr="//list" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="base.open_module_tree" model="ir.actions.act_window"><field name="path">technical-modules</field></record>
+    <!-- Action types use separate inherited SQL tables; flush the old path before
+         the client action checks uniqueness across those tables. -->
+    <function model="ir.actions.act_window" name="flush_model"><value eval="['path']"/></function>
+    <record id="action_tcsi_apps" model="ir.actions.client"><field name="name">Workspace apps</field><field name="tag">tcsi_apps</field><field name="path">apps</field></record>
+    <record id="base.menu_management" model="ir.ui.menu"><field name="name">Apps</field><field name="action" ref="action_tcsi_apps"/><field name="groups_id" eval="[(6, 0, [ref('base.group_user')])]"/><field name="web_icon">thirdcode_accounting,static/src/img/apps/workspace.svg</field></record>
+    <record id="base.menu_apps" model="ir.ui.menu"><field name="name">System modules</field><field name="groups_id" eval="[(6, 0, [ref('base.group_system')])]"/></record>
+    <record id="base.menu_module_tree" model="ir.ui.menu"><field name="name">Technical modules</field><field name="groups_id" eval="[(6, 0, [ref('base.group_system')])]"/></record>
+    <record id="base.menu_third_party" model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="base.menu_theme_store" model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="base.theme_store" model="ir.ui.menu"><field name="active" eval="False"/></record>
+    <record id="mail.menu_root_discuss" model="ir.ui.menu"><field name="name">Messages</field><field name="web_icon">thirdcode_accounting,static/src/img/apps/messages.svg</field></record>
+    <record id="contacts.menu_contacts" model="ir.ui.menu"><field name="name">Directory</field><field name="web_icon">thirdcode_accounting,static/src/img/apps/directory.svg</field></record>
+    <record id="account.menu_finance" model="ir.ui.menu"><field name="name">Revenue</field><field name="web_icon">thirdcode_accounting,static/src/img/apps/revenue.svg</field></record>
+    <record id="hr.menu_hr_root" model="ir.ui.menu"><field name="name">People</field><field name="web_icon">thirdcode_accounting,static/src/img/apps/people.svg</field></record>
+    <record id="hr_expense.menu_hr_expense_root" model="ir.ui.menu"><field name="name">Spend</field><field name="web_icon">thirdcode_accounting,static/src/img/apps/spend.svg</field></record>
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu"><field name="web_icon">thirdcode_accounting,static/src/img/apps/insights.svg</field></record>
+    <record id="base.menu_administration" model="ir.ui.menu"><field name="web_icon">thirdcode_accounting,static/src/img/apps/settings.svg</field></record>
+    <record id="view_move_line_pivot_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_move_line_pivot without synthetic records</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_pivot"/>
+        <field name="arch" type="xml"><xpath expr="//pivot" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_move_line_tree_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_move_line_tree without synthetic records</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_tree"/>
+        <field name="arch" type="xml"><xpath expr="//list" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="account_move_line_graph_date_no_samples" model="ir.ui.view">
+        <field name="name">TCSI account_move_line_graph_date without synthetic records</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.account_move_line_graph_date"/>
+        <field name="arch" type="xml"><xpath expr="//graph" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_move_line_payment_tree_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_move_line_payment_tree without synthetic records</field>
+        <field name="model">account.move.line</field>
+        <field name="inherit_id" ref="account.view_move_line_payment_tree"/>
+        <field name="arch" type="xml"><xpath expr="//list" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_account_move_kanban_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_account_move_kanban without synthetic records</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_move_kanban"/>
+        <field name="arch" type="xml"><xpath expr="//kanban" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="hr_expense_view_expenses_analysis_tree_no_samples" model="ir.ui.view">
+        <field name="name">TCSI hr_expense_view_expenses_analysis_tree without synthetic records</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_expenses_analysis_tree"/>
+        <field name="arch" type="xml"><xpath expr="//list" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="hr_expense_view_expenses_analysis_kanban_no_samples" model="ir.ui.view">
+        <field name="name">TCSI hr_expense_view_expenses_analysis_kanban without synthetic records</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_expenses_analysis_kanban"/>
+        <field name="arch" type="xml"><xpath expr="//kanban" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="hr_expense_view_pivot_no_samples" model="ir.ui.view">
+        <field name="name">TCSI hr_expense_view_pivot without synthetic records</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_pivot"/>
+        <field name="arch" type="xml"><xpath expr="//pivot" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="hr_expense_view_graph_no_samples" model="ir.ui.view">
+        <field name="name">TCSI hr_expense_view_graph without synthetic records</field>
+        <field name="model">hr.expense</field>
+        <field name="inherit_id" ref="hr_expense.hr_expense_view_graph"/>
+        <field name="arch" type="xml"><xpath expr="//graph" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_hr_expense_sheet_tree_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_hr_expense_sheet_tree without synthetic records</field>
+        <field name="model">hr.expense.sheet</field>
+        <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_tree"/>
+        <field name="arch" type="xml"><xpath expr="//list" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_hr_expense_sheet_kanban_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_hr_expense_sheet_kanban without synthetic records</field>
+        <field name="model">hr.expense.sheet</field>
+        <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_kanban"/>
+        <field name="arch" type="xml"><xpath expr="//kanban" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_hr_expense_sheet_pivot_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_hr_expense_sheet_pivot without synthetic records</field>
+        <field name="model">hr.expense.sheet</field>
+        <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_pivot"/>
+        <field name="arch" type="xml"><xpath expr="//pivot" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+    <record id="view_hr_expense_sheet_graph_no_samples" model="ir.ui.view">
+        <field name="name">TCSI view_hr_expense_sheet_graph without synthetic records</field>
+        <field name="model">hr.expense.sheet</field>
+        <field name="inherit_id" ref="hr_expense.view_hr_expense_sheet_graph"/>
+        <field name="arch" type="xml"><xpath expr="//graph" position="attributes"><attribute name="sample">0</attribute></xpath></field>
+    </record>
+</odoo>

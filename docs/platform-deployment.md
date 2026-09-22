@@ -1,5 +1,27 @@
 # TCSI platform deployment
 
+## Customer app launcher
+
+`/workspace/apps` lists installed apps available through the authenticated user's
+server-filtered menu tree. It uses bundled TCSI icons and makes no marketplace
+requests. Search and category filters run locally on that existing menu data.
+Accounting Administrator is a business role, not `base.group_system`; this
+release does not grant module-installation privileges. The technical module
+manager remains at `/workspace/technical-modules` for system administration.
+Marketplace/theme links are removed from customer navigation. Copyright and
+license notices, dependency identities and technical diagnostics are retained.
+
+Invoice, journal and expense views disable synthetic sample records; empty
+ledgers must not display generated amounts. Existing records are unaffected.
+The launcher release updates menu/action metadata as well as inherited views.
+To roll it back without touching transactions, deploy a corrective module upgrade:
+move `action_tcsi_apps.path` away from `apps`, flush the client action, restore
+`base.open_module_tree.path` to `apps`, and restore the previous root menu action
+and groups. Restore changed menu names/icons/active flags from the previous
+release and deactivate this release's inherited no-sample views as needed.
+Redeploying an older image alone does not reverse database metadata. Never restore
+a snapshot over new customer transactions just to revert a UI release.
+
 ## ORVEXA local task engine
 
 ORVEXA presents supported commands in the native docked messaging window and

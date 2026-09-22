@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="thirdcode_accounting.TCSIApps">
+        <main class="tcsi-app-catalog" aria-labelledby="tcsi-apps-title">
+            <header class="tcsi-apps-heading">
+                <div><p class="tcsi-apps-kicker">Third Code Solutions Inc.</p><h1 id="tcsi-apps-title">Your workspace apps</h1><p>One place for the tools available to your account.</p></div>
+                <span class="tcsi-apps-count"><t t-esc="apps.length"/> available</span>
+            </header>
+            <div class="tcsi-apps-toolbar">
+                <div class="tcsi-apps-search"><label for="tcsi-app-search">Find an app</label><input id="tcsi-app-search" type="search" t-model="state.query" placeholder="Search apps…" autocomplete="off"/></div>
+                <div class="tcsi-apps-filters" role="group" aria-label="App categories"><button t-foreach="categories" t-as="category" t-key="category" type="button" t-att-aria-pressed="state.category === category" t-on-click="() => state.category = category" t-esc="category"/></div>
+            </div>
+            <p t-if="state.error" role="alert" class="alert alert-warning" t-esc="state.error"/>
+            <p class="tcsi-apps-results" role="status"><t t-esc="filteredApps.length"/> apps shown</p>
+            <section class="tcsi-apps-grid" aria-label="Available apps">
+                <article t-foreach="filteredApps" t-as="app" t-key="app.id" class="tcsi-app-card">
+                    <img t-att-src="'/thirdcode_accounting/static/src/img/apps/' + app.icon + '.svg'" alt="" width="48" height="48"/>
+                    <span class="tcsi-app-category" t-esc="app.category"/>
+                    <h2 t-esc="app.name"/><p t-esc="app.description"/>
+                    <button type="button" t-att-disabled="state.opening !== null" t-on-click="() => this.open(app)" t-att-aria-label="'Open ' + app.name"><t t-if="state.opening === app.id">Opening…</t><t t-else="">Open <span aria-hidden="true">↗</span></t></button>
+                </article>
+            </section>
+            <section t-if="!filteredApps.length" class="tcsi-apps-empty"><h2>No matching apps</h2><p>Try another search or category. Apps are shown only when your account can access them.</p><button type="button" class="btn btn-secondary" t-on-click="clear">Clear filters</button></section>
+            <footer class="tcsi-apps-note">Access follows your role. Installing additional modules is a separate system-administration task, not an accounting permission.</footer>
+        </main>
+    </t>
+</templates>

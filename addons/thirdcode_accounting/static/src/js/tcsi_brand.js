@@ -280,7 +280,7 @@ function ensureNativeRouteHeader(actionManager, details) {
         return;
     }
     const action = actionManager.querySelector(".o_action") || actionManager.firstElementChild;
-    if (!action || action.classList.contains("tcsi-dashboard") || action.querySelector(":scope > .tcsi-native-route-header")) {
+    if (!action || action.matches(".tcsi-dashboard, .tcsi-app-catalog") || action.querySelector(":scope > .tcsi-native-route-header")) {
         return;
     }
     const header = document.createElement("header");
@@ -431,11 +431,11 @@ const ICON_PATHS = {
 function iconKey(label = "") {
     const value = label.toLowerCase();
     if (value.includes("discuss") || value.includes("message")) return "discuss";
-    if (value.includes("contact")) return "contacts";
+    if (value.includes("contact") || value.includes("directory")) return "contacts";
     if (value.includes("employee") || value.includes("people") || value.includes("staff")) return "employees";
-    if (value.includes("expense")) return "expenses";
-    if (value.includes("dashboard") || value.includes("overview")) return "dashboard";
-    if (value.includes("invoic")) return "invoicing";
+    if (value.includes("expense") || value.includes("spend")) return "expenses";
+    if (value.includes("dashboard") || value.includes("overview") || value.includes("insight")) return "dashboard";
+    if (value.includes("invoic") || value.includes("revenue")) return "invoicing";
     if (value.includes("period")) return "periods";
     if (value.includes("journal")) return "invoices";
     if (value.includes("bill")) return "bills";
