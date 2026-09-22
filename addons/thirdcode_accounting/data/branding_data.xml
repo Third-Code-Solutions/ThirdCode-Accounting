@@ -14,4 +14,5 @@
         <field name="name">TCSI Workspace Assistant</field>
         <field name="image_1920" type="base64" file="thirdcode_accounting/static/src/img/orvexa-avatar.png"/>
     </record>
+    <function model="res.company" name="_apply_tcsi_invitation_branding"/>
 </odoo>

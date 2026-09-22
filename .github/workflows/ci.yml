@@ -30,7 +30,9 @@ jobs:
         run: python scripts/validate-odoo-package.py
 
       - name: Verify branding regression
-        run: node --test scripts/test-branding.mjs
+        run: |
+          node --test scripts/test-branding.mjs
+          python scripts/test-branding.py
 
       - name: Lint
         run: npm run lint

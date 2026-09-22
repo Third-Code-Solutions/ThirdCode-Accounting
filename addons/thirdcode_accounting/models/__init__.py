@@ -1,4 +1,5 @@
 from . import account_journal
+from . import branding
 from . import account_move
 from . import account_payment
 from . import account_payment_register
