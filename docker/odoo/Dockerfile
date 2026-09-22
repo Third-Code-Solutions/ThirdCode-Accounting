@@ -44,6 +44,7 @@ RUN apt-get update \
     && cp -a /opt/oca-account-reconcile/account_statement_reconcile_status /opt/extra-addons/account_statement_reconcile_status
 
 COPY addons /opt/extra-addons
+COPY docker/odoo/cloud_start.py /opt/tcsi/cloud_start.py
 
 RUN chown -R odoo:odoo /opt/extra-addons /opt/oca-server-tools /opt/oca-server-ux /opt/oca-reporting-engine /opt/oca-account-financial-reporting /opt/oca-account-reconcile
 

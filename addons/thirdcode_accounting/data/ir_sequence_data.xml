@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_thirdcode_official_receipt" model="ir.sequence">
+            <field name="name">Third Code Official Receipt</field>
+            <field name="code">thirdcode.official.receipt</field>
+            <field name="implementation">no_gap</field>
+            <field name="prefix">OR/</field>
+            <field name="padding">8</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_thirdcode_payment_batch" model="ir.sequence">
+            <field name="name">Third Code Payment Batch</field>
+            <field name="code">thirdcode.payment.batch</field>
+            <field name="implementation">no_gap</field>
+            <field name="prefix">PB/</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_thirdcode_migration_batch" model="ir.sequence">
+            <field name="name">Third Code Migration Batch</field>
+            <field name="code">thirdcode.migration.batch</field>
+            <field name="implementation">no_gap</field>
+            <field name="prefix">MIG/</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_thirdcode_recurring_invoice" model="ir.sequence">
+            <field name="name">Third Code Recurring Invoice</field>
+            <field name="code">thirdcode.recurring.invoice</field>
+            <field name="implementation">no_gap</field>
+            <field name="prefix">RI/</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+    </data>
+</odoo>
