@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="tcsi_promotion" inherit_id="web.brand_promotion_message">
+        <xpath expr="//t[@t-set='odoo_logo']" position="replace">
+            <t t-set="odoo_logo"><a href="https://www.thirdcodesolutions.com" target="_blank" rel="noopener">TCSI</a></t>
+        </xpath>
+    </template>
+    <template id="tcsi_mail_footer" inherit_id="mail.mail_notification_layout">
+        <xpath expr="//a[contains(@href, 'odoo.com')]" position="replace"><a href="https://www.thirdcodesolutions.com">Third Code Solutions Inc.</a></xpath>
+    </template>
+    <template id="tcsi_mail_light_footer" inherit_id="mail.mail_notification_light">
+        <xpath expr="//a[contains(@href, 'odoo.com')]" position="replace"><a href="https://www.thirdcodesolutions.com">Third Code Solutions Inc.</a></xpath>
+    </template>
+    <template id="tcsi_reset_mail" inherit_id="auth_signup.reset_password_email">
+        <xpath expr="//a[contains(@href, 'odoo.com')]" position="replace"><a href="https://www.thirdcodesolutions.com">Third Code Solutions Inc.</a></xpath>
+        <xpath expr="//div[text()[contains(., 'A password reset was requested for the Odoo account')]]" position="replace">
+            <div>
+                Dear <t t-out="object.name or ''"/>,<br/><br/>
+                A password reset was requested for the TCSI account linked to this email.
+                This link remains valid for <t t-out="user.env['ir.config_parameter'].sudo().get_param('auth_signup.reset_password.validity.hours',4)"/> hours.
+                <p><a t-att-href="object.partner_id._get_signup_url()">Change password</a></p>
+                If you did not request this, you can safely ignore this email.
+                <t t-if="user.signature"><br/><t t-out="user.signature"/></t>
+            </div>
+        </xpath>
+    </template>
+    <template id="tcsi_device_mail" inherit_id="auth_signup.alert_login_new_device">
+        <xpath expr="//a[contains(@href, 'odoo.com')]" position="replace"><a href="https://www.thirdcodesolutions.com">Third Code Solutions Inc.</a></xpath>
+    </template>
+    <template id="tcsi_expense_mail" inherit_id="hr_expense.hr_expense_template_register_no_user">
+        <xpath expr="//a[contains(@href, 'odoo.com')]" position="replace"><a href="https://www.thirdcodesolutions.com">Third Code Solutions Inc.</a></xpath>
+    </template>
+    <template id="tcsi_portal_sidebar" inherit_id="portal.portal_record_sidebar">
+        <xpath expr="//a[contains(@href, 'odoo.com')]" position="replace"><a href="https://www.thirdcodesolutions.com" title="Third Code Solutions Inc.">TCSI</a></xpath>
+    </template>
+    <template id="tcsi_report_title" inherit_id="web.report_layout">
+        <xpath expr="//title" position="replace"><title t-esc="title or 'TCSI Report'"/></xpath>
+    </template>
+    <template id="tcsi_report_preview_title" inherit_id="web.report_preview_layout">
+        <xpath expr="//title" position="replace"><title t-esc="title or 'TCSI Report'"/></xpath>
+    </template>
+    <template id="tcsi_invoice_qr" inherit_id="account.report_invoice_document">
+        <xpath expr="//img[@id='qrcode_odoo_logo']" position="attributes"><attribute name="src">/thirdcode_accounting/static/src/img/tcsi-mark.svg</attribute><attribute name="alt">TCSI</attribute></xpath>
+    </template>
+    <template id="tcsi_invoice_qr_preview" inherit_id="account.report_invoice_qr_code_preview">
+        <xpath expr="//img[@id='qrcode_odoo_logo']" position="attributes"><attribute name="src">/thirdcode_accounting/static/src/img/tcsi-mark.svg</attribute><attribute name="alt">TCSI</attribute></xpath>
+    </template>
+    <template id="tcsi_aged_partner_balance_title" inherit_id="account_financial_report.report_aged_partner_balance_base">
+        <xpath expr="//h4[@t-esc]" position="attributes"><attribute name="t-esc">title or 'TCSI Report'</attribute></xpath>
+    </template>
+    <template id="tcsi_general_ledger_title" inherit_id="account_financial_report.report_general_ledger_base">
+        <xpath expr="//h4[@t-out]" position="attributes"><attribute name="t-out">title or 'TCSI Report'</attribute></xpath>
+    </template>
+    <template id="tcsi_journal_ledger_title" inherit_id="account_financial_report.report_journal_ledger_base">
+        <xpath expr="//h4[@t-esc]" position="attributes"><attribute name="t-esc">title or 'TCSI Report'</attribute></xpath>
+    </template>
+    <template id="tcsi_open_items_title" inherit_id="account_financial_report.report_open_items_base">
+        <xpath expr="//h4[@t-esc]" position="attributes"><attribute name="t-esc">title or 'TCSI Report'</attribute></xpath>
+    </template>
+    <template id="tcsi_trial_balance_title" inherit_id="account_financial_report.report_trial_balance_base">
+        <xpath expr="//h4[@t-out]" position="attributes"><attribute name="t-out">title or 'TCSI Report'</attribute></xpath>
+    </template>
+    <template id="tcsi_vat_report_title" inherit_id="account_financial_report.report_vat_report_base">
+        <xpath expr="//h4[@t-esc]" position="attributes"><attribute name="t-esc">title or 'TCSI Report'</attribute></xpath>
+    </template>
+    <record id="tcsi_partner_website" model="ir.ui.view">
+        <field name="name">tcsi_partner_website</field><field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='website']" position="attributes"><attribute name="placeholder">https://www.thirdcodesolutions.com</attribute></xpath></field>
+    </record>
+    <record id="tcsi_company_website" model="ir.ui.view">
+        <field name="name">tcsi_company_website</field><field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='website']" position="attributes"><attribute name="placeholder">https://www.thirdcodesolutions.com</attribute></xpath></field>
+    </record>
+    <record id="tcsi_partner_address_website" model="ir.ui.view">
+        <field name="name">tcsi_partner_address_website</field><field name="inherit_id" ref="base.view_partner_address_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='website']" position="attributes"><attribute name="placeholder">https://www.thirdcodesolutions.com</attribute></xpath></field>
+    </record>
+    <record id="tcsi_settings_labels" model="ir.ui.view">
+        <field name="name">tcsi_settings_labels</field><field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='web_app_name']" position="attributes"><attribute name="placeholder">TCSI Accounting</attribute></xpath>
+                <xpath expr="//setting[field[@name='web_app_name']]" position="attributes"><attribute name="help">Application name shown when this workspace is installed through the browser.</attribute></xpath>
+                <xpath expr="//setting[@string='API Keys']" position="attributes"><attribute name="help">API keys let authorized users access TCSI Accounting with external tools.</attribute></xpath>
+                <xpath expr="//setting[@id='partner_autocomplete']" position="attributes"><attribute name="title">Company data can be populated by the configured enrichment provider.</attribute></xpath></field>
+    </record>
+</odoo>

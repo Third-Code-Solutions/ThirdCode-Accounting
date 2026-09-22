@@ -170,3 +170,21 @@ real client/provider decisions and cannot be invented in code:
   approval;
 - remaining accounting vertical slices: posting, invoices, payments,
   reconciliation, recurring jobs, reports, and migration import.
+# Customer-facing branding releases
+
+The accounting engine retains its upstream package names, exception identifiers,
+diagnostic traces, and license notices. TCSI branding is implemented through the
+custom addon's inherited views and client patches, not by renaming engine code.
+Customer-authored accounting records and messages must not be rewritten.
+
+After deploying a branding manifest version change, upgrade only
+`thirdcode_accounting` using the module administration API, after taking database
+and filestore snapshots. Verify inherited views, login, menus, and report/email
+templates afterward. A source deployment alone does not apply database view changes.
+To roll back these view-only changes, deactivate the affected `thirdcode_accounting`
+inherited views and redeploy the previous release; do not restore the database over
+new customer transactions. Keep diagnostic error details intact for support.
+
+Run `node --test scripts/test-branding.mjs` to check the branding mutation-loop
+regression before deploying. The workspace observer must never rewrite unchanged
+text, and human chat windows must retain their original identities.
