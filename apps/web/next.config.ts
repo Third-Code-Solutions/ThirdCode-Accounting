@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 import { accountingOrigin, accountingRoutePrefixes } from "./lib/accounting-routes";
 
 const accountingSources = [
-  ...accountingRoutePrefixes.map((prefix) => `/${prefix}/:path*`),
+  ...accountingRoutePrefixes.filter((prefix) => prefix !== "websocket").map((prefix) => `/${prefix}/:path*`),
+  "/websocket/:path+",
   "/:addon([a-zA-Z0-9_]+)/static/:path*",
   "/logo.png",
 ];

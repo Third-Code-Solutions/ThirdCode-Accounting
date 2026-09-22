@@ -28,6 +28,15 @@ pages to the entry page. `/api/readiness` probes Supabase Auth; it does not cert
 correctness. Do not switch portal mode off for customer use until standalone
 accounting has passed its release gates.
 
+`/websocket` uses a small same-origin Vercel Function relay because external CDN
+rewrites do not preserve the accounting WebSocket handshake. It forwards only
+the existing session cookie to the fixed Railway origin, enforces Origin checks,
+bounds buffers, and reconnects before the function duration limit. Railway remains
+the authorization and subscription authority. This uses Vercel's beta WebSocket
+API and requires Fluid Compute; verify a real handshake and notification delivery
+after each runtime/provider change. `/websocket/*` HTTP endpoints still use rewrites.
+The Railway URL remains available for operational recovery if Vercel is unavailable.
+
 Railway uses `docker/odoo/Dockerfile` and start command
 `python3 /opt/tcsi/cloud_start.py`, with `/web/login` as its health check.
 New Railway services no longer accept the legacy `railway.json` mechanism;
