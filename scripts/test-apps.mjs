@@ -7,12 +7,28 @@ const source = readFileSync(new URL("../addons/thirdcode_accounting/static/src/j
 const context = {};
 runInNewContext(source.slice(source.indexOf("export const APP_DESIGNS"), source.indexOf("class TCSIApps")).replaceAll("export ", "") + "; this.designs = APP_DESIGNS;", context);
 
-test("launcher shows only supplied authorized apps, not uninstalled marketplace products", () => {
+test("open targets come only from authorized menus", () => {
     const apps = context.catalogApps([{ id: 1, xmlid: "account.menu_finance", name: "Invoicing" }, { id: 2, xmlid: "base.menu_management", name: "Apps" }]);
     assert.equal(apps.length, 1);
     assert.equal(apps[0].name, "Revenue");
     assert.equal(apps[0].id, 1);
     assert.equal(context.catalogApps([]).length, 0);
+});
+test("full catalog preserves uninstalled modules and distinguishes accessible apps", () => {
+    const modules = [
+        { id: 10, name: "sale", shortdesc: "Sales", state: "uninstalled", category_id: [1, "Sales"] },
+        { id: 11, name: "account", shortdesc: "Invoicing", state: "installed" },
+        { id: 12, name: "auditlog", shortdesc: "Audit Log", state: "installed" },
+        { id: 13, name: "vendor", shortdesc: "Odoo Extension", summary: "Odoo tools", state: "uninstallable" },
+    ];
+    const apps = context.moduleCatalog(modules, [{ id: 7, xmlid: "account.menu_finance", name: "Revenue" }]);
+    assert.equal(apps.length, 4);
+    assert.equal(apps.find((a) => a.id === 10).status, "Not installed");
+    assert.equal(apps.find((a) => a.id === 10).menuId, undefined);
+    assert.equal(apps.find((a) => a.id === 11).menuId, 7);
+    assert.equal(apps.find((a) => a.id === 12).menuId, undefined);
+    assert.equal(apps.find((a) => a.id === 13).name, "TCSI Extension");
+    assert.equal(apps.find((a) => a.id === 13).status, "Unavailable");
 });
 test("each known app has a distinct bundled TCSI icon", () => {
     const icons = Object.values(context.designs).map((design) => design.icon);

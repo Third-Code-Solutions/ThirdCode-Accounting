@@ -23,6 +23,10 @@ class TestAppLauncher(TransactionCase):
                 "groups_id": [Command.set([self.env.ref(f"thirdcode_accounting.group_thirdcode_{role}").id])],
             })
             self.assertFalse(user.has_group("base.group_system"))
+            catalog = self.env["ir.module.module"].with_user(user).search_read(
+                [("application", "=", True)], ["name", "shortdesc", "summary", "state", "category_id"]
+            )
+            self.assertTrue(any(app["state"] == "uninstalled" for app in catalog))
             visible = self.env["ir.ui.menu"].with_user(user)._visible_menu_ids()
             self.assertIn(self.env.ref("base.menu_management").id, visible)
             self.assertNotIn(self.env.ref("base.menu_module_tree").id, visible)

@@ -2,9 +2,12 @@
 
 ## Customer app launcher
 
-`/workspace/apps` lists installed apps available through the authenticated user's
-server-filtered menu tree. It uses bundled TCSI icons and makes no marketplace
-requests. Search and category filters run locally on that existing menu data.
+`/workspace/apps` lists the complete application-module catalog using one
+permission-checked module read. Installed, uninstalled, unavailable and pending
+states are explicit. Only installed apps with an accessible root menu have an
+Open button; other cards explain setup or embedded features. Bundled TCSI icons
+and local monograms replace vendor images. Search/category/status filtering is
+local. No installation or permission changes occur when browsing the catalog.
 Accounting Administrator is a business role, not `base.group_system`; this
 release does not grant module-installation privileges. The technical module
 manager remains at `/workspace/technical-modules` for system administration.

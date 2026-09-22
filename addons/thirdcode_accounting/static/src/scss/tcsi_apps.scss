@@ -2,6 +2,12 @@
     --apps-ink: #20352f; --apps-muted: #586761; --apps-line: #dfe6e2;
     padding: clamp(1.25rem, 4vw, 3rem); overflow-y: auto; height: 100%; background: #f8faf9; color: var(--apps-ink);
     font-family: inherit;
+    select { max-width: 20rem; padding: .75rem; border: 1px solid var(--apps-line); border-radius: .375rem; background: white; color: var(--apps-ink); }
+    .tcsi-app-status { font-size: .75rem; color: var(--apps-muted); margin: 0 0 1rem; }
+    .tcsi-app-status.is-installed { color: #245b43; }
+    .tcsi-app-monogram rect { fill: #edf2ef; }
+    .tcsi-app-monogram text { fill: #365b49; font-size: 15px; font-weight: 600; }
+    .tcsi-apps-detail { max-width: 76rem; margin: 1.5rem auto; padding: 1.5rem; background: #eaf1ed; border-left: 3px solid #365b49; }
     .tcsi-apps-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; max-width: 76rem; margin: 0 auto 2rem; }
     h1 { font: inherit; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; letter-spacing: -.04em; margin: .5rem 0; }
     p { color: var(--apps-muted); line-height: 1.6; }

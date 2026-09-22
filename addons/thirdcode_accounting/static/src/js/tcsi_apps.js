@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, useState } from "@odoo/owl";
+import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -21,30 +21,59 @@ export function catalogApps(apps) {
     }).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export function moduleCatalog(modules, menus) {
+    const accessible = catalogApps(menus);
+    const clean = (text) => (text || "").replace(/\bodoo\b/gi, "TCSI");
+    return modules.map((module) => {
+        const menu = accessible.find((app) => app.xmlid?.split(".")[0] === module.name);
+        const name = clean(module.shortdesc || module.name);
+        return {
+            id: module.id, name, menuId: menu?.id,
+            icon: menu?.icon,
+            initials: name.split(/\s+/).map((word) => word[0]).slice(0, 2).join("").toUpperCase(),
+            category: clean(module.category_id?.[1]) || "Other",
+            description: clean(module.summary) || "Explore this business application and its setup requirements.",
+            installed: module.state === "installed",
+            status: module.state === "installed" ? "Installed" : module.state === "uninstalled" ? "Not installed" : module.state === "uninstallable" ? "Unavailable" : "Setup pending",
+        };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 class TCSIApps extends Component {
     static template = "thirdcode_accounting.TCSIApps";
     static props = ["*"];
     setup() {
         this.menu = useService("menu");
-        this.state = useState({ query: "", category: "All", opening: null, error: "" });
-        // The menu service already contains the server-filtered, accessible menus.
-        // Do not query the module marketplace or infer authorization in the client.
-        this.apps = catalogApps(this.menu.getApps());
-        this.categories = ["All", ...new Set(this.apps.map((app) => app.category))];
+        this.orm = useService("orm");
+        this.state = useState({ query: "", category: "All", status: "All", opening: null, error: "", apps: [], selected: null, loading: true });
+        onWillStart(() => this.load());
     }
+    async load() {
+        this.state.loading = true;
+        this.state.error = "";
+        try {
+            const modules = await this.orm.searchRead("ir.module.module", [["application", "=", true]], ["name", "shortdesc", "summary", "state", "category_id"]);
+            this.state.apps = moduleCatalog(modules, this.menu.getApps());
+        } catch {
+            this.state.error = "The app catalog could not load. Check your connection or catalog permissions, then retry.";
+        } finally { this.state.loading = false; }
+    }
+    get apps() { return this.state.apps; }
+    get categories() { return ["All", ...new Set(this.apps.map((app) => app.category))]; }
     get filteredApps() {
         const query = this.state.query.trim().toLowerCase();
         return this.apps.filter((app) => (this.state.category === "All" || app.category === this.state.category)
+            && (this.state.status === "All" || (this.state.status === "Installed" ? app.installed : !app.installed))
             && `${app.name} ${app.description}`.toLowerCase().includes(query));
     }
     async open(app) {
         if (this.state.opening !== null) return;
         this.state.opening = app.id;
         this.state.error = "";
-        try { await this.menu.selectMenu(app.id); }
+        try { await this.menu.selectMenu(app.menuId); }
         catch { this.state.error = "This app could not open. Check your connection and try again. Access is controlled by your current role."; }
         finally { this.state.opening = null; }
     }
-    clear() { this.state.query = ""; this.state.category = "All"; }
+    clear() { this.state.query = ""; this.state.category = "All"; this.state.status = "All"; }
 }
 registry.category("actions").add("tcsi_apps", TCSIApps);

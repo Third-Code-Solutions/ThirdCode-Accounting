@@ -3,24 +3,33 @@
     <t t-name="thirdcode_accounting.TCSIApps">
         <main class="tcsi-app-catalog" aria-labelledby="tcsi-apps-title">
             <header class="tcsi-apps-heading">
-                <div><p class="tcsi-apps-kicker">Third Code Solutions Inc.</p><h1 id="tcsi-apps-title">Your workspace apps</h1><p>One place for the tools available to your account.</p></div>
-                <span class="tcsi-apps-count"><t t-esc="apps.length"/> available</span>
+                <div><p class="tcsi-apps-kicker">Third Code Solutions Inc.</p><h1 id="tcsi-apps-title">Explore your apps</h1><p>Your complete business app catalog. See what is installed and what you can add.</p></div>
+                <span class="tcsi-apps-count"><t t-esc="apps.length"/> apps in catalog</span>
             </header>
             <div class="tcsi-apps-toolbar">
                 <div class="tcsi-apps-search"><label for="tcsi-app-search">Find an app</label><input id="tcsi-app-search" type="search" t-model="state.query" placeholder="Search apps…" autocomplete="off"/></div>
-                <div class="tcsi-apps-filters" role="group" aria-label="App categories"><button t-foreach="categories" t-as="category" t-key="category" type="button" t-att-aria-pressed="state.category === category" t-on-click="() => state.category = category" t-esc="category"/></div>
+                <div><label for="tcsi-app-category">Category</label><select id="tcsi-app-category" t-model="state.category"><option t-foreach="categories" t-as="category" t-key="category" t-att-value="category" t-esc="category"/></select></div>
+                <div class="tcsi-apps-filters" role="group" aria-label="Installation status"><button t-foreach="['All', 'Installed', 'Not installed']" t-as="status" t-key="status" type="button" t-att-aria-pressed="state.status === status" t-on-click="() => state.status = status" t-esc="status"/></div>
             </div>
-            <p t-if="state.error" role="alert" class="alert alert-warning" t-esc="state.error"/>
+            <div t-if="state.error" role="alert" class="alert alert-warning"><p t-esc="state.error"/><button type="button" class="btn btn-secondary" t-on-click="load">Retry</button></div>
             <p class="tcsi-apps-results" role="status"><t t-esc="filteredApps.length"/> apps shown</p>
-            <section class="tcsi-apps-grid" aria-label="Available apps">
+            <section class="tcsi-apps-grid" aria-label="App catalog" t-att-aria-busy="state.loading">
                 <article t-foreach="filteredApps" t-as="app" t-key="app.id" class="tcsi-app-card">
-                    <img t-att-src="'/thirdcode_accounting/static/src/img/apps/' + app.icon + '.svg'" alt="" width="48" height="48"/>
+                    <img t-if="app.icon" t-att-src="'/thirdcode_accounting/static/src/img/apps/' + app.icon + '.svg'" alt="" width="48" height="48"/>
+                    <svg t-else="" class="tcsi-app-monogram" viewBox="0 0 48 48" width="48" height="48" aria-hidden="true"><rect width="48" height="48" rx="10"/><text x="24" y="29" text-anchor="middle" t-esc="app.initials"/></svg>
                     <span class="tcsi-app-category" t-esc="app.category"/>
                     <h2 t-esc="app.name"/><p t-esc="app.description"/>
-                    <button type="button" t-att-disabled="state.opening !== null" t-on-click="() => this.open(app)" t-att-aria-label="'Open ' + app.name"><t t-if="state.opening === app.id">Opening…</t><t t-else="">Open <span aria-hidden="true">↗</span></t></button>
+                    <span class="tcsi-app-status" t-att-class="{'is-installed': app.installed}" t-esc="app.status"/>
+                    <button t-if="app.installed and app.menuId" type="button" t-att-disabled="state.opening !== null" t-on-click="() => this.open(app)" t-att-aria-label="'Open ' + app.name"><t t-if="state.opening === app.id">Opening…</t><t t-else="">Open <span aria-hidden="true">↗</span></t></button>
+                    <button t-else="" type="button" t-att-aria-label="'Details for ' + app.name" t-att-aria-expanded="state.selected?.id === app.id" t-on-click="() => state.selected = app">View details <span aria-hidden="true">↗</span></button>
+                    <section t-if="state.selected?.id === app.id" class="tcsi-apps-detail" aria-label="App details">
+                        <p t-if="app.installed">This module is installed. Features without a standalone app are available within related workspace menus, subject to your role.</p>
+                        <p t-else="">This app is not enabled for use. A system administrator must review availability, licensing, dependencies and configuration before installation. Accounting administration does not grant module-installation privileges.</p>
+                        <button type="button" t-on-click="() => state.selected = null" aria-label="Close app details">Close details</button>
+                    </section>
                 </article>
             </section>
-            <section t-if="!filteredApps.length" class="tcsi-apps-empty"><h2>No matching apps</h2><p>Try another search or category. Apps are shown only when your account can access them.</p><button type="button" class="btn btn-secondary" t-on-click="clear">Clear filters</button></section>
+            <section t-if="!state.loading and !state.error and !filteredApps.length" class="tcsi-apps-empty"><h2>No matching apps</h2><p>Try another search, installation status or category.</p><button type="button" class="btn btn-secondary" t-on-click="clear">Clear filters</button></section>
             <footer class="tcsi-apps-note">Access follows your role. Installing additional modules is a separate system-administration task, not an accounting permission.</footer>
         </main>
     </t>
