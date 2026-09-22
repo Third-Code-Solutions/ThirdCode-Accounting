@@ -629,7 +629,8 @@ function replaceAssistantMessageCopy(message) {
 }
 
 function isAssistantAvatarSource(source = "") {
-    return /\/res\.partner\/2(?:\/|[?#])/i.test(source) || /(?:[?&])(?:id|res_id)=2(?:&|$)/i.test(source);
+    return /\/res\.partner\/2(?:\/|[?#])/i.test(source) || /(?:[?&])(?:id|res_id)=2(?:&|$)/i.test(source)
+        || source.includes("/thirdcode_accounting/static/src/img/orvexa-avatar.png");
 }
 
 function replaceAssistantAvatar(avatar) {

@@ -2,9 +2,11 @@
 
 ## ORVEXA local task engine
 
-ORVEXA presents supported commands as a chat conversation with inline draft
-review/confirmation. Enter sends a message; Shift+Enter inserts a new line.
-The chat transcript is held only while the dialog is open, not stored in browser
+ORVEXA presents supported commands in the native docked messaging window and
+expanded Discuss conversation, with inline draft review/confirmation. Native
+minimize, restore and close controls are retained. Enter sends a message;
+Shift+Enter inserts a new line. The chat transcript is held in tab memory per
+company until reload, surviving minimize/close/reopen, not stored in browser
 storage. Existing server-side activity memory and task proposals remain persistent.
 The chatbot interface does not add general language inference or change permissions.
 

@@ -4,13 +4,12 @@ import { runInNewContext } from "node:vm";
 import { test } from "node:test";
 
 const source = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/orvexa.js", import.meta.url), "utf8");
-const classSource = source.slice(source.indexOf("export class OrvexaDialog"), source.indexOf("class OrvexaLauncher")).replace("export class", "class");
+const classSource = source.slice(source.indexOf("export class OrvexaChat"), source.indexOf("class OrvexaLauncher")).replace("export class", "class");
 function chat(call) {
     const context = { Component: class {}, Dialog: class {} };
-    runInNewContext(`${classSource}; this.Chat = OrvexaDialog;`, context);
+    runInNewContext(`${classSource}; this.Chat = OrvexaChat;`, context);
     const dialog = new context.Chat();
     dialog.state = { message: "", busy: false, result: null, messages: [] };
-    dialog.nextMessageId = 0;
     dialog.closed = false;
     dialog.call = call;
     dialog.refreshMemory = async () => {};
@@ -80,4 +79,46 @@ test("Enter sends; Shift+Enter and composition do not submit", () => {
     }
     assert.equal(submits, 1);
     assert.equal(prevented, 1);
+});
+
+test("only the configured assistant's private thread uses ORVEXA", () => {
+    const start = source.indexOf("export function isOrvexaThread");
+    const end = source.indexOf("patch(ThreadRecord.prototype", start);
+    const context = {};
+    runInNewContext(source.slice(start, end).replace("export function", "function"), context);
+    const assistant = { id: 2 };
+    const thread = { model: "discuss.channel", channel_type: "chat", correspondent: { id: 99, persona: { id: 2 } } };
+    assert.equal(context.isOrvexaThread(thread, assistant), true);
+    assert.equal(context.isOrvexaThread({ ...thread, correspondent: { id: 2, persona: { id: 9 } } }, assistant), false);
+    assert.equal(context.isOrvexaThread({ ...thread, channel_type: "channel" }, assistant), false);
+    assert.equal(context.isOrvexaThread({ ...thread, model: "account.move" }, assistant), false);
+    assert.equal(context.isOrvexaThread(thread, undefined), false);
+});
+
+test("closing a native window during execution retains the result for reopening", async () => {
+    let resolve;
+    const dialog = chat(() => new Promise((done) => { resolve = done; }));
+    dialog.state.message = "show overdue invoices";
+    const pending = dialog.submit();
+    dialog.closed = true;
+    resolve({ status: "complete", message: "Completed while closed" });
+    await pending;
+    assert.equal(dialog.state.busy, false);
+    assert.equal(dialog.state.messages.at(-1).result.message, "Completed while closed");
+    const reopened = chat();
+    reopened.state = dialog.state;
+    reopened.append("user", { message: "Next request" });
+    assert.equal(new Set(reopened.state.messages.map((message) => message.id)).size, 3);
+});
+
+test("tab memory is shared across chat surfaces but isolated by company", () => {
+    let service;
+    const context = { registry: { category: () => ({ add: (_, definition) => { service = definition.start(); } }) } };
+    const start = source.indexOf('registry.category("services").add("tcsi_orvexa_sessions"');
+    const end = source.indexOf("export function isOrvexaThread", start);
+    runInNewContext(source.slice(start, end), context);
+    const first = service.get({ id: 1, name: "First" });
+    first.messages.push({ id: 1, role: "user" });
+    assert.equal(service.get({ id: 1, name: "First" }), first);
+    assert.equal(service.get({ id: 2, name: "Second" }).messages.length, 0);
 });

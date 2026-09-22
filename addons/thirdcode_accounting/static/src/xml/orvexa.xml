@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <t t-name="thirdcode_accounting.OrvexaNativeWindow" t-inherit="mail.ChatWindow" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-ChatWindow')]" position="attributes">
+            <attribute name="t-attf-class">{{ thread?.isCorrespondentOdooBot ? 'tcsi-chat-window' : '' }}</attribute>
+        </xpath>
+    </t>
+    <t t-name="thirdcode_accounting.OrvexaThread">
+        <OrvexaChat t-if="isAssistant" t-key="company.currentCompany.id"/>
+        <Thread t-else="" t-props="props"/>
+    </t>
+    <t t-name="thirdcode_accounting.OrvexaComposer">
+        <Composer t-if="!isAssistant" t-props="props"/>
+    </t>
     <t t-name="thirdcode_accounting.OrvexaLauncher">
         <button class="btn btn-link tcsi-orvexa-launcher" t-on-click="open" aria-label="Ask ORVEXA">ORVEXA</button>
     </t>
-    <t t-name="thirdcode_accounting.OrvexaDialog">
-        <Dialog title="'ORVEXA · Your accounting assistant'" size="'lg'">
-            <div class="tcsi-orvexa">
+    <t t-name="thirdcode_accounting.OrvexaChat">
+            <div class="tcsi-orvexa tcsi-orvexa-native" aria-label="ORVEXA accounting assistant">
                 <p><strong t-esc="state.company"/> · Private rule-based execution. No external AI service.</p>
                 <div class="tcsi-orvexa-transcript" t-ref="transcript" role="log" aria-label="Conversation with ORVEXA" aria-live="polite" aria-relevant="additions">
                     <article class="tcsi-orvexa-message tcsi-orvexa-message-assistant">
@@ -58,7 +69,7 @@
                 <div t-if="state.feedError" role="alert" class="alert alert-warning" t-esc="state.feedError"/>
                 <details class="tcsi-orvexa-memory">
                     <summary>Activity memory and saved tasks</summary>
-                    <small>The chat transcript lasts while this window is open. Activity memory and task proposals are saved by the engine.</small>
+                    <small>Chat stays in this browser tab until reload. Activity memory and task proposals are saved by the engine.</small>
                     <p t-if="!state.memory">Loading authorized activity…</p>
                     <t t-if="state.memory">
                         <small>Last checked (UTC): <t t-esc="state.memory.as_of"/>. Event-driven updates; reconnect check every 15 seconds.</small>
@@ -75,7 +86,5 @@
                     </t>
                 </details>
             </div>
-            <t t-set-slot="footer"><button class="btn btn-secondary" t-on-click="props.close">Close ORVEXA</button></t>
-        </Dialog>
     </t>
 </templates>
