@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -79,6 +80,7 @@ export function LoginForm() {
       <section className="auth-panel">
         <div className="auth-panel-inner">
           <div className="auth-mobile-brand"><span className="brand-mark">T</span><strong>TCSI Accounting</strong></div>
+          <Link className="auth-back-link" href="/">← Back to TCSI home</Link>
           <div className="auth-heading">
             <span className="eyebrow">Secure workspace access</span>
             <h2>{title}</h2>

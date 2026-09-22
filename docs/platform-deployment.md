@@ -62,10 +62,25 @@ Run `python scripts/validate-odoo-package.py` before uploading; module XML data
 must not be excluded by `.gitignore` or the container build context.
 Vercel enforces portal mode in code, including previews with no configured flag.
 
-Only `restrict_rls_event_trigger_execute` has been applied to the Supabase
-portal project. The standalone foundation migration has NOT been applied.
-Never run an unreviewed bulk migration push against this project. The event
-trigger hardening revokes public execution without disabling automatic RLS.
+The reviewed Supabase portal migrations have been applied to the project:
+the tenant foundation, website demo-request intake, platform-owner access
+boundary, and explicit function-grant hardening. Never run an unreviewed bulk
+migration push against this project. The event-trigger hardening revokes public
+execution without disabling automatic RLS.
+
+The marketing routes are `/`, `/platform`, `/controls`, `/pilot`, and
+`/contact`; each is a real page rather than a hash-scroll section. `/contact`
+accepts a company demo request and writes only a `new` website lead. The
+separate `/login` route is the Supabase platform-owner sign-in; `/web/login`
+remains the customer accounting-engine sign-in.
+
+Platform ownership is deliberately singleton and server-enforced. The
+`platform_owner_access` table can contain one assigned Supabase user, and the
+analytics RPCs require that authenticated user before returning cross-tenant
+metrics. Customer organization owners remain limited to their own workspace.
+Create the owner's Supabase Auth user first, then assign that user through a
+reviewed administrative database operation. Do not add a service-role key to
+Vercel or the browser.
 
 Rollback: restore the last verified application deployment through the provider.
 Keep database and filestore volumes intact. A code rollback does not roll back

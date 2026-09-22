@@ -51,6 +51,53 @@ export const createWorkspaceSchema = z.object({
 
 export type CreateWorkspace = z.infer<typeof createWorkspaceSchema>;
 
+export const demoRequestSchema = z.object({
+  companyName: z.string().trim().min(2).max(160),
+  contactName: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(254),
+  phone: z.string().trim().max(40).optional().default(""),
+  teamSize: z.enum(["1-5", "6-20", "21-50", "51-200", "201+"]),
+  accountingStack: z.string().trim().max(160).optional().default(""),
+  message: z.string().trim().min(10).max(2000),
+  website: z.string().max(128).optional().default(""),
+});
+
+export type DemoRequest = z.infer<typeof demoRequestSchema>;
+
+export const platformWorkspaceSummarySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  member_count: z.number().int().nonnegative(),
+  invoice_count: z.number().int().nonnegative(),
+  posted_entry_count: z.number().int().nonnegative(),
+  created_at: z.string(),
+});
+
+export const platformDemoRequestSummarySchema = z.object({
+  id: z.string().uuid(),
+  company_name: z.string(),
+  contact_name: z.string(),
+  email: z.string().email(),
+  team_size: z.string(),
+  status: z.string(),
+  created_at: z.string(),
+});
+
+export const platformAnalyticsSchema = z.object({
+  workspace_count: z.number().int().nonnegative(),
+  membership_count: z.number().int().nonnegative(),
+  invoice_count: z.number().int().nonnegative(),
+  journal_entry_count: z.number().int().nonnegative(),
+  receivables_due: z.number().nonnegative(),
+  demo_request_count: z.number().int().nonnegative(),
+  open_demo_request_count: z.number().int().nonnegative(),
+  workspaces: z.array(platformWorkspaceSummarySchema),
+  recent_demo_requests: z.array(platformDemoRequestSummarySchema),
+});
+
+export type PlatformAnalytics = z.infer<typeof platformAnalyticsSchema>;
+
 export const apiErrorSchema = z.object({
   error: z.object({
     code: z.string(),

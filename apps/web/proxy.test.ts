@@ -41,13 +41,20 @@ describe("hosted pilot boundary", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it.each(["/platform", "/controls", "/pilot", "/contact", "/owner", "/login", "/api/demo-requests", "/api/platform/analytics"])("allows public portal route %s", async (path) => {
+    vi.stubEnv("TCSI_PORTAL_ONLY", "true");
+    const response = await proxy(new NextRequest(`https://portal.example${path}`));
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.headers.get("location")).toBeNull();
+  });
+
   it.each(["/api/workspaces", "/api/dashboard"])("blocks unreleased endpoint %s", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`, { method: "POST" }));
     expect(response.status).toBe(404);
   });
 
-  it.each(["/dashboard", "/login", "/invoices", "/settings"])("redirects unreleased page %s", async (path) => {
+  it.each(["/dashboard", "/invoices", "/settings"])("redirects unreleased page %s", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`));
     expect(response.status).toBe(307);

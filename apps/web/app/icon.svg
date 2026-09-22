@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">TCSI Accounting</title>
+  <defs>
+    <linearGradient id="tcsi" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#5526AB" />
+      <stop offset="0.45" stop-color="#601BE6" />
+      <stop offset="1" stop-color="#905AED" />
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#tcsi)" />
+  <path d="M560 225h130L466 799H336z" fill="#fff" />
+</svg>

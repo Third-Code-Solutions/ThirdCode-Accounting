@@ -7,11 +7,16 @@ export const metadata: Metadata = {
     default: "TCSI Accounting",
     template: "%s · TCSI Accounting",
   },
-  description: "A calm, controlled workspace for modern finance teams.",
+  description: "TCSI Accounting connects ledger work, invoicing, reconciliation, controls, and reporting in one clear workspace for finance teams.",
   applicationName: "TCSI Accounting",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   openGraph: {
     title: "TCSI Accounting · Clear books, clear next steps",
-    description: "A focused accounting workspace for finance teams that need a clearer operating view.",
+    description: "Prepare entries, follow invoices, reconcile activity, and see what is ready for close in a controlled TCSI workspace.",
     type: "website",
   },
 };

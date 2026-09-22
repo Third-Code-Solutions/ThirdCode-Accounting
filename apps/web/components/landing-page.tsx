@@ -1,3 +1,7 @@
+import Link from "next/link";
+
+import { MarketingFooter, MarketingHeader } from "./marketing-layout";
+
 type FeatureKind = "ledger" | "review" | "evidence";
 
 function TCSIMark({ compact = false }: { compact?: boolean }) {
@@ -101,19 +105,19 @@ const features: Array<{ kind: FeatureKind; label: string; title: string; copy: s
     kind: "ledger",
     label: "01 / Ledger control",
     title: "See what moved, and why.",
-    copy: "Bring entries, balances, and account activity into one readable operating view for the day.",
+    copy: "Bring journals, balances, and account activity into one readable operating view for the day.",
   },
   {
     kind: "review",
     label: "02 / Review flows",
     title: "Make the next action obvious.",
-    copy: "Keep invoices, payments, and close work moving with focused queues instead of scattered handoffs.",
+    copy: "Create and follow invoices, payments, and close work with focused queues instead of scattered handoffs.",
   },
   {
     kind: "evidence",
     label: "03 / Clear evidence",
     title: "Leave a trail people can trust.",
-    copy: "Give every financial conversation a clear source, status, and owner before it reaches the close.",
+    copy: "Give every financial conversation a source, status, owner, and audit event before it reaches the close.",
   },
 ];
 
@@ -121,30 +125,16 @@ export function LandingPage() {
   return (
     <main className="landing">
       <div className="landing-frame">
-        <header className="landing-header">
-          <a className="landing-brand" href="#top" aria-label="TCSI Accounting home">
-            <TCSIMark />
-            <span><strong>Third Code Solutions Inc.</strong><small>TCSI Accounting</small></span>
-          </a>
-          <nav className="landing-nav" aria-label="Primary navigation">
-            <a href="#platform">Platform</a>
-            <a href="#controls">Controls</a>
-            <a href="#pilot">Pilot access</a>
-          </nav>
-          <div className="landing-header-actions">
-            <a className="landing-text-link landing-header-company" href="https://www.thirdcodesolutions.com" target="_blank" rel="noreferrer">Company site <ArrowIcon /></a>
-            <a className="landing-header-cta" href="/web/login">Open workspace <ArrowIcon /></a>
-          </div>
-        </header>
+        <MarketingHeader />
 
         <section className="landing-hero" id="top" aria-labelledby="landing-title">
           <div className="landing-hero-copy">
             <p className="landing-kicker"><span /> TCSI ACCOUNTING <b>/</b> CUSTOMER PILOT</p>
             <h1 id="landing-title">Clear books for the work <em>behind the numbers.</em></h1>
-            <p className="landing-lede">A focused accounting workspace for finance teams that need a calmer way to review, reconcile, and move the day forward.</p>
+            <p className="landing-lede">TCSI Accounting connects the everyday financial work: prepare entries, follow invoices, reconcile activity, and understand what is ready for close.</p>
             <div className="landing-actions">
               <a className="landing-button landing-button--primary" href="/web/login">Open the accounting workspace <ArrowIcon /></a>
-              <a className="landing-button landing-button--quiet" href="#platform">See the platform <ArrowIcon /></a>
+              <Link className="landing-button landing-button--quiet" href="/platform">See the platform <ArrowIcon /></Link>
             </div>
             <dl className="landing-hero-details">
               <div><dt>Access</dt><dd>Invitation-only pilot</dd></div>
@@ -161,7 +151,7 @@ export function LandingPage() {
           </div>
           <div className="landing-intro-copy">
             <p>TCSI Accounting puts the state of your work in front of you without adding another layer of noise. Start with what needs attention, then follow the evidence through the ledger.</p>
-            <a className="landing-text-link" href="#controls">A clearer way to work <ArrowIcon /></a>
+            <Link className="landing-text-link" href="/controls">A clearer way to work <ArrowIcon /></Link>
           </div>
         </section>
 
@@ -187,13 +177,10 @@ export function LandingPage() {
 
         <section className="landing-cta" id="pilot" aria-labelledby="pilot-title">
           <div><p className="landing-kicker">READY WHEN YOU ARE</p><h2 id="pilot-title">Bring the month-end conversation into one workspace.</h2></div>
-          <div className="landing-cta-action"><p>Your implementation team will provide the credentials for your customer pilot.</p><a className="landing-button landing-button--primary" href="/web/login">Enter the workspace <ArrowIcon /></a></div>
+          <div className="landing-cta-action"><p>See how the product fits your close, review, and reporting workflow before you commit to a rollout.</p><Link className="landing-button landing-button--primary" href="/contact">Request a demo <ArrowIcon /></Link></div>
         </section>
 
-        <footer className="landing-footer">
-          <div className="landing-footer-brand"><TCSIMark compact /><span><strong>Third Code Solutions Inc.</strong><small>Accounting systems, made clearer.</small></span></div>
-          <div className="landing-footer-links"><span>© {new Date().getFullYear()} TCSI</span><a href="https://www.thirdcodesolutions.com" target="_blank" rel="noreferrer">thirdcodesolutions.com <ArrowIcon /></a></div>
-        </footer>
+        <MarketingFooter />
       </div>
     </main>
   );

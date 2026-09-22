@@ -2,15 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getPublicEnv } from "./lib/env";
-import { isPilotPortal } from "./lib/pilot";
+import { isPilotPortal, isPublicPortalApi, isPublicPortalPage } from "./lib/pilot";
 import { isAccountingRoute } from "./lib/accounting-routes";
 
 export async function proxy(request: NextRequest) {
   // The hosted portal must not expose the unfinished standalone ledger.
   if (isPilotPortal()) {
     if (isAccountingRoute(request.nextUrl.pathname)) return NextResponse.next();
-    if (request.nextUrl.pathname === "/") return NextResponse.next();
+    if (isPublicPortalPage(request.nextUrl.pathname)) return NextResponse.next();
     if (request.nextUrl.pathname.startsWith("/api/")) {
+      if (isPublicPortalApi(request.nextUrl.pathname)) return NextResponse.next();
       return NextResponse.json({ error: "Standalone accounting is not released" }, { status: 404 });
     }
     return NextResponse.redirect(new URL("/", request.url));
