@@ -3,6 +3,7 @@ export const accountingRoutePrefixes = [
   "web", "workspace", "odoo", "mail", "bus", "websocket", "report",
   "account", "payment", "portal", "my", "digest", "auth_totp",
   "thirdcode_accounting", "discuss", "hr_expense", "spreadsheet",
+  "website", "web_editor", "html_editor",
 ];
 
 export function isAccountingRoute(pathname: string): boolean {

@@ -45,5 +45,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Engine requests go directly through CDN rewrites, avoiding middleware body
   // buffering for accounting attachments and preserving upgrade requests.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/readiness|(?:web|workspace|odoo|mail|bus|websocket|report|account|payment|portal|my|digest|auth_totp|thirdcode_accounting|discuss|hr_expense|spreadsheet)(?:/|$)|[a-zA-Z0-9_]+/static/|logo\\.png$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/readiness|(?:web|workspace|odoo|mail|bus|websocket|report|account|payment|portal|my|digest|auth_totp|thirdcode_accounting|discuss|hr_expense|spreadsheet|website|web_editor|html_editor)(?:/|$)|[a-zA-Z0-9_]+/static/|logo\\.png$).*)"],
 };

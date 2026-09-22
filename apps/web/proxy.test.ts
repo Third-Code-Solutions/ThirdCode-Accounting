@@ -1,11 +1,22 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { proxy } from "./proxy";
+import { config, proxy } from "./proxy";
+import { unstable_doesMiddlewareMatch, unstable_getResponseFromNextConfig, getRewrittenUrl } from "next/experimental/testing/server";
+import nextConfig from "./next.config";
+import { accountingRoutePrefixes } from "./lib/accounting-routes";
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe("hosted pilot boundary", () => {
+  it.each(accountingRoutePrefixes)("rewrites /%s without middleware buffering or shared caching", async (prefix) => {
+    vi.stubEnv("VERCEL", "1");
+    const url = `https://portal.example/${prefix}/test?lang=en_US`;
+    expect(unstable_doesMiddlewareMatch({ config, url, nextConfig })).toBe(false);
+    const response = await unstable_getResponseFromNextConfig({ url, nextConfig });
+    expect(getRewrittenUrl(response)).toBe(`https://tcsi-accounting-production.up.railway.app/${prefix}/test?lang=en_US`);
+    expect(response.headers.get("x-vercel-enable-rewrite-caching")).toBe("0");
+  });
   it.each(["/web/login", "/web/session/authenticate", "/workspace/action-408", "/report/pdf/test/1", "/mail/data", "/websocket", "/thirdcode_accounting/static/src/img/tcsi-mark.svg"])("passes accounting route %s to the origin rewrite", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`));
