@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import { accountingOrigin, accountingRoutePrefixes } from "./lib/accounting-routes";
+
+const accountingSources = [
+  ...accountingRoutePrefixes.map((prefix) => `/${prefix}/:path*`),
+  "/:addon([a-zA-Z0-9_]+)/static/:path*",
+  "/logo.png",
+];
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -12,7 +19,21 @@ const nextConfig: NextConfig = {
   output: "standalone",
   transpilePackages: ["@tcsi/contracts"],
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      ...accountingSources.map((source) => ({ source, headers: [
+        { key: "x-vercel-enable-rewrite-caching", value: "0" },
+        { key: "Cache-Control", value: "private, no-store" },
+        { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      ] })),
+    ];
+  },
+  async rewrites() {
+    if (process.env.VERCEL !== "1" && process.env.TCSI_PORTAL_ONLY !== "true") return [];
+    return { beforeFiles: accountingSources.map((source) => ({
+      source,
+      destination: `${accountingOrigin}${source.replace("([a-zA-Z0-9_]+)", "")}`,
+    })) };
   },
 };
 

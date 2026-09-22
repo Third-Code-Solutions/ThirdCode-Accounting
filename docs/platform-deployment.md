@@ -12,14 +12,19 @@ Vercel portal -> Railway TCSI Accounting -> dedicated Railway Postgres + filesto
 ```
 
 - Portal: https://tcsi-accounting-portal.vercel.app
-- Pilot: https://tcsi-accounting-production.up.railway.app/web/login
+- Customer login: https://tcsi-accounting-portal.vercel.app/web/login
+- Railway origin (operations/recovery): https://tcsi-accounting-production.up.railway.app/web/login
 - Railway project: `4af92f83-8aa1-4135-9eeb-c6bcf9f7cbc8`, production environment.
 - Vercel team: `pavi-2e9809a4`, project `tcsi-accounting-portal`, root `apps/web`.
 - Supabase project: `zcalwevgunkevwzficvm`.
 
-Set `TCSI_PORTAL_ONLY=true` and `TCSI_PILOT_URL` in Vercel. Portal mode blocks
-all unfinished standalone API routes and redirects non-portal pages to the
-entry page. `/api/readiness` probes Supabase Auth; it does not certify ledger
+Set `TCSI_PORTAL_ONLY=true` in Vercel. The portal links to `/web/login` on its
+own domain. Engine paths use external CDN rewrites to Railway; they bypass
+Next middleware body buffering and shared caching is disabled. Sessions remain
+host-only on the customer domain. The origin still performs authentication and
+authorization. Do not replace these rewrites with a catch-all that exposes the
+unfinished standalone app. Portal mode blocks its API routes and redirects its
+pages to the entry page. `/api/readiness` probes Supabase Auth; it does not certify ledger
 correctness. Do not switch portal mode off for customer use until standalone
 accounting has passed its release gates.
 

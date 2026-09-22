@@ -3,10 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getPublicEnv } from "./lib/env";
 import { isPilotPortal } from "./lib/pilot";
+import { isAccountingRoute } from "./lib/accounting-routes";
 
 export async function proxy(request: NextRequest) {
   // The hosted portal must not expose the unfinished standalone ledger.
   if (isPilotPortal()) {
+    if (isAccountingRoute(request.nextUrl.pathname)) return NextResponse.next();
     if (request.nextUrl.pathname === "/") return NextResponse.next();
     if (request.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Standalone accounting is not released" }, { status: 404 });
@@ -41,5 +43,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/readiness).*)"],
+  // Engine requests go directly through CDN rewrites, avoiding middleware body
+  // buffering for accounting attachments and preserving upgrade requests.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/readiness|(?:web|workspace|odoo|mail|bus|websocket|report|account|payment|portal|my|digest|auth_totp|thirdcode_accounting|discuss|hr_expense|spreadsheet)(?:/|$)|[a-zA-Z0-9_]+/static/|logo\\.png$).*)"],
 };
