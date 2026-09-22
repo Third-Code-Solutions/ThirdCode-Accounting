@@ -1,5 +1,6 @@
 """Start a single-database pilot with secrets supplied by the hosting platform."""
 import configparser
+import ast
 import os
 import pathlib
 import pwd
@@ -77,13 +78,21 @@ def main():
         cursor.execute("SELECT to_regclass('public.ir_module_module')")
         installed = cursor.fetchone()[0] is not None
         if installed:
-            cursor.execute("SELECT state FROM ir_module_module WHERE name = %s", ("thirdcode_accounting",))
+            cursor.execute("SELECT state, latest_version FROM ir_module_module WHERE name = %s", ("thirdcode_accounting",))
             module = cursor.fetchone()
             installed = module is not None and module[0] == "installed"
     connection.close()
     base = ["odoo", "-c", config_path, "-d", database]
     if not installed:
         subprocess.run(base + ["-i", "thirdcode_accounting", "--without-demo=all", "--no-http", "--stop-after-init"], check=True)
+    else:
+        manifest = ast.literal_eval(pathlib.Path("/opt/extra-addons/thirdcode_accounting/__manifest__.py").read_text())
+        deployed_version = tuple(map(int, manifest["version"].split(".")))
+        installed_version = tuple(map(int, (module[1] or "0").split(".")))
+        if installed_version < deployed_version:
+            # Additive schema changes must finish before serving requests with new code.
+            # A failed upgrade prevents readiness; rollback keeps the previous schema.
+            subprocess.run(base + ["-u", "thirdcode_accounting", "--without-demo=all", "--no-http", "--stop-after-init"], check=True)
     # Persist the first-admin marker in the database, so restarts and restores
     # never reset an existing administrator's credentials.
     bootstrap = '''

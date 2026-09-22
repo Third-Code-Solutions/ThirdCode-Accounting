@@ -1,5 +1,39 @@
 # TCSI platform deployment
 
+## ORVEXA local task engine
+
+ORVEXA uses deterministic, allowlisted commands inside the accounting server;
+it does not call an AI provider or require a model. It is not an unrestricted
+natural-language agent. Supported requests are `show overdue invoices`,
+`find "customer or invoice reference"`, `show recent activity`, and
+`draft invoice for "Customer" with 2 x "Product" at 100`. Exact customer and
+product names and a single sales journal are required. Unsupported or compound
+requests are not executed. The UI explains the supported forms.
+
+Draft proposals expire after ten minutes and require an explicit confirmation.
+Execution checks current role, company, record rules and referenced record versions;
+confirmation retries are serialized and cannot create a second invoice. No tool
+posts entries, transfers money, sends invoices or deletes business records.
+Only proposal/activity metadata uses elevated access; accounting CRUD does not.
+The session API is `POST /thirdcode_accounting/orvexa` (JSON-RPC), with a valid
+session CSRF token and authorized `company_id`. Proposal confirmation takes only
+the server-created ID, not client-supplied financial values.
+
+Organization memory records committed invoice, bill and journal-entry changes
+from deployment onward; it is not a retrospective archive or whole-application
+surveillance. Each read rechecks current record access. Own task history persists
+across sessions. Notifications contain invalidation hints only, refresh the open
+panel after 250ms, and use the existing authenticated WebSocket relay. A 15-second
+poll while visible recovers missed notifications. The UI shows snapshot time and
+connection failure; exact one-second freshness is not guaranteed.
+
+Version 18.0.2.6.0 adds two metadata tables. Startup upgrades the custom module
+before accepting traffic when its numeric manifest version exceeds the installed
+version. Take a database/filestore snapshot before this release. On failure, the
+new instance must remain unready; roll back its image without dropping tables.
+Existing financial data is preserved. Local and CI integration tests use disposable
+databases; do not run synthetic write tests against customer books.
+
 ## Hosted pilot (approved deployment architecture)
 
 The customer pilot uses the existing TCSI-branded accounting engine. The new

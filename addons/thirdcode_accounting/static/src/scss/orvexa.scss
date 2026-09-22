@@ -1,0 +1,12 @@
+.tcsi-orvexa-launcher { font-weight: 700; letter-spacing: .04em; }
+.tcsi-orvexa {
+    color: var(--body-color, #241b35);
+    textarea { resize: vertical; min-height: 6rem; }
+    small { display: block; color: #62566f; }
+    li { margin-block: .5rem; overflow-wrap: anywhere; }
+    h3 { font-size: 1.15rem; }
+    h4 { font-size: 1rem; }
+    .tcsi-orvexa-review { display: grid; grid-template-columns: minmax(6rem, 1fr) 2fr; gap: .5rem 1rem; }
+    dt { text-transform: capitalize; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+}
