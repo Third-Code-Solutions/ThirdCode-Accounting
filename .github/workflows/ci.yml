@@ -10,6 +10,38 @@ permissions:
   contents: read
 
 jobs:
+  orvexa-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: ci-disposable-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned accounting runtime
+        run: docker build -f docker/odoo/Dockerfile -t tcsi-orvexa-ci .
+      - name: Install accounting in a disposable database
+        run: >-
+          docker run --rm --network host tcsi-orvexa-ci odoo
+          --db_host=127.0.0.1 --db_user=odoo --db_password=ci-disposable-only
+          -d tcsi_orvexa_ci --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
+          -i thirdcode_accounting --without-demo=all --stop-after-init --no-http --max-cron-threads=0
+      - name: Verify ORVEXA authorization, execution and memory
+        run: >-
+          docker run --rm --network host --entrypoint python3
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          tcsi-orvexa-ci /tcsi-tests/test_orvexa_integration.py
+          --db_host=127.0.0.1 --db_user=odoo --db_password=ci-disposable-only
+          -d tcsi_orvexa_ci --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
+          --no-http --max-cron-threads=0
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
