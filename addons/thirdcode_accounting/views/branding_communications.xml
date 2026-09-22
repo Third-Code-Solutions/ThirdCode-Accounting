@@ -64,18 +64,22 @@
         <xpath expr="//h4[@t-esc]" position="attributes"><attribute name="t-esc">title or 'TCSI Report'</attribute></xpath>
     </template>
     <record id="tcsi_partner_website" model="ir.ui.view">
+        <field name="model">res.partner</field>
         <field name="name">tcsi_partner_website</field><field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml"><xpath expr="//field[@name='website']" position="attributes"><attribute name="placeholder">https://www.thirdcodesolutions.com</attribute></xpath></field>
     </record>
     <record id="tcsi_company_website" model="ir.ui.view">
+        <field name="model">res.company</field>
         <field name="name">tcsi_company_website</field><field name="inherit_id" ref="base.view_company_form"/>
         <field name="arch" type="xml"><xpath expr="//field[@name='website']" position="attributes"><attribute name="placeholder">https://www.thirdcodesolutions.com</attribute></xpath></field>
     </record>
     <record id="tcsi_partner_address_website" model="ir.ui.view">
+        <field name="model">res.partner</field>
         <field name="name">tcsi_partner_address_website</field><field name="inherit_id" ref="base.view_partner_address_form"/>
         <field name="arch" type="xml"><xpath expr="//field[@name='website']" position="attributes"><attribute name="placeholder">https://www.thirdcodesolutions.com</attribute></xpath></field>
     </record>
     <record id="tcsi_settings_labels" model="ir.ui.view">
+        <field name="model">res.config.settings</field>
         <field name="name">tcsi_settings_labels</field><field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
         <field name="arch" type="xml"><xpath expr="//field[@name='web_app_name']" position="attributes"><attribute name="placeholder">TCSI Accounting</attribute></xpath>
                 <xpath expr="//setting[field[@name='web_app_name']]" position="attributes"><attribute name="help">Application name shown when this workspace is installed through the browser.</attribute></xpath>
