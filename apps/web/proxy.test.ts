@@ -41,7 +41,7 @@ describe("hosted pilot boundary", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it.each(["/platform", "/controls", "/pilot", "/contact", "/owner", "/login", "/api/demo-requests", "/api/platform/analytics"])("allows public portal route %s", async (path) => {
+  it.each(["/platform", "/controls", "/pilot", "/contact", "/owner", "/login", "/icon.svg", "/api/demo-requests", "/api/platform/analytics"])("allows public portal route %s", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`));
     expect(response.headers.get("x-middleware-next")).toBe("1");

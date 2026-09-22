@@ -24,6 +24,9 @@ export async function loadPlatformOwnerSummary(): Promise<PlatformOwnerSummary> 
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) {
+    if (userError.name === "AuthSessionMissingError" || /auth session missing/i.test(userError.message)) {
+      return { state: "signed_out", analytics: null, message: "Sign in with the TCSI platform-owner account to continue." };
+    }
     return { state: "unavailable", analytics: null, message: "We could not verify this session. Please sign in again." };
   }
   if (!userData.user) {
