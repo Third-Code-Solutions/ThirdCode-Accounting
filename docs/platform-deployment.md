@@ -2,6 +2,12 @@
 
 ## ORVEXA local task engine
 
+ORVEXA presents supported commands as a chat conversation with inline draft
+review/confirmation. Enter sends a message; Shift+Enter inserts a new line.
+The chat transcript is held only while the dialog is open, not stored in browser
+storage. Existing server-side activity memory and task proposals remain persistent.
+The chatbot interface does not add general language inference or change permissions.
+
 ORVEXA uses deterministic, allowlisted commands inside the accounting server;
 it does not call an AI provider or require a model. It is not an unrestricted
 natural-language agent. Supported requests are `show overdue invoices`,

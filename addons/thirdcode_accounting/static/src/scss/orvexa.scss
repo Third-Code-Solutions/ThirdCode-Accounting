@@ -1,7 +1,15 @@
 .tcsi-orvexa-launcher { font-weight: 700; letter-spacing: .04em; }
 .tcsi-orvexa {
     color: var(--body-color, #241b35);
-    textarea { resize: vertical; min-height: 6rem; }
+    textarea { resize: vertical; min-height: 3rem; }
+    .tcsi-orvexa-transcript { height: clamp(12rem, 40vh, 28rem); overflow-y: auto; padding: .75rem; background: var(--body-bg, #f8f9fa); border: 1px solid var(--border-color, #dee2e6); border-radius: .5rem; margin-bottom: 1rem; }
+    .tcsi-orvexa-message { width: fit-content; max-width: 90%; padding: .75rem 1rem; margin-bottom: .75rem; border: 1px solid var(--border-color, #dee2e6); border-radius: .5rem; overflow-wrap: anywhere; }
+    .tcsi-orvexa-message-assistant { background: var(--body-bg, #fff); }
+    .tcsi-orvexa-message-user { margin-left: auto; background: #edf4fa; color: #203b50; }
+    .tcsi-orvexa-message-text { white-space: pre-wrap; margin: .25rem 0; }
+    .tcsi-orvexa-working { margin: .75rem; }
+    .tcsi-orvexa-memory { border-top: 1px solid var(--border-color, #dee2e6); padding-top: .75rem; }
+    summary { cursor: pointer; font-weight: 600; margin-bottom: .5rem; }
     small { display: block; color: #62566f; }
     li { margin-block: .5rem; overflow-wrap: anywhere; }
     h3 { font-size: 1.15rem; }
@@ -9,4 +17,8 @@
     .tcsi-orvexa-review { display: grid; grid-template-columns: minmax(6rem, 1fr) 2fr; gap: .5rem 1rem; }
     dt { text-transform: capitalize; }
     dd { margin: 0; overflow-wrap: anywhere; }
+}
+@media (max-width: 575px) {
+    .tcsi-orvexa .tcsi-orvexa-message { max-width: 100%; padding: .75rem; }
+    .tcsi-orvexa .tcsi-orvexa-review { grid-template-columns: 1fr; gap: .25rem; }
 }

@@ -1,5 +1,5 @@
 /** @odoo-module **/
-import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useEffect, useRef, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
@@ -13,7 +13,14 @@ export class OrvexaDialog extends Component {
         this.company = useService("company");
         this.bus = useService("bus_service");
         this.input = useRef("input");
-        this.state = useState({ message: "", busy: false, result: null, memory: null, feedError: "", company: this.company.currentCompany.name });
+        this.transcript = useRef("transcript");
+        this.state = useState({ message: "", busy: false, result: null, messages: [], memory: null, feedError: "", company: this.company.currentCompany.name });
+        this.nextMessageId = 0;
+        useEffect(() => {
+            const transcript = this.transcript.el;
+            if (transcript) transcript.scrollTop = transcript.scrollHeight;
+            if (!this.state.busy) this.input.el?.focus();
+        }, () => [this.state.messages.length, this.state.busy]);
         this.companyId = this.company.currentCompany.id;
         this.closed = false;
         this.refreshing = false;
@@ -53,21 +60,42 @@ export class OrvexaDialog extends Component {
     }
     async submit() {
         if (this.state.busy || !this.state.message.trim() || this.state.result?.status === "confirmation_required") return;
-        await this.perform({ message: this.state.message });
+        const message = this.state.message.trim();
+        this.append("user", { message });
+        this.state.message = "";
+        await this.perform({ message });
     }
     async confirm(cancel = false) {
         if (this.state.busy || !this.state.result?.proposal_id) return;
+        this.append("user", { message: cancel ? "Cancel this proposal." : "Confirm: create this draft only." });
         await this.perform({ proposal_id: this.state.result.proposal_id, cancel });
+    }
+    append(role, result) {
+        this.state.messages.push({ id: ++this.nextMessageId, role, result });
+    }
+    onKeydown(event) {
+        if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+            event.preventDefault();
+            this.submit();
+        }
     }
     async perform(params) {
         this.state.busy = true;
         try {
             const result = await this.call(params);
-            if (!this.closed) this.state.result = result;
+            if (!this.closed) {
+                this.state.result = result;
+                this.append("assistant", result);
+            }
             await this.refreshMemory();
         } catch {
             // Keep the proposal for safe retry if the server committed but the response was lost.
-            if (!this.closed) this.state.feedError = "Request interrupted. Completion is unknown. Retry the same confirmation; ORVEXA will not create it twice.";
+            if (!this.closed) {
+                this.append("assistant", { status: "error", message: params.proposal_id
+                    ? "Connection interrupted. Completion is unknown. Retry the same confirmation above; it will not create a second draft."
+                    : "Connection interrupted. I could not retrieve a response. Please send your request again." });
+                if (!params.proposal_id) this.state.message = params.message;
+            }
         } finally { if (!this.closed) this.state.busy = false; }
     }
     example(value) { this.state.message = value; this.input.el.focus(); }

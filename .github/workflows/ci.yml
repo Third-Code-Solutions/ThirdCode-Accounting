@@ -64,6 +64,7 @@ jobs:
       - name: Verify branding regression
         run: |
           node --test scripts/test-branding.mjs
+          node --test scripts/test-orvexa-chat.mjs
           python scripts/test-branding.py
 
       - name: Lint

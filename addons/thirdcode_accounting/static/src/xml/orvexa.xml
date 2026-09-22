@@ -4,48 +4,61 @@
         <button class="btn btn-link tcsi-orvexa-launcher" t-on-click="open" aria-label="Ask ORVEXA">ORVEXA</button>
     </t>
     <t t-name="thirdcode_accounting.OrvexaDialog">
-        <Dialog title="'ORVEXA · Accounting task engine'" size="'lg'">
+        <Dialog title="'ORVEXA · Your accounting assistant'" size="'lg'">
             <div class="tcsi-orvexa">
                 <p><strong t-esc="state.company"/> · Private rule-based execution. No external AI service.</p>
-                <p>Ask for an invoice lookup, overdue invoices, or a draft invoice. Financial changes require your review. Other actions are not automated.</p>
+                <div class="tcsi-orvexa-transcript" t-ref="transcript" role="log" aria-label="Conversation with ORVEXA" aria-live="polite" aria-relevant="additions">
+                    <article class="tcsi-orvexa-message tcsi-orvexa-message-assistant">
+                        <strong>ORVEXA</strong>
+                        <p>Hello! I can look up invoices, show overdue balances and recent activity, or prepare a draft invoice for your review. What would you like to do?</p>
+                        <small>I use supported commands, not a general AI model. Each request should include the details it needs.</small>
+                    </article>
+                    <article t-foreach="state.messages" t-as="message" t-key="message.id" t-att-class="'tcsi-orvexa-message tcsi-orvexa-message-' + message.role">
+                        <strong t-esc="message.role === 'user' ? 'You' : 'ORVEXA'"/>
+                        <t t-set="result" t-value="message.result"/>
+                        <p class="tcsi-orvexa-message-text" t-esc="result.message"/>
+                        <dl t-if="result.review" class="tcsi-orvexa-review">
+                            <t t-foreach="Object.entries(result.review)" t-as="entry" t-key="entry[0]">
+                                <dt t-esc="entry[0].replaceAll('_', ' ')"/><dd t-esc="entry[1]"/>
+                            </t>
+                        </dl>
+                        <div t-if="result.status === 'confirmation_required' &amp;&amp; state.result === result" class="d-flex gap-2 flex-wrap mb-3">
+                            <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="() => this.confirm(false)">Confirm: create draft only</button>
+                            <button class="btn btn-outline-secondary" t-att-disabled="state.busy" t-on-click="() => this.confirm(true)">Cancel proposal</button>
+                        </div>
+                        <a t-if="result.url" t-att-href="result.url">Review invoice</a>
+                        <ul t-if="result.records">
+                            <li t-foreach="result.records" t-as="record" t-key="record.id">
+                                <a t-att-href="record.url" t-esc="record.name"/> · <t t-esc="record.customer"/> · <t t-esc="record.amount_due"/> <t t-esc="record.currency"/> due <t t-esc="record.due || 'date not set'"/>
+                            </li>
+                        </ul>
+                        <p t-if="result.records &amp;&amp; !result.records.length">No matching invoices.</p>
+                        <p t-if="result.has_more">More matches exist. Narrow your search.</p>
+                        <t t-if="result.events">
+                            <p t-esc="result.scope"/>
+                            <ul><li t-foreach="result.events" t-as="event" t-key="event.id"><a t-att-href="event.url" t-esc="event.name"/> · <t t-esc="event.event"/> by <t t-esc="event.by"/> · <t t-esc="event.at"/> UTC</li></ul>
+                            <p t-if="!result.events.length">No recorded activity visible to your role yet.</p>
+                            <small>Snapshot (UTC): <t t-esc="result.as_of"/>. Open Activity memory below for live updates and saved tasks.</small>
+                        </t>
+                    </article>
+                    <p t-if="state.busy" role="status" class="tcsi-orvexa-working">ORVEXA is working…</p>
+                </div>
                 <div class="d-flex gap-2 flex-wrap mb-3">
                     <button class="btn btn-outline-secondary" t-on-click="() => this.example('show overdue invoices')">Overdue invoices</button>
                     <button class="btn btn-outline-secondary" t-on-click="() => this.example('show recent activity')">Recent activity</button>
                 </div>
-                <form t-on-submit.prevent="submit" class="mb-3">
-                    <label for="orvexa-request">What would you like to do?</label>
-                    <textarea id="orvexa-request" t-ref="input" t-model="state.message" class="form-control" rows="3" maxlength="2000" required="required" t-att-disabled="state.busy || state.result?.status === 'confirmation_required'" placeholder="draft invoice for &quot;Customer&quot; with 2 x &quot;Product&quot; at 100"/>
-                    <small>Use exact customer/product names. For searches: find "customer or invoice reference".</small>
-                    <button type="submit" class="btn btn-primary d-block mt-2" t-att-disabled="state.busy || state.result?.status === 'confirmation_required'">
-                        <t t-if="state.busy">Working…</t><t t-else="">Run request</t>
+                <form t-on-submit.prevent="submit" class="tcsi-orvexa-composer mb-3">
+                    <label for="orvexa-request">Message ORVEXA</label>
+                    <textarea id="orvexa-request" t-ref="input" t-model="state.message" t-on-keydown="onKeydown" class="form-control" rows="2" maxlength="2000" required="required" t-att-disabled="state.busy || state.result?.status === 'confirmation_required'" placeholder="e.g. show overdue invoices" aria-describedby="orvexa-help"/>
+                    <small id="orvexa-help">Enter to send · Shift+Enter for a new line. Review or cancel a pending proposal before sending another request.</small>
+                    <button type="submit" class="btn btn-primary d-block mt-2" t-att-disabled="state.busy || !state.message.trim() || state.result?.status === 'confirmation_required'">
+                        <t t-if="state.busy">Working…</t><t t-else="">Send message</t>
                     </button>
                 </form>
                 <div t-if="state.feedError" role="alert" class="alert alert-warning" t-esc="state.feedError"/>
-                <section t-if="state.result" aria-live="polite" t-att-aria-busy="state.busy">
-                    <p class="fw-bold" t-esc="state.result.message"/>
-                    <t t-if="state.result.review">
-                        <dl class="tcsi-orvexa-review">
-                            <t t-foreach="Object.entries(state.result.review)" t-as="entry" t-key="entry[0]">
-                                <dt t-esc="entry[0].replaceAll('_', ' ')"/><dd t-esc="entry[1]"/>
-                            </t>
-                        </dl>
-                    </t>
-                    <div t-if="state.result.status === 'confirmation_required'" class="d-flex gap-2 mb-3">
-                        <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="() => this.confirm(false)">Confirm: create draft only</button>
-                        <button class="btn btn-outline-secondary" t-att-disabled="state.busy" t-on-click="() => this.confirm(true)">Cancel proposal</button>
-                    </div>
-                    <a t-if="state.result.url" t-att-href="state.result.url">Review created draft</a>
-                    <ul t-if="state.result.records">
-                        <li t-foreach="state.result.records" t-as="record" t-key="record.id">
-                            <a t-att-href="record.url" t-esc="record.name"/> · <t t-esc="record.customer"/> · <t t-esc="record.amount_due"/> <t t-esc="record.currency"/> due <t t-esc="record.due || 'date not set'"/>
-                        </li>
-                    </ul>
-                    <p t-if="state.result.records &amp;&amp; !state.result.records.length">No matching invoices.</p>
-                    <p t-if="state.result.has_more">More matches exist. Narrow your search.</p>
-                </section>
-                <hr/>
-                <section aria-label="ORVEXA organization memory">
-                    <h3>Activity memory</h3>
+                <details class="tcsi-orvexa-memory">
+                    <summary>Activity memory and saved tasks</summary>
+                    <small>The chat transcript lasts while this window is open. Activity memory and task proposals are saved by the engine.</small>
                     <p t-if="!state.memory">Loading authorized activity…</p>
                     <t t-if="state.memory">
                         <small>Last checked (UTC): <t t-esc="state.memory.as_of"/>. Event-driven updates; reconnect check every 15 seconds.</small>
@@ -60,7 +73,7 @@
                         <ul><li t-foreach="state.memory.tasks" t-as="task" t-key="task.id">Draft proposal #<t t-esc="task.id"/> · <t t-esc="task.state"/> · <t t-esc="task.at"/> UTC</li></ul>
                         <p t-if="!state.memory.tasks.length">No saved task proposals yet.</p>
                     </t>
-                </section>
+                </details>
             </div>
             <t t-set-slot="footer"><button class="btn btn-secondary" t-on-click="props.close">Close ORVEXA</button></t>
         </Dialog>
