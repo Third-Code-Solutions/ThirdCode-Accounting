@@ -11,6 +11,7 @@ class RecurringJournal(models.Model):
     _description = "Third Code Recurring Journal"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "next_run, id"
+    _check_company_auto = True
 
     name = fields.Char(required=True, tracking=True)
     company_id = fields.Many2one(
@@ -19,6 +20,7 @@ class RecurringJournal(models.Model):
     journal_id = fields.Many2one(
         "account.journal",
         required=True,
+        check_company=True,
         domain="[(\"company_id\", \"=\", company_id)]",
         tracking=True,
     )
@@ -155,6 +157,7 @@ class RecurringJournal(models.Model):
 
     def action_run_now(self):
         self._check_run_access()
+        self.check_access("write")
         for record in self:
             run_date = fields.Date.context_today(record)
             record._run_one(run_date)
@@ -162,6 +165,7 @@ class RecurringJournal(models.Model):
 
     def action_run_due(self):
         self._check_run_access()
+        self.check_access("write")
         today = fields.Date.context_today(self)
         for record in self.filtered(lambda item: item.active):
             runs = 0
@@ -184,12 +188,14 @@ class RecurringJournalLine(models.Model):
     _name = "thirdcode.recurring.journal.line"
     _description = "Third Code Recurring Journal Line"
     _order = "sequence, id"
+    _check_company_auto = True
 
     recurring_id = fields.Many2one("thirdcode.recurring.journal", required=True, ondelete="cascade")
+    company_id = fields.Many2one(related="recurring_id.company_id", store=True, index=True)
     sequence = fields.Integer(default=10)
     name = fields.Char()
-    account_id = fields.Many2one("account.account", required=True)
-    partner_id = fields.Many2one("res.partner")
+    account_id = fields.Many2one("account.account", required=True, check_company=True)
+    partner_id = fields.Many2one("res.partner", check_company=True)
     debit = fields.Monetary(currency_field="currency_id")
     credit = fields.Monetary(currency_field="currency_id")
     currency_id = fields.Many2one(related="recurring_id.company_id.currency_id", store=True)

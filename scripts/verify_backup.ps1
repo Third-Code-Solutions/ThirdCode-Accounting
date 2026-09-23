@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$BackupDirectory
+    [string]$BackupDirectory,
+    [string]$ComposeProjectName = $(if ($env:COMPOSE_PROJECT_NAME) { $env:COMPOSE_PROJECT_NAME } else { 'thirdcode-accounting' })
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,12 +30,12 @@ if (-not (Test-Path -LiteralPath $filestore -PathType Leaf)) { throw "Filestore 
 
 $containerDump = "/tmp/verify-$([Guid]::NewGuid().ToString('N')).dump"
 try {
-    docker compose cp $dump "db:$containerDump"
-    docker compose exec -T db pg_restore -l $containerDump | Out-Null
+    docker compose -p $ComposeProjectName cp $dump "db:$containerDump"
+    docker compose -p $ComposeProjectName exec -T db pg_restore -l $containerDump | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "pg_restore archive listing failed with exit code $LASTEXITCODE" }
 }
 finally {
-    docker compose exec -T db sh -lc "rm -f $containerDump" 2>$null | Out-Null
+    docker compose -p $ComposeProjectName exec -T db sh -lc "rm -f $containerDump" 2>$null | Out-Null
 }
 
 tar -tzf $filestore | Out-Null

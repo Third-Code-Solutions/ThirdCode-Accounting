@@ -5,8 +5,12 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class YearEndClose(models.Model):
     _name = "thirdcode.year.end.close"
     _description = "Third Code Year-end Retained Earnings Close"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "thirdcode.workflow.guard.mixin"]
     _order = "date_end desc, id desc"
+    _check_company_auto = True
+    _workflow_state_field = "state"
+    _workflow_initial_state = "draft"
+    _workflow_protected_fields = frozenset({"state", "move_id"})
 
     name = fields.Char(required=True, copy=False, default="New", tracking=True)
     company_id = fields.Many2one(
@@ -16,11 +20,13 @@ class YearEndClose(models.Model):
     journal_id = fields.Many2one(
         "account.journal",
         required=True,
+        check_company=True,
         domain="[(\"company_id\", \"=\", company_id), (\"type\", \"=\", \"general\")]",
     )
     retained_earnings_account_id = fields.Many2one(
         "account.account",
         required=True,
+        check_company=True,
         domain="[(\"company_ids\", \"in\", [company_id]), (\"account_type\", \"=\", \"equity\")]",
     )
     state = fields.Selection(
@@ -95,6 +101,7 @@ class YearEndClose(models.Model):
 
     def action_prepare(self):
         self._check_thirdcode_access()
+        self.check_access("read")
         for close in self:
             if close.state != "draft":
                 continue
@@ -104,6 +111,7 @@ class YearEndClose(models.Model):
 
     def action_post(self):
         self._check_thirdcode_access()
+        self.check_access("write")
         self._lock_for_posting()
         for close in self:
             if close.state != "draft":
@@ -148,7 +156,7 @@ class YearEndClose(models.Model):
                 }
             )
             move.action_post()
-            close.write({"move_id": move.id, "state": "posted"})
+            close.sudo().write({"move_id": move.id, "state": "posted"})
         return True
 
     def _lock_for_posting(self):
@@ -164,5 +172,23 @@ class YearEndClose(models.Model):
 
     def action_cancel(self):
         self._check_thirdcode_access()
-        self.filtered(lambda close: close.state == "draft").write({"state": "cancelled"})
+        self.check_access("write")
+        self.filtered(lambda close: close.state == "draft").sudo().write(
+            {"state": "cancelled"}
+        )
         return True
+
+    def write(self, vals):
+        editable_fields = {
+            "name",
+            "company_id",
+            "date_end",
+            "journal_id",
+            "retained_earnings_account_id",
+            "notes",
+        }
+        if not self.env.su and editable_fields.intersection(vals) and any(
+            close.state in ("posted", "cancelled") for close in self
+        ):
+            raise UserError(_("A completed year-end close cannot be edited."))
+        return super().write(vals)

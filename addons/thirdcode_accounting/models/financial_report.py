@@ -64,11 +64,15 @@ class FinancialReportWizard(models.TransientModel):
             raise AccessError(
                 _("Encoder users may prepare drafts, but may not run accounting reports.")
             )
+        if self and any(wizard.company_id not in self.env.companies for wizard in self):
+            raise AccessError(_("You may only run reports for an active company."))
 
     @api.model_create_multi
     def create(self, vals_list):
         self._check_report_access()
-        return super().create(vals_list)
+        wizards = super().create(vals_list)
+        wizards._check_report_access()
+        return wizards
 
     def _move_line_domain(self, balance_sheet=False):
         self.ensure_one()

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="rule_period_company" model="ir.rule">
+            <field name="name">Accounting periods: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_accounting_period"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_recurring_journal_company" model="ir.rule">
+            <field name="name">Recurring journals: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_recurring_journal"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_recurring_journal_line_company" model="ir.rule">
+            <field name="name">Recurring journal lines: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_recurring_journal_line"/>
+            <field name="domain_force">[('recurring_id.company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_recurring_invoice_company" model="ir.rule">
+            <field name="name">Recurring invoices: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_recurring_invoice"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_recurring_invoice_line_company" model="ir.rule">
+            <field name="name">Recurring invoice lines: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_recurring_invoice_line"/>
+            <field name="domain_force">[('recurring_id.company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_payment_batch_company" model="ir.rule">
+            <field name="name">Payment batches: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_payment_batch"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_payment_batch_line_company" model="ir.rule">
+            <field name="name">Payment batch lines: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_payment_batch_line"/>
+            <field name="domain_force">[('batch_id.company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_migration_batch_company" model="ir.rule">
+            <field name="name">Migration batches: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_migration_batch"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_migration_row_company" model="ir.rule">
+            <field name="name">Migration rows: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_migration_row"/>
+            <field name="domain_force">[('batch_id.company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_report_sample_company" model="ir.rule">
+            <field name="name">Report samples: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_report_sample"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_tax_profile_company" model="ir.rule">
+            <field name="name">Tax profiles: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_tax_profile"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_bank_reconciliation_company" model="ir.rule">
+            <field name="name">Bank reconciliations: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_bank_reconciliation"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_year_end_close_company" model="ir.rule">
+            <field name="name">Year-end closes: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_year_end_close"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_orvexa_proposal_company" model="ir.rule">
+            <field name="name">ORVEXA proposals: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_orvexa_proposal"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_orvexa_event_company" model="ir.rule">
+            <field name="name">ORVEXA activity: allowed companies</field>
+            <field name="model_id" ref="model_thirdcode_orvexa_event"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+    </data>
+</odoo>

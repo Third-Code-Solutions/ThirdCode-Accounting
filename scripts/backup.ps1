@@ -1,6 +1,7 @@
 param(
     [string]$Database = $(if ($env:ODOO_DB) { $env:ODOO_DB } else { 'thirdcode_accounting' }),
-    [string]$OutputRoot = (Join-Path $PSScriptRoot '..\backups')
+    [string]$OutputRoot = (Join-Path $PSScriptRoot '..\backups'),
+    [string]$ComposeProjectName = $(if ($env:COMPOSE_PROJECT_NAME) { $env:COMPOSE_PROJECT_NAME } else { 'thirdcode-accounting' })
 )
 
 $ErrorActionPreference = 'Stop'
@@ -23,14 +24,14 @@ $containerDump = "/tmp/thirdcode-$stamp.dump"
 $containerFilestore = "/tmp/thirdcode-$stamp-filestore.tar.gz"
 
 try {
-    docker compose exec -T db sh -lc "pg_dump -U odoo -Fc -d $Database > $containerDump"
+    docker compose -p $ComposeProjectName exec -T db sh -lc "pg_dump -U odoo -Fc -d $Database > $containerDump"
     if ($LASTEXITCODE -ne 0) { throw "pg_dump failed with exit code $LASTEXITCODE" }
-    docker compose cp "db:$containerDump" $dumpPath
+    docker compose -p $ComposeProjectName cp "db:$containerDump" $dumpPath
     if ($LASTEXITCODE -ne 0) { throw "Copying the database dump failed with exit code $LASTEXITCODE" }
 
-    docker compose exec -T odoo sh -lc "tar -czf $containerFilestore -C /var/lib/odoo ."
+    docker compose -p $ComposeProjectName exec -T odoo sh -lc "tar -czf $containerFilestore -C /var/lib/odoo ."
     if ($LASTEXITCODE -ne 0) { throw "Filestore archive failed with exit code $LASTEXITCODE" }
-    docker compose cp "odoo:$containerFilestore" $filestorePath
+    docker compose -p $ComposeProjectName cp "odoo:$containerFilestore" $filestorePath
     if ($LASTEXITCODE -ne 0) { throw "Copying the filestore archive failed with exit code $LASTEXITCODE" }
 
     $configPath = Join-Path $PSScriptRoot '..\config\odoo.conf'
@@ -44,7 +45,7 @@ try {
             sha256 = $hash.Hash.ToLowerInvariant()
         }
     }
-    $imageInfo = (docker compose images 2>$null | Out-String).Trim()
+    $imageInfo = (docker compose -p $ComposeProjectName images 2>$null | Out-String).Trim()
     $manifest = [ordered]@{
         format = 'thirdcode-accounting-backup-v1'
         created_at_utc = $stamp
@@ -57,6 +58,6 @@ try {
     Write-Output "Backup created: $backupPath"
 }
 finally {
-    docker compose exec -T db sh -lc "rm -f $containerDump" 2>$null | Out-Null
-    docker compose exec -T odoo sh -lc "rm -f $containerFilestore" 2>$null | Out-Null
+    docker compose -p $ComposeProjectName exec -T db sh -lc "rm -f $containerDump" 2>$null | Out-Null
+    docker compose -p $ComposeProjectName exec -T odoo sh -lc "rm -f $containerFilestore" 2>$null | Out-Null
 }

@@ -1,5 +1,7 @@
 from odoo import models
 
+from .account_move import _RECONCILIATION_METADATA_TOKEN
+
 
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
@@ -8,18 +10,22 @@ class AccountPaymentRegister(models.TransientModel):
         """Allow the native wizard to link a payment to a posted invoice.
 
         Odoo stores that link in ``account.move.matched_payment_ids``.  It is
-        reconciliation metadata, not a journal-line edit, but the accounting
-        immutability guard must receive an explicit context marker before
-        allowing the native wizard to write it.
+        reconciliation metadata, not a journal-line edit. A private in-process
+        token lets the native wizard make this one controlled update without
+        exposing a forgeable RPC context flag.
         """
         return super(
             AccountPaymentRegister,
-            self.with_context(thirdcode_allow_reconciliation_metadata=True),
+            self.with_context(
+                thirdcode_reconciliation_metadata_token=_RECONCILIATION_METADATA_TOKEN
+            ),
         ).action_create_payments()
 
     def _reconcile_payments(self, to_process, edit_mode=False):
         context = dict(self.env.context)
-        context["thirdcode_allow_reconciliation_metadata"] = True
+        context["thirdcode_reconciliation_metadata_token"] = (
+            _RECONCILIATION_METADATA_TOKEN
+        )
         prepared = []
         for values in to_process:
             values = dict(values)

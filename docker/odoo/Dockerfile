@@ -2,6 +2,7 @@ FROM odoo:18.0@sha256:478065867b945579649373aa4cca3b56f7b74daf0522e5fdf85e7d1262
 
 USER root
 
+ARG INSTALL_ODOO_TEST_HELPER=false
 ARG OCA_SERVER_TOOLS_COMMIT=60cd54e5ee8f6538a14266af8a7b3d1da0af08ec
 ARG OCA_SERVER_UX_COMMIT=5a67ed407c07160ee1b4fc74b8d2e6eb5507fa2b
 ARG OCA_REPORTING_ENGINE_COMMIT=7a156caae6558276408854ef26b729331e974361
@@ -47,5 +48,11 @@ COPY addons /opt/extra-addons
 COPY docker/odoo/cloud_start.py /opt/tcsi/cloud_start.py
 
 RUN chown -R odoo:odoo /opt/extra-addons /opt/oca-server-tools /opt/oca-server-ux /opt/oca-reporting-engine /opt/oca-account-financial-reporting /opt/oca-account-reconcile
+
+COPY docker/odoo/test-requirements.txt /tmp/tcsi-odoo-test-requirements.txt
+RUN if [ "$INSTALL_ODOO_TEST_HELPER" = "true" ]; then \
+        python3 -m pip install --disable-pip-version-check --no-cache-dir --no-deps --require-hashes --target /opt/tcsi-test-deps -r /tmp/tcsi-odoo-test-requirements.txt; \
+    fi \
+    && rm -f /tmp/tcsi-odoo-test-requirements.txt
 
 USER odoo

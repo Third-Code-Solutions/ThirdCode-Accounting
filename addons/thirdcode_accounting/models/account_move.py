@@ -1,6 +1,12 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
+from .write_tokens import BANK_STATEMENT_SYNC_TOKEN
+
+
+_RECONCILIATION_METADATA_TOKEN = object()
+_REVERSAL_METADATA_TOKEN = object()
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -104,32 +110,31 @@ class AccountMove(models.Model):
             if field.compute and field.readonly and not field.inverse
         )
         protected_fields = set(vals) - safe_posted_fields
-        payment_metadata_write = (
-            self._name == "account.payment"
-            and self.env.context.get("thirdcode_allow_payment_metadata")
-            and protected_fields <= {
-                "thirdcode_receipt_number",
-                "thirdcode_receipt_issued_at",
-                "thirdcode_payment_instrument",
-                "thirdcode_instrument_reference",
-            }
-        )
         reconciliation_metadata_write = (
             self._name == "account.move"
-            and self.env.context.get("thirdcode_allow_reconciliation_metadata")
+            and self.env.context.get("thirdcode_reconciliation_metadata_token")
+            is _RECONCILIATION_METADATA_TOKEN
             and protected_fields <= {"matched_payment_ids"}
         )
         reversal_metadata_write = (
             self._name == "account.move"
-            and self.env.context.get("thirdcode_allow_reversal_metadata")
+            and self.env.context.get("thirdcode_reversal_metadata_token")
+            is _REVERSAL_METADATA_TOKEN
             and protected_fields <= {"partner_bank_id"}
+        )
+        bank_statement_sync_write = (
+            self.env.context.get("thirdcode_bank_statement_sync_token")
+            is BANK_STATEMENT_SYNC_TOKEN
+            and protected_fields <= {"currency_id", "journal_id", "line_ids", "partner_id"}
+            and all(move.sudo().statement_line_ids for move in self)
         )
         if (
             protected_fields
             and any(move.state == "posted" for move in self)
-            and not payment_metadata_write
+            and not self.env.su
             and not reconciliation_metadata_write
             and not reversal_metadata_write
+            and not bank_statement_sync_write
         ):
             raise UserError(
                 _(
@@ -141,7 +146,7 @@ class AccountMove(models.Model):
     def _reverse_moves(self, default_values_list=None, cancel=False):
         return super(
             AccountMove,
-            self.with_context(thirdcode_allow_reversal_metadata=True),
+            self.with_context(thirdcode_reversal_metadata_token=_REVERSAL_METADATA_TOKEN),
         )._reverse_moves(default_values_list=default_values_list, cancel=cancel)
 
     def unlink(self):

@@ -290,7 +290,31 @@ def main() -> int:
     checks["recurring_invoice"] = ensure_recurring_invoice(odoo, admin, company_id, partner, int(sale["id"]), int(income["id"]))
 
     invoice_id = checks["recurring_invoice"]["move_id"]
+    invoice_before_payment = required_row(
+        odoo.first(
+            "account.move",
+            [("id", "=", invoice_id)],
+            ["amount_total", "amount_residual", "currency_id"],
+        ),
+        "recurring invoice before partial payment",
+    )
+    invoice_total = money(invoice_before_payment["amount_total"])
+    invoice_residual_before = money(invoice_before_payment["amount_residual"])
+    payment_amount = money(invoice_total / Decimal("2"))
+    if payment_amount <= 0 or payment_amount >= invoice_total:
+        raise RuntimeError("The synthetic invoice cannot exercise a partial payment")
     batch = first_or_none(odoo, "thirdcode.payment.batch", [("name", "=", "PB/FULL-SCOPE")], ["id", "state", "line_ids", "total_amount"])
+    expected_residual_before_batch = (
+        invoice_total - payment_amount
+        if batch and batch["state"] == "posted"
+        else invoice_total
+    )
+    if invoice_residual_before != expected_residual_before_batch:
+        raise RuntimeError(
+            "The synthetic invoice has an unexpected balance before the batch check: "
+            f"expected {expected_residual_before_batch}, found {invoice_residual_before}"
+        )
+    invoice_residual_before = invoice_total
     if not batch:
         batch_id = int(admin.call("thirdcode.payment.batch", "create", [{
             "name": "PB/FULL-SCOPE",
@@ -301,21 +325,58 @@ def main() -> int:
             "partner_type": "customer",
             "payment_instrument": "bank_transfer",
             "instrument_reference": "TC-FULL-TRANSFER-001",
-            "line_ids": [[0, 0, {"move_id": invoice_id, "partner_id": partner, "amount": 0.0, "communication": "TC-FULL-PAYMENT"}]],
+            "line_ids": [[0, 0, {"move_id": invoice_id, "partner_id": partner, "amount": float(payment_amount), "communication": "TC-FULL-PAYMENT"}]],
         }]))
         batch = required_row(admin.first("thirdcode.payment.batch", [("id", "=", batch_id)], ["id", "state", "line_ids", "total_amount"]), "payment batch")
     batch_id = int(batch["id"])
     if batch["state"] != "posted":
+        batch_lines = admin.search_read(
+            "thirdcode.payment.batch.line",
+            [("batch_id", "=", batch_id)],
+            ["id", "amount"],
+        )
+        if len(batch_lines) != 1:
+            raise RuntimeError("The synthetic payment batch must contain exactly one line")
+        current_amount = money(batch_lines[0]["amount"])
+        if current_amount == 0:
+            admin.call(
+                "thirdcode.payment.batch.line",
+                "write",
+                [[int(batch_lines[0]["id"])], {"amount": float(payment_amount)}],
+            )
+        elif current_amount != payment_amount:
+            raise RuntimeError(
+                f"The synthetic payment amount changed: expected {payment_amount}, found {current_amount}"
+            )
         admin.call("thirdcode.payment.batch", "action_post", [[batch_id]])
     batch = required_row(admin.first("thirdcode.payment.batch", [("id", "=", batch_id)], ["id", "state", "line_ids", "total_amount"]), "posted payment batch")
     if batch["state"] != "posted":
         raise RuntimeError("Payment batch did not post")
-    line = required_row(admin.first("thirdcode.payment.batch.line", [("batch_id", "=", batch_id)], ["payment_id"]), "payment batch line")
+    line = required_row(admin.first("thirdcode.payment.batch.line", [("batch_id", "=", batch_id)], ["payment_id", "amount"]), "payment batch line")
     payment_id = int(line["payment_id"][0])
-    payment = required_row(admin.first("account.payment", [("id", "=", payment_id)], ["id", "state", "thirdcode_receipt_number", "thirdcode_payment_instrument", "thirdcode_instrument_reference"]), "batch payment")
+    payment = required_row(admin.first("account.payment", [("id", "=", payment_id)], ["id", "state", "amount", "thirdcode_receipt_number", "thirdcode_payment_instrument", "thirdcode_instrument_reference"]), "batch payment")
     if not payment["thirdcode_receipt_number"] or payment["thirdcode_payment_instrument"] != "bank_transfer":
         raise RuntimeError("Posted batch payment did not receive receipt/instrument metadata")
-    checks["payment_batch"] = {"id": batch_id, "payment_id": payment_id, "receipt_number": payment["thirdcode_receipt_number"]}
+    invoice_after_payment = required_row(
+        odoo.first("account.move", [("id", "=", invoice_id)], ["amount_residual"]),
+        "recurring invoice after partial payment",
+    )
+    invoice_residual_after = money(invoice_after_payment["amount_residual"])
+    if money(line["amount"]) != payment_amount or money(payment["amount"]) != payment_amount:
+        raise RuntimeError("The posted payment does not match the independently calculated partial amount")
+    expected_residual_after = invoice_total - payment_amount
+    if invoice_residual_after != expected_residual_after:
+        raise RuntimeError(
+            f"Partial payment residual mismatch: expected {expected_residual_after}, found {invoice_residual_after}"
+        )
+    checks["payment_batch"] = {
+        "id": batch_id,
+        "payment_id": payment_id,
+        "receipt_number": payment["thirdcode_receipt_number"],
+        "partial_amount": str(payment_amount),
+        "invoice_residual_before": str(invoice_residual_before),
+        "invoice_residual_after": str(invoice_residual_after),
+    }
     checks["official_receipt_guarded"] = bool(expect_error(lambda: admin.call("account.payment", "action_print_thirdcode_receipt", [[payment_id]]), "printing without BIR control"))
 
     advance_batch = first_or_none(odoo, "thirdcode.payment.batch", [("name", "=", "PB/FULL-SCOPE-ADVANCE")], ["id", "state"])
@@ -339,7 +400,7 @@ def main() -> int:
     checks["customer_advance"] = {"batch_id": advance_id, "payment_id": int(advance_payment["id"]), "receipt_number": advance_payment["thirdcode_receipt_number"]}
 
     supplier = ensure_partner(odoo, "TC Full Scope Supplier", "TC-FULL-SUPPLIER", False, int(receivable["id"]), int(payable["id"]))
-    approval_batch = first_or_none(odoo, "thirdcode.payment.batch", [("name", "=", "PB/FULL-SCOPE-APPROVAL-REGRESSION")], ["id", "state"])
+    approval_batch = first_or_none(odoo, "thirdcode.payment.batch", [("name", "=", "PB/FULL-SCOPE-APPROVAL-REGRESSION")], ["id", "state", "approved_by", "approved_at"])
     original_approval = {
         "thirdcode_payment_approval_enabled": company["thirdcode_payment_approval_enabled"],
         "thirdcode_payment_approval_threshold": company["thirdcode_payment_approval_threshold"],
@@ -375,29 +436,52 @@ def main() -> int:
         if approval_batch["state"] == "draft":
             admin.call("thirdcode.payment.batch", "action_submit", [[approval_id]])
         approval_batch = required_row(
-            admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state"]),
+            admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state", "approved_by", "approved_at"]),
             "threshold payment batch after submit",
         )
         approval_blocked = False
         if approval_batch["state"] == "pending_approval":
             approval_blocked = bool(expect_error(lambda: admin.call("thirdcode.payment.batch", "action_post", [[approval_id]]), "posting threshold payment before approval"))
+            after_denial = required_row(
+                admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state", "line_ids"]),
+                "threshold batch after denied posting",
+            )
+            if after_denial["state"] != "pending_approval":
+                raise RuntimeError("A denied threshold payment changed batch state")
+            pending_lines = admin.search_read(
+                "thirdcode.payment.batch.line",
+                [("batch_id", "=", approval_id)],
+                ["payment_id"],
+            )
+            if any(line["payment_id"] for line in pending_lines):
+                raise RuntimeError("A denied threshold payment created a native payment")
             admin.call("thirdcode.payment.batch", "action_approve", [[approval_id]])
             approval_batch = required_row(
-                admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state"]),
+                admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state", "approved_by", "approved_at"]),
                 "approved threshold payment batch",
+            )
+        elif approval_batch["state"] in ("approved", "posted"):
+            if not approval_batch["approved_by"] or not approval_batch["approved_at"]:
+                raise RuntimeError("The previously approved threshold batch has no administrator approval evidence")
+        else:
+            raise RuntimeError(
+                f"The threshold batch did not enter its required approval state: {approval_batch['state']}"
             )
         if approval_batch["state"] in ("approved", "draft"):
             admin.call("thirdcode.payment.batch", "action_post", [[approval_id]])
         final_approval = required_row(
-            admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state"]),
+            admin.first("thirdcode.payment.batch", [("id", "=", approval_id)], ["id", "state", "approved_by", "approved_at"]),
             "posted threshold payment batch",
         )
         if final_approval["state"] != "posted":
             raise RuntimeError(f"Threshold payment batch did not post after approval: {final_approval}")
+        if not final_approval["approved_by"] or not final_approval["approved_at"]:
+            raise RuntimeError("The posted threshold payment is missing administrator approval evidence")
         checks["optional_payment_approval"] = {
             "batch_id": approval_id,
             "approval_required": True,
-            "blocked_before_approval": approval_blocked,
+            "blocked_before_approval": approval_blocked if approval_blocked else None,
+            "administrator_approval_recorded": True,
             "state": final_approval["state"],
         }
     finally:
