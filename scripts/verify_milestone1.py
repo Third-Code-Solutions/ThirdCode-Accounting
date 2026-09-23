@@ -957,6 +957,23 @@ def account_partner_balance(
     return sum((money(line["balance"]) for line in lines), Decimal("0"))
 
 
+def account_partner_open_residual(
+    odoo: Odoo, company_id: int, account_id: int, partner_id: int
+) -> Decimal:
+    lines = odoo.search_read(
+        "account.move.line",
+        [
+            ("company_id", "=", company_id),
+            ("parent_state", "=", "posted"),
+            ("account_id", "=", account_id),
+            ("partner_id", "=", partner_id),
+            ("reconciled", "=", False),
+        ],
+        ["amount_residual"],
+    )
+    return sum((money(line["amount_residual"]) for line in lines), Decimal("0"))
+
+
 def configure_audit_rule(odoo: Odoo) -> int:
     model = required_row(
         odoo.first("ir.model", [("model", "=", "account.move")], ["id", "name"]),
@@ -1338,16 +1355,24 @@ def main() -> int:
     customer_control = account_partner_balance(
         odoo, company_id, int(receivable["id"]), customer_id
     )
+    customer_open_residual = account_partner_open_residual(
+        odoo, company_id, int(receivable["id"]), customer_id
+    )
     supplier_control = account_partner_balance(
         odoo, company_id, int(payable["id"]), supplier_id
     )
-    if customer_control != customer_residual:
+    supplier_open_residual = account_partner_open_residual(
+        odoo, company_id, int(payable["id"]), supplier_id
+    )
+    if customer_control != customer_open_residual:
         raise RuntimeError(
-            f"Customer control balance {customer_control} != residual {customer_residual}"
+            "Customer control balance "
+            f"{customer_control} != aggregate open-item residual {customer_open_residual}"
         )
-    if supplier_control != -supplier_residual:
+    if supplier_control != supplier_open_residual:
         raise RuntimeError(
-            f"Supplier control balance {supplier_control} != expected {-supplier_residual}"
+            "Supplier control balance "
+            f"{supplier_control} != aggregate open-item residual {supplier_open_residual}"
         )
 
     role_matrix = run_role_matrix(
@@ -1442,6 +1467,10 @@ def main() -> int:
             "supplier_bill_balanced": True,
             "customer_control_equals_residual": True,
             "supplier_control_equals_residual": True,
+            "customer_control_balance": str(customer_control),
+            "customer_aggregate_open_item_residual": str(customer_open_residual),
+            "supplier_control_balance": str(supplier_control),
+            "supplier_aggregate_open_item_residual": str(supplier_open_residual),
             "role_matrix": role_matrix,
             "fiscalyear_lock_adjusts_backdated_posting": period_lock_blocked,
             "posted_trial_balance_balanced": {

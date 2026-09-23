@@ -1,0 +1,2 @@
+odoo-test-helper==2.1.3 \
+    --hash=sha256:8c40c8a01c7fcb59d8fbfcdbee83412bdaac3e24700f70daefa43ddd4b4146a0

@@ -1,3 +1,4 @@
+from . import workflow_guard
 from . import account_journal
 from . import branding
 from . import account_move

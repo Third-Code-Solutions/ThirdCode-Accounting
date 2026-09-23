@@ -57,7 +57,7 @@
                     <p>Keep every transaction, approval, and report moving in one considered workspace.</p>
                 </div>
                 <div class="tcsi-login-visual" aria-hidden="true">
-                    <div class="tcsi-login-visual-header"><span>Financial control</span><span class="tcsi-login-visual-live"><i></i> Live ledger</span></div>
+                    <div class="tcsi-login-visual-header"><span>Workflow overview</span><span class="tcsi-login-visual-live"><i></i> Illustrative</span></div>
                     <svg viewBox="0 0 420 150" role="presentation">
                         <path class="tcsi-login-grid-line" d="M0 28H420M0 75H420M0 122H420"/>
                         <path class="tcsi-login-chart-fill" d="M0 116C34 110 46 93 76 101S121 115 148 88s44-36 69-17 38 26 60 2 33-44 61-30 42 4 82-18v125H0Z"/>

@@ -5,8 +5,13 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class AccountingPeriod(models.Model):
     _name = "thirdcode.accounting.period"
     _description = "Third Code Accounting Period"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "thirdcode.workflow.guard.mixin"]
     _order = "date_start desc, id desc"
+    _workflow_state_field = "state"
+    _workflow_initial_state = "open"
+    _workflow_protected_fields = frozenset(
+        {"state", "closed_by", "closed_at", "reopened_by", "reopened_at"}
+    )
 
     name = fields.Char(required=True, tracking=True)
     company_id = fields.Many2one(
@@ -69,7 +74,10 @@ class AccountingPeriod(models.Model):
 
     def action_close(self):
         self._check_close_operator()
+        self.check_access("read")
         for period in self:
+            if period.state != "open":
+                raise UserError(_("Only an open period may be closed."))
             draft = self.env["account.move"].search(
                 [
                     ("company_id", "=", period.company_id.id),
@@ -100,6 +108,9 @@ class AccountingPeriod(models.Model):
 
     def action_reopen(self):
         self._check_administrator()
+        self.check_access("read")
+        if any(period.state != "closed" for period in self):
+            raise UserError(_("Only a closed period may be reopened."))
         self.sudo().write(
             {
                 "state": "open",
@@ -108,6 +119,14 @@ class AccountingPeriod(models.Model):
             }
         )
         return True
+
+    def write(self, vals):
+        period_fields = {"name", "company_id", "date_start", "date_end", "close_note"}
+        if not self.env.su and period_fields.intersection(vals) and any(
+            period.state == "closed" for period in self
+        ):
+            raise UserError(_("A closed period cannot be changed. Reopen it first."))
+        return super().write(vals)
 
     @api.model
     def _check_move_post_allowed(self, moves):

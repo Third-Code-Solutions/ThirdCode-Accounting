@@ -9,6 +9,7 @@ class RecurringInvoice(models.Model):
     _description = "Third Code Recurring Invoice or Supplier Bill"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "next_run, id"
+    _check_company_auto = True
 
     name = fields.Char(required=True, copy=False, tracking=True)
     company_id = fields.Many2one(
@@ -20,13 +21,14 @@ class RecurringInvoice(models.Model):
         default="out_invoice",
         tracking=True,
     )
-    partner_id = fields.Many2one("res.partner", required=True, tracking=True)
+    partner_id = fields.Many2one("res.partner", required=True, tracking=True, check_company=True)
     journal_id = fields.Many2one(
         "account.journal",
         required=True,
+        check_company=True,
         domain="[(\"company_id\", \"=\", company_id), (\"type\", \"in\", [\"sale\", \"purchase\"])]",
     )
-    payment_term_id = fields.Many2one("account.payment.term")
+    payment_term_id = fields.Many2one("account.payment.term", check_company=True)
     reference = fields.Char(required=True, copy=False)
     narration = fields.Text()
     date_start = fields.Date(required=True, default=fields.Date.context_today)
@@ -156,12 +158,14 @@ class RecurringInvoice(models.Model):
 
     def action_run_now(self):
         self._check_run_access()
+        self.check_access("write")
         for record in self:
             record._run_one(fields.Date.context_today(record))
         return True
 
     def action_run_due(self):
         self._check_run_access()
+        self.check_access("write")
         today = fields.Date.context_today(self)
         for record in self.filtered(lambda item: item.active):
             runs = 0
@@ -184,13 +188,15 @@ class RecurringInvoiceLine(models.Model):
     _name = "thirdcode.recurring.invoice.line"
     _description = "Third Code Recurring Invoice Line"
     _order = "sequence, id"
+    _check_company_auto = True
 
     recurring_id = fields.Many2one("thirdcode.recurring.invoice", required=True, ondelete="cascade")
+    company_id = fields.Many2one(related="recurring_id.company_id", store=True, index=True)
     sequence = fields.Integer(default=10)
     name = fields.Char()
-    account_id = fields.Many2one("account.account", required=True)
+    account_id = fields.Many2one("account.account", required=True, check_company=True)
     quantity = fields.Float(default=1.0, required=True)
     price_unit = fields.Monetary(currency_field="currency_id", required=True)
-    tax_ids = fields.Many2many("account.tax", string="Taxes")
+    tax_ids = fields.Many2many("account.tax", string="Taxes", check_company=True)
     currency_id = fields.Many2one(related="recurring_id.company_id.currency_id", store=True)
     analytic_distribution = fields.Json()

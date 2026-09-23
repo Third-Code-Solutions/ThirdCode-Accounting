@@ -67,6 +67,27 @@ new instance must remain unready; roll back its image without dropping tables.
 Existing financial data is preserved. Local and CI integration tests use disposable
 databases; do not run synthetic write tests against customer books.
 
+Version 18.0.2.6.1 adds global company-scoped rules for custom accounting
+records and guarded workflow transitions. The selected integration suite and a
+fresh synthetic install passed locally. The upgrade from an existing customer
+database has not been rehearsed; take a paired database/filestore snapshot and
+verify the exact release against a restored disposable copy before customer
+cutover.
+
+Versions 18.0.2.6.2 through 18.0.2.6.6 add active-company fiscal-year date
+defaults for Trial Balance and Journal Ledger, and active-company reconcilable
+account defaults for Open Items and Aged Partner Balance. Selecting neither the
+receivable nor payable-only filter restores all reconcilable accounts for that
+company. Each wizard still enforces the existing active-company report access
+check.
+
+Version 18.0.2.7.2 adds company-scoped rules and guarded workflow transitions for
+accounting records, with regression coverage for financial controls. It also
+retains the app launcher and Sass regression check introduced in 18.0.2.7.1.
+Startup upgrades the custom module when its manifest version exceeds the
+installed version. Take paired database and filestore snapshots before rollout;
+verify startup upgrade, login, accounting access, and health routes afterward.
+
 ## Hosted pilot (approved deployment architecture)
 
 The customer pilot uses the existing TCSI-branded accounting engine. The new
@@ -270,8 +291,12 @@ real client/provider decisions and cannot be invented in code:
   parallel accounting month;
 - production role matrix, named-user acceptance, security review, and go-live
   approval;
-- remaining accounting vertical slices: posting, invoices, payments,
-  reconciliation, recurring jobs, reports, and migration import.
+- approved ten-company topology and repeatable fresh-company/user provisioning;
+- rerun the selected Odoo regression and synthetic full-scope checks against the
+  exact reviewed release image before any customer cutover. Local synthetic
+  invoice, payment, reconciliation, recurring, report, migration, and period
+  workflows have been exercised; client acceptance and customer-host evidence
+  remain separate gates.
 # Customer-facing branding releases
 
 The accounting engine retains its upstream package names, exception identifiers,

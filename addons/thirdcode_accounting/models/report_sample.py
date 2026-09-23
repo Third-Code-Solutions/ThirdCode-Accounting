@@ -5,8 +5,13 @@ from odoo.exceptions import AccessError, UserError
 class ReportSample(models.Model):
     _name = "thirdcode.report.sample"
     _description = "Third Code Client Report Sample Approval"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "thirdcode.workflow.guard.mixin"]
     _order = "sample_type, id"
+    _workflow_state_field = "state"
+    _workflow_initial_state = "pending"
+    _workflow_protected_fields = frozenset(
+        {"state", "approved_by", "approved_at"}
+    )
 
     name = fields.Char(required=True, tracking=True)
     company_id = fields.Many2one(
@@ -42,10 +47,13 @@ class ReportSample(models.Model):
 
     def action_approve(self):
         self._check_approver()
+        self.check_access("write")
         for sample in self:
+            if sample.state == "approved":
+                raise UserError(_("This report sample is already approved."))
             if not sample.source_file or not sample.revision:
                 raise UserError(_("An attached source file and revision are required."))
-            sample.write(
+            sample.sudo().write(
                 {
                     "state": "approved",
                     "approved_by": self.env.user.id,
@@ -56,5 +64,20 @@ class ReportSample(models.Model):
 
     def action_reject(self):
         self._check_approver()
-        self.write({"state": "rejected", "approved_by": False, "approved_at": False})
+        self.check_access("write")
+        if any(sample.state == "rejected" for sample in self):
+            raise UserError(_("Only pending or approved report samples may be rejected."))
+        self.sudo().write(
+            {"state": "rejected", "approved_by": False, "approved_at": False}
+        )
         return True
+
+    def write(self, vals):
+        approved_content = {"company_id", "sample_type", "revision", "source_file", "source_filename"}
+        if not self.env.su and approved_content.intersection(vals) and any(
+            sample.state == "approved" for sample in self
+        ):
+            raise UserError(
+                _("An approved report sample is immutable. Create a new revision instead.")
+            )
+        return super().write(vals)
