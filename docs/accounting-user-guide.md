@@ -1,0 +1,159 @@
+# Accounting system user guide and five-company go-live path
+
+This guide is for the hosted pilot at
+<https://tcsi-accounting-portal.vercel.app/web/login>. The accounting workspace is
+Odoo. The separate portal pages describe the product; they are not another
+ledger. Use a named login for each person. Select the legal company whose books
+you are working on before entering or approving anything.
+
+**Current live state (28 September 2026):** the read-only production preflight
+found only one company visible to the pilot Administrator and Accountant, with
+no chart of accounts, sales/purchase/general/bank journals, current open period,
+configured tax profile, approved document samples, or assigned backup/restore
+owners. Login and server health work, but real posting for five companies is
+not accepted. Do not treat a green `/api/readiness` response as financial
+readiness; it checks only service availability.
+
+## The basic model
+
+- A **company** is one legal set of books. It needs its own approved accounts,
+  journals, tax treatment, opening balances, periods, documents, and reports.
+- A **user** is one employee's login. An Administrator assigns that user to one
+  or more companies and an appropriate role. Creating five logins does **not**
+  create or configure five companies. Giving one employee access to five
+  companies does **not** merge their books.
+- A **journal** groups transactions, such as sales, purchases, bank, cash, or
+  general entries. An **account** is a line in the chart of accounts. A
+  **period** controls when entries may be posted.
+- **Draft** means reviewable and editable. **Posted** means entered into the
+  ledger. Correct posted mistakes by the approved reversal/credit-note flow;
+  do not delete or silently edit the original.
+
+## 1. Set up each company before giving staff posting access
+
+The Administrator and lead Accountant repeat these steps for **each** legal
+company. Keep the approved source documents and owner decision with the
+company's setup record. Do not copy another company's tax, balances, or BIR
+values merely to make a check pass.
+
+1. Create the legal company in Odoo and select it in the company switcher.
+   Confirm legal name, address, currency, fiscal year, and registration details.
+2. Approve and load that company's chart of accounts. Create its sales,
+   purchase, general, and every bank/cash journal, with the correct default
+   accounts and numbering policy. Test that entries and reports stay in the
+   selected company.
+3. In **TCSI Accounting → Controls → Accounting periods**, create the current
+   period and set it open. Keep the preceding period closed when its close is
+   approved. Reopening is an Administrator action with a recorded reason.
+4. In **TCSI Accounting → Controls → Tax profiles**, map approved native VAT
+   and withholding taxes, enter the effective date and accountant owner, and
+   select **Configure** only after reviewing the basis. The software does not
+   choose tax rates for the business.
+5. In the company form's **Third Code Accounting** tab, record the assessed BIR
+   acknowledgement/control number, EIS classification, signatory, numbering
+   owner, retention setting, and backup/restore owners. Use **Validate
+   configuration** to surface missing fields. Official invoice/receipt output
+   remains guarded until required company approvals exist.
+6. In **TCSI Accounting → Controls → Report samples**, attach the approved
+   statement, financial, invoice, receipt, and reconciliation samples with
+   revisions. The Administrator uses **Approve sample** after the actual
+   document review. Then mark the company report approval flag. Generic
+   financial statements remain visibly provisional until this is done.
+7. Decide whether historical MYOB transactions are migrated or retained in a
+   read-only archive. Validate the approved export and mapping before loading.
+   Load opening balances and open items only against the correct company and
+   journals. Reconcile every source count and balance. A real cutover requires
+   an authorized source export and accountant sign-off.
+8. Create a separate named user for each employee. Assign only that employee's
+   approved company list and role: **Administrator** for configuration and
+   restricted approvals, **Accountant** for posting/reconciliation, **Encoder**
+   for draft entry, or **Read-only** for review. Test the login with the user's
+   own account. Do not share the Administrator login.
+9. Run the read-only preflight from an operator workstation as an Administrator
+   who should see all five companies:
+
+   ```powershell
+   python scripts/check_company_readiness.py --url https://tcsi-accounting-production.up.railway.app --database tcsi_pilot --login <administrator-login> --expected-companies 5
+   ```
+
+   The command prompts for the password without displaying it. Every company
+   check must pass. This proves configuration presence, not correctness of
+   source balances or tax/legal approval.
+
+## 2. Daily accounting work
+
+1. **Start:** sign in, select the legal company, and check the open period.
+   If the wrong company appears, stop and have the Administrator fix access.
+2. **Customer billing:** create or find the customer, create a customer invoice
+   in Odoo Accounting, check company, date, terms, account, tax, amounts, and
+   attachment, then save a draft. An Accountant reviews and posts it. Use the
+   guarded invoice print only after that company's document approval is real.
+3. **Customer collections:** register a payment against the posted invoice.
+   Check the bank/cash journal, instrument, reference, date, and amount.
+   Partial payment should leave the correct unpaid balance. Record an advance
+   as an advance and allocate it later; do not invent an invoice to hold it.
+4. **Supplier bills:** create or find the supplier, attach the source bill,
+   enter a draft bill with the proper company, account, tax, and due date, and
+   have an Accountant review and post it. Correct a posted bill through the
+   authorized credit/debit or reversal flow.
+5. **Payables and bulk payments:** use native payment registration for a single
+   bill. For a batch, open **TCSI Accounting → Payment batches**, add lines,
+   select cash/cheque/transfer and references, then **Submit**. If the
+   company's approval threshold applies, an Administrator must **Approve**.
+   An Accountant then uses **Post batch**. Compare the created payments with
+   the source bills and bank evidence.
+6. **Manual journal entries:** enter balanced debits and credits in the right
+   general journal and period. An Accountant posts only after review. The
+   system blocks out-of-balance entries and posting into closed periods.
+7. **Bank/cash reconciliation:** in **TCSI Accounting → Bank reconciliations**,
+   choose the correct journal and dates, attach the paper/PDF statement,
+   record opening/closing balances and outstanding items, then **Compute ledger
+   balance**. Investigate any difference. **Sign off reconciliation** only
+   when the calculated difference is zero and evidence agrees. Reopening is
+   restricted to an Administrator.
+
+## 3. Month-end and year-end
+
+1. Reconcile every bank/cash journal, customer and supplier open items, and
+   control accounts against approved evidence. Review draft entries, failed
+   recurring runs, and unmatched payments.
+2. Use **TCSI Accounting → Financial statements** and native Accounting reports
+   for the trial balance, general ledger, profit and loss, balance sheet,
+   cash movement, aged receivables/payables, and partner statements. Set the
+   company, date range, and **posted** target. Tie totals to the ledger and
+   approved source reports. A PDF with a provisional warning is not an
+   accepted client-format report.
+3. Approve the month, then close its accounting period. After close, changes
+   use the approved exception/reversal procedure. At year-end, the Accountant
+   reviews the retained-earnings account and journal before using **TCSI
+   Accounting → Controls → Year-end retained earnings**.
+4. Check the scheduled paired database **and** filestore backup. The recovery
+   owner restores a recent pair to an isolated target and verifies attachments,
+   reports, and ledger totals. A database-only backup misses Odoo attachments.
+
+## 4. Problems staff may encounter
+
+| Symptom | Meaning and next action |
+| --- | --- |
+| Can sign in but cannot see a company | Administrator must assign the user to the legal company and correct role. A login alone does not grant company access. |
+| Cannot post | Check role, selected company, open period, balanced entry, journal, account, and required tax configuration. Do not disable the guard. |
+| Invoice/receipt print is blocked or marked draft | The company's BIR control or approved sample is absent. Obtain the real approval and value, then configure them. |
+| Payment batch waits for approval | Its amount crossed the configured threshold. The named approver must approve before the Accountant posts. |
+| Reconciliation cannot sign off | The difference is nonzero, statement evidence is missing, or journal/period is wrong. Resolve the underlying mismatch. |
+| Portal says “ready” but books are empty | Portal health means the services answer. Run the company preflight and financial acceptance checks. |
+| System or report unavailable | Record the company, user, time, page, and error; check the Railway origin and backup status. Do not retry a posting blindly until its result is known. |
+
+## 5. Five-company acceptance before real use
+
+Each company must have: its legal setup and approved chart/journals/taxes,
+correct opening balances and open items, current period, accepted document
+samples, named staff and role tests, a reconciled trial balance, one real
+parallel accounting month, bank/report sign-off, and a recent paired restore.
+Also settle the retention, regulatory, license, and support decisions in
+[`decisions-and-blockers.md`](decisions-and-blockers.md) and
+[`cas-control-pack.md`](cas-control-pack.md).
+
+The technical suite has tested ten **synthetic** isolated companies, including
+posted entries, migration batches, attachments, and company-specific reports.
+It does not replace the five companies' actual accounting acceptance. The
+standalone Supabase ledger pages remain unreleased; use the Odoo workspace.
