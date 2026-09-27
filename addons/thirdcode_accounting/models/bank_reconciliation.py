@@ -130,24 +130,29 @@ class BankReconciliation(models.Model):
         for record in self:
             if record.state == "reconciled":
                 raise UserError(_("Reopen a signed-off reconciliation before recomputing it."))
-            journal = record.journal_id
-            account = journal.default_account_id
-            if not account:
-                raise UserError(_("Configure a default account on journal %(journal)s first.", journal=journal.display_name))
-            lines = self.env["account.move.line"].search(
-                [
-                    ("company_id", "=", record.company_id.id),
-                    ("journal_id", "=", journal.id),
-                    ("account_id", "=", account.id),
-                    ("date", ">=", record.date_start),
-                    ("date", "<=", record.date_end),
-                    ("move_id.state", "=", "posted"),
-                ]
-            )
-            record.ledger_balance = record.opening_balance + sum(
-                lines.mapped(lambda line: line.debit - line.credit)
-            )
+            record.ledger_balance = record._posted_ledger_balance()
         return True
+
+    def _posted_ledger_balance(self):
+        self.ensure_one()
+        account = self.journal_id.default_account_id
+        if not account:
+            raise UserError(
+                _(
+                    "Configure a default account on journal %(journal)s first.",
+                    journal=self.journal_id.display_name,
+                )
+            )
+        # Include opening entries and adjustments posted through other journals.
+        lines = self.env["account.move.line"].search(
+            [
+                ("company_id", "=", self.company_id.id),
+                ("account_id", "=", account.id),
+                ("date", "<=", self.date_end),
+                ("parent_state", "=", "posted"),
+            ]
+        )
+        return sum(lines.mapped("balance"))
 
     def action_reconcile(self):
         self._check_operator()
@@ -159,6 +164,12 @@ class BankReconciliation(models.Model):
                 raise UserError(_("Attach the paper/PDF statement before sign-off."))
             if not record.definition and not record.company_id.thirdcode_reconciliation_definition:
                 raise UserError(_("Define the approved monthly reconciliation procedure before sign-off."))
+            if record.currency_id.compare_amounts(
+                record.ledger_balance, record._posted_ledger_balance()
+            ) != 0:
+                raise UserError(
+                    _("The posted bank ledger has changed. Recompute the ledger balance and review the reconciliation before sign-off.")
+                )
             if record.currency_id.compare_amounts(record.difference, 0) != 0:
                 raise UserError(
                     _("The reconciliation difference must be zero before sign-off; current difference is %(difference)s.", difference=record.difference)

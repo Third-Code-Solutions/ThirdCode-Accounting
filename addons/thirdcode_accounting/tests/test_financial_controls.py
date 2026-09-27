@@ -243,6 +243,15 @@ class TestFinancialControls(AccountTestInvoicingCommon):
                 "thirdcode_reconciliation_id": reconciliation.id,
             }
         )
+        reconciliation.action_compute_ledger_balance()
+        reconciliation.write(
+            {
+                "closing_balance": reconciliation.ledger_balance
+                - reconciliation.outstanding_deposits
+                + reconciliation.outstanding_payments
+            }
+        )
+        self.assertEqual(reconciliation.difference, 0)
         reconciliation.action_reconcile()
         self.assertEqual(reconciliation.state, "reconciled")
 
@@ -277,6 +286,41 @@ class TestFinancialControls(AccountTestInvoicingCommon):
                     "thirdcode_reconciliation_id": reconciliation.id,
                 }
             )
+
+    def test_bank_reconciliation_rejects_forged_ledger_balance(self):
+        bank_journal = self.company_data["default_journal_bank"]
+        current_balance = sum(
+            self.env["account.move.line"].search(
+                [
+                    ("company_id", "=", self.company.id),
+                    ("account_id", "=", bank_journal.default_account_id.id),
+                    ("date", "<=", fields.Date.today()),
+                    ("parent_state", "=", "posted"),
+                ]
+            ).mapped("balance")
+        )
+        reconciliation = self.env["thirdcode.bank.reconciliation"].with_user(
+            self.accountant
+        ).create(
+            {
+                "name": "FIN-CONTROL-FORGED-BALANCE",
+                "company_id": self.company.id,
+                "journal_id": bank_journal.id,
+                "statement_reference": "FIN-CONTROL-FORGED-STATEMENT",
+                "date_start": fields.Date.today(),
+                "date_end": fields.Date.today(),
+                "ledger_balance": current_balance + 100,
+                "closing_balance": current_balance + 100,
+                "evidence_file": base64.b64encode(b"synthetic bank statement"),
+                "evidence_filename": "synthetic-statement.txt",
+                "definition": "Synthetic QA procedure.",
+            }
+        )
+
+        self.assertEqual(reconciliation.difference, 0)
+        with self.assertRaises(UserError):
+            reconciliation.action_reconcile()
+        self.assertEqual(reconciliation.state, "draft")
 
     def test_statement_line_sync_updates_posted_move_without_opening_direct_write(self):
         statement_line = self.env["account.bank.statement.line"].with_user(
