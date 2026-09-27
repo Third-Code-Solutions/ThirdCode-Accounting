@@ -47,7 +47,7 @@
                     </div>
                     <div class="tcsi-dashboard-status-meta">
                         <span><t t-esc="state.data.user_name"/> · <t t-esc="state.data.role"/></span>
-                        <span class="tcsi-live-status"><span class="tcsi-live-dot"></span> Ledger synced <time t-esc="this.formatDate(state.data.generated_at.split(' ')[0])"/></span>
+                        <span class="tcsi-live-status"><span class="tcsi-live-dot"></span> Dashboard updated <time t-esc="this.formatTimestamp(state.data.generated_at)"/></span>
                     </div>
                 </section>
 

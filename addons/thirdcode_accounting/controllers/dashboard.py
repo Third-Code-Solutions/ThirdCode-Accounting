@@ -3,7 +3,8 @@
 from datetime import date
 import logging
 
-from odoo import fields, http
+from odoo import _, fields, http
+from odoo.exceptions import AccessError
 from odoo.http import request
 
 
@@ -19,7 +20,12 @@ class TCSIDashboardController(http.Controller):
         auth="user",
         methods=["POST"],
     )
-    def dashboard(self):
+    def dashboard(self, company_id=None):
+        if type(company_id) is not int or company_id not in request.env.user.company_ids.ids:
+            raise AccessError(
+                _("The selected company is not assigned to your account.")
+            )
+        request.update_context(allowed_company_ids=[company_id])
         user = request.env.user
         company = request.env.company
         move_model = request.env["account.move"].with_company(company)

@@ -6,6 +6,62 @@ Odoo. The separate portal pages describe the product; they are not another
 ledger. Use a named login for each person. Select the legal company whose books
 you are working on before entering or approving anything.
 
+## Potential-client demonstration on this workstation
+
+The local demonstration at <http://localhost:8077/web/login> uses a separate
+`tcsi_demo` database and five clearly named fictional companies. It does not
+write to the hosted pilot. Keep the URL on the presenter's workstation and
+screen-share the browser; `localhost` is not a public client link. The named
+presenter and five restricted accountant logins are in
+`D:\thirdcode\accounting-system\private-demo-access\credentials.json`, outside
+the Git checkout. Do not show or send that file to a prospect.
+After a workstation restart, run `./scripts/start_client_demo.ps1` from the
+demo checkout. It starts the existing isolated containers, checks the local
+login endpoint, and reruns the read-only demo acceptance check. Allow several
+minutes for the five named-account and report checks before the client call.
+
+For a sales walkthrough:
+
+1. Sign in as `demo.presenter@example.invalid` using the private credential
+   file. Start on **Overview** for **DEMO | Meridian Design Studio**. Show the
+   current receivables, payables, cash position, and recent entries.
+2. Open the posted customer invoice and supplier bill. The invoice has a
+   partial receipt, so compare its original amount with the unpaid balance.
+3. Open **Payment batches** and the fictional Meridian customer receipt and
+   supplier settlement. Show that the configured threshold required approval
+   before each batch posted, then compare both remaining balances.
+4. Open **Bank reconciliations** and the Meridian example. Open the attached
+   PDF marked fictional; check the bank ledger, statement balance, zero
+   difference, and sign-off. This is a manual reconciliation, not a bank feed.
+   The two batch payments remain pending bank clearing, so the sample bank
+   balance still reflects the fictional opening entry.
+5. In **Controls**, show the open period, configured demo tax disclosure, the
+   recurring monthly service invoice, and the balanced recurring accrual
+   journal. The sample tax profile makes no statutory determination for a
+   real company.
+6. Open **Financial statements**, select a date range and posted entries, and
+   export the balance sheet or profit and loss PDF. The draft-layout warning is
+   deliberate: no client has approved an actual financial report format.
+7. Ask ORVEXA to “show recent activity.” It is a private, rule-based command
+   assistant and identifies its own limits in the chat. It is not a general AI
+   accounting agent.
+8. Switch to the other four fictional companies and show their separate
+   invoice, bill, period, and reports. The five accountant logins each have
+   only their own company assigned. Do not use the presenter login as proof of
+   restricted employee access.
+
+On this workstation, `scripts/seed_client_demo.py` provisions the isolated
+records and `scripts/check_client_demo.py` checks the five companies, named
+accountant isolation, payment, reconciliation, and report totals. The seeder
+requires an explicit `--apply`, a database name containing `demo`, a loopback
+HTTP URL, and a credential file outside the checkout. Re-running it is
+idempotent for accounting records but rotates the demo user passwords in that
+file. Keep the Docker database and Odoo filestore together when backing up or
+resetting this demo. A paired snapshot from 28 September 2026 is stored in
+`private-demo-access` beside the credentials file as
+`tcsi_demo_20260928.dump` and `tcsi_demo_filestore_20260928.tgz`; these files
+are local and outside Git.
+
 **Current live state (28 September 2026):** the read-only production preflight
 found only one company visible to the pilot Administrator and Accountant, with
 no chart of accounts, sales/purchase/general/bank journals, current open period,

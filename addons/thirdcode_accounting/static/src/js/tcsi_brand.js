@@ -132,7 +132,7 @@ const NATIVE_ROUTE_COPY = Object.freeze({
     "bank reconciliation": {
         eyebrow: "LEDGER CONTROLS",
         title: "Bank reconciliation",
-        description: "Clear imported bank activity against the ledger with confidence.",
+        description: "Compare a bank statement with posted ledger activity and sign off the difference.",
     },
     "analytic reporting": {
         eyebrow: "REPORTING",
