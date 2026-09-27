@@ -22,6 +22,10 @@ minutes for the five named-account and report checks before the client call.
 
 For a sales walkthrough:
 
+Use **Dark mode** in the workspace sidebar footer to switch the interface.
+The sign-in page has the same control. The choice is saved in this browser;
+it changes presentation only and does not affect company data or permissions.
+
 1. Sign in as `demo.presenter@example.invalid` using the private credential
    file. Start on **Overview** for **DEMO | Meridian Design Studio**. Show the
    current receivables, payables, cash position, and recent entries.

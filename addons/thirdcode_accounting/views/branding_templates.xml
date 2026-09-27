@@ -71,10 +71,16 @@
         </xpath>
         <xpath expr="//div[hasclass('tcsi-login-brand')]" position="after">
             <div class="tcsi-login-panel-header">
-                <a class="tcsi-login-back" href="/" aria-label="Back to TCSI Accounting home">
-                    <span aria-hidden="true">←</span>
-                    <span>Back to TCSI home</span>
-                </a>
+                <div class="tcsi-login-panel-actions">
+                    <a class="tcsi-login-back" href="/" aria-label="Back to TCSI Accounting home">
+                        <span aria-hidden="true">←</span>
+                        <span>Back to TCSI home</span>
+                    </a>
+                    <button class="tcsi-theme-toggle" type="button" data-tcsi-theme-toggle="" aria-pressed="false">
+                        <span class="tcsi-theme-toggle-icon" aria-hidden="true">◐</span>
+                        <span data-tcsi-theme-label="">Dark mode</span>
+                    </button>
+                </div>
                 <t t-if="request.httprequest.path == '/web/signup'">
                     <span class="tcsi-login-panel-eyebrow">New workspace access</span>
                     <h2>Create your TCSI account</h2>

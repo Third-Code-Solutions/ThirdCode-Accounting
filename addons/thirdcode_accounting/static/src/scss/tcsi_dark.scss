@@ -1,0 +1,527 @@
+// The theme switch is shared by the public sign-in page and the private workspace.
+.tcsi-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 30px;
+    margin-left: auto;
+    padding: 4px 8px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: var(--tcsi-route-muted, var(--tcsi-muted));
+    background: transparent;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.2;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--tcsi-route-ink, var(--tcsi-ink));
+        background: var(--tcsi-route-surface-hover, var(--tcsi-lilac));
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--tcsi-route-accent, var(--tcsi-violet));
+        outline-offset: 2px;
+    }
+}
+
+.tcsi-login-panel-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 20px;
+
+    .tcsi-login-back {
+        margin-bottom: 0;
+    }
+
+    .tcsi-theme-toggle {
+        min-height: 32px;
+        border-color: var(--tcsi-line);
+    }
+}
+
+html[data-tcsi-theme="dark"] {
+    color-scheme: dark;
+    --bs-body-color: #e6edf5;
+    --bs-body-bg: #111923;
+    --bs-secondary-bg: #1b2733;
+    --bs-tertiary-bg: #24313e;
+    --bs-border-color: #344453;
+    --body-color: #e6edf5;
+    --body-bg: #111923;
+    --border-color: #344453;
+}
+
+html[data-tcsi-theme="dark"] body.tcsi-shell-active {
+    --tcsi-paper: #101720;
+    --tcsi-ink: #edf2f8;
+    --tcsi-muted: #aab7c7;
+    --tcsi-line: #344453;
+    --tcsi-lilac: #2a2540;
+    --tcsi-violet: #bca6ff;
+    --tcsi-violet-deep: #d4c5ff;
+    --tcsi-surface-0: #101720;
+    --tcsi-surface-1: #18222d;
+    --tcsi-surface-2: #24313f;
+    --tcsi-border: #344453;
+    --tcsi-border-strong: #485a6c;
+    --tcsi-subtle: #97a7b7;
+    --tcsi-console-page: #101720;
+    --tcsi-console-surface: #18222d;
+    --tcsi-console-surface-soft: #1e2a36;
+    --tcsi-console-ink: #edf2f8;
+    --tcsi-console-text: #d1dbe6;
+    --tcsi-console-muted: #aab7c7;
+    --tcsi-console-subtle: #91a3b5;
+    --tcsi-console-line: #344453;
+    --tcsi-console-line-strong: #485a6c;
+    --tcsi-console-accent: #bca6ff;
+    --tcsi-console-accent-deep: #d4c5ff;
+    --tcsi-console-accent-soft: #302947;
+    --tcsi-ui-page: #101720;
+    --tcsi-ui-surface: #18222d;
+    --tcsi-ui-surface-soft: #1e2a36;
+    --tcsi-ui-surface-tint: #24313f;
+    --tcsi-ui-ink: #edf2f8;
+    --tcsi-ui-muted: #aab7c7;
+    --tcsi-ui-subtle: #91a3b5;
+    --tcsi-ui-line: #344453;
+    --tcsi-ui-line-strong: #485a6c;
+    --tcsi-ui-purple: #bca6ff;
+    --tcsi-ui-purple-deep: #d4c5ff;
+    --tcsi-ui-purple-soft: #302947;
+    --tcsi-rail-bg: #18222d;
+    --tcsi-rail-soft: #24313f;
+    --tcsi-rail-ink: #edf2f8;
+    --tcsi-rail-muted: #aab7c7;
+    --tcsi-rail-line: #344453;
+    --tcsi-rail-accent: #bca6ff;
+    --tcsi-route-page: #101720;
+    --tcsi-route-surface: #18222d;
+    --tcsi-route-surface-soft: #1e2a36;
+    --tcsi-route-surface-hover: #263442;
+    --tcsi-route-ink: #edf2f8;
+    --tcsi-route-text: #d1dbe6;
+    --tcsi-route-muted: #aab7c7;
+    --tcsi-route-subtle: #91a3b5;
+    --tcsi-route-line: #344453;
+    --tcsi-route-line-strong: #485a6c;
+    --tcsi-route-purple: #bca6ff;
+    --tcsi-route-purple-deep: #d4c5ff;
+    --tcsi-route-purple-soft: #302947;
+    --tcsi-route-accent: #7353c4;
+    --tcsi-route-accent-deep: #6343b3;
+    --tcsi-route-accent-soft: #302947;
+    color: var(--tcsi-route-ink);
+    background: var(--tcsi-route-page);
+    color-scheme: dark;
+}
+
+html[data-tcsi-theme="dark"] body.tcsi-shell-active {
+    .o_web_client,
+    .o_action_manager,
+    .o_action,
+    .o_content,
+    .o_view_controller,
+    .o_list_view,
+    .o_form_view,
+    .o_kanban_view,
+    .o_form_sheet_bg,
+    .o-mail-Discuss,
+    .o-mail-Discuss-core,
+    .o-mail-Thread,
+    .o-mail-ChatWindow,
+    .o-mail-Chatter {
+        color: var(--tcsi-route-text);
+        background: var(--tcsi-route-page) !important;
+    }
+
+    .o-mail-Discuss-core,
+    .o-mail-DiscussSidebar,
+    .o-mail-Discuss-threadContainer {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-surface) !important;
+    }
+
+    .o_main_navbar,
+    .tcsi-workspace-sidebar,
+    .o_control_panel,
+    .o_form_sheet,
+    .o_list_renderer,
+    .o_kanban_record,
+    .o_form_statusbar,
+    .o-mail-Chatter,
+    .o-mail-Thread,
+    .modal-content,
+    .dropdown-menu,
+    .o_popover,
+    .o_dialog,
+    .o_search_panel,
+    .o_searchview,
+    .o_cp_searchview,
+    .o_graph_view,
+    .o_pivot_view,
+    .o_calendar_view,
+    .o_activity_view {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .tcsi-workspace-sidebar .tcsi-sidebar-footer,
+    .tcsi-theme-toggle {
+        color: var(--tcsi-route-muted) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .tcsi-theme-toggle:hover,
+    .tcsi-theme-toggle:focus-visible {
+        color: var(--tcsi-route-ink) !important;
+        background: var(--tcsi-route-surface-hover) !important;
+    }
+
+    .o_list_table,
+    .o_list_table thead,
+    .o_list_table thead th,
+    .o_list_table tbody td,
+    .o_list_table tbody th,
+    .o_list_table tfoot,
+    .o_field_x2many_list,
+    .o_field_x2many_list .o_list_renderer {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .o_list_table thead th,
+    .o_list_table tfoot,
+    .o_form_statusbar,
+    .o_control_panel .breadcrumb,
+    .o_group .o_horizontal_separator,
+    .o_notebook .nav-tabs {
+        background: var(--tcsi-route-surface-soft) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .o_list_table tbody tr:hover > *,
+    .o_list_table tbody tr.o_data_row_selected > *,
+    .dropdown-item:hover,
+    .dropdown-item:focus-visible,
+    .o_menu_item:hover {
+        background: var(--tcsi-route-surface-hover) !important;
+    }
+
+    .o_list_table tbody td,
+    .o_list_table tbody th,
+    .o_list_table tbody tr {
+        border-bottom-color: var(--tcsi-route-line) !important;
+    }
+
+    .o_form_label,
+    .text-muted,
+    .o_list_table thead th,
+    .o_field_widget .text-muted,
+    .o_search_panel_label,
+    .o_search_panel_section_header {
+        color: var(--tcsi-route-muted) !important;
+    }
+
+    .o_form_sheet h1,
+    .o_form_sheet h2,
+    .o_horizontal_separator,
+    .modal-title,
+    .dropdown-item,
+    .o_menu_item,
+    .o_searchview_input,
+    .o_breadcrumb,
+    .o_control_panel_breadcrumbs {
+        color: var(--tcsi-route-ink) !important;
+    }
+
+    .form-control,
+    .form-select,
+    .o_input,
+    .o_field_widget input,
+    .o_field_widget textarea,
+    .o_field_widget select,
+    .o_searchview input,
+    .o_searchview_input_container,
+    .btn:not(.btn-primary):not(.btn-danger) {
+        color: var(--tcsi-route-ink) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-color: var(--tcsi-route-line-strong) !important;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: var(--tcsi-route-subtle) !important;
+    }
+
+    .o_action a:not(.btn):not(.nav-link) {
+        color: var(--tcsi-route-purple);
+    }
+
+    &.tcsi-view-form .o_form_view a:not(.btn) {
+        color: var(--tcsi-route-purple) !important;
+    }
+
+    .o_form_uri,
+    .o_form_uri span {
+        color: var(--tcsi-route-purple) !important;
+    }
+
+    .modal-header .btn-close,
+    .o_dialog .btn-close {
+        filter: invert(1) grayscale(1);
+    }
+
+    .btn-primary,
+    .o_form_button_save,
+    .o_cp_buttons .btn-primary {
+        color: #fff !important;
+        background: var(--tcsi-route-accent) !important;
+        border-color: var(--tcsi-route-accent) !important;
+    }
+
+    .badge,
+    .o_tag_badge,
+    .o_field_widget .badge {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-surface-soft) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .tcsi-native-route-header,
+    .tcsi-view-list .o_list_renderer,
+    .tcsi-view-form .o_form_sheet,
+    .tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record {
+        color: var(--tcsi-route-ink) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .tcsi-view-list .o_list_table tbody td,
+    .tcsi-view-list .o_list_table tbody th {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-bottom-color: var(--tcsi-route-line) !important;
+    }
+
+    .o_action:has(> .tcsi-dashboard) {
+        background: var(--tcsi-route-page) !important;
+    }
+}
+
+html[data-tcsi-theme="dark"] body.tcsi-shell-active .tcsi-dashboard {
+    --tcsi-dashboard-page: #101720;
+    --tcsi-dashboard-surface: #18222d;
+    --tcsi-dashboard-ink: #edf2f8;
+    --tcsi-dashboard-muted: #aab7c7;
+    --tcsi-dashboard-subtle: #91a3b5;
+    --tcsi-dashboard-line: #344453;
+    --tcsi-dashboard-accent: #bca6ff;
+    --tcsi-dashboard-accent-deep: #d4c5ff;
+    --tcsi-dashboard-accent-soft: #302947;
+    color: var(--tcsi-dashboard-ink) !important;
+    background: var(--tcsi-dashboard-page) !important;
+
+    .tcsi-dashboard-panel,
+    .tcsi-kpi-card,
+    .tcsi-balance-panel,
+    .tcsi-reporting-window,
+    .tcsi-dashboard-statusbar,
+    .tcsi-icon-button,
+    .tcsi-quick-action {
+        color: var(--tcsi-dashboard-ink) !important;
+        background: var(--tcsi-dashboard-surface) !important;
+        border-color: var(--tcsi-dashboard-line) !important;
+    }
+
+    .tcsi-recent-row:hover,
+    .tcsi-attention-item:hover {
+        background: var(--tcsi-route-surface-hover) !important;
+    }
+
+    .tcsi-kpi-icon-violet,
+    .tcsi-quick-icon-violet,
+    .tcsi-attention-violet,
+    .tcsi-empty-mark {
+        color: #ccbaff !important;
+        background: #302947 !important;
+    }
+
+    .tcsi-kpi-icon-amber,
+    .tcsi-quick-icon-amber,
+    .tcsi-attention-amber {
+        color: #f3c987 !important;
+        background: #3e3125 !important;
+    }
+
+    .tcsi-kpi-icon-teal,
+    .tcsi-quick-icon-teal,
+    .tcsi-empty-mark-success {
+        color: #8cddc2 !important;
+        background: #1f3b37 !important;
+    }
+}
+
+html[data-tcsi-theme="dark"] body.tcsi-shell-active {
+    .o-mail-ChatWindow.tcsi-chat-window,
+    .o-mail-ChatWindow.tcsi-chat-window > .d-flex.flex-column.h-100,
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-Thread,
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-ChatWindow-header,
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-Composer,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-orvexa,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-orvexa-native {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-ChatWindow-header .o-mail-ChatWindow-command,
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-ChatWindow-header .o-mail-ChatWindow-command.o-quick,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-chat-title,
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-Message-body {
+        color: var(--tcsi-route-ink) !important;
+    }
+
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-ChatWindow-command:hover,
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-ChatWindow-command:focus-visible {
+        background: var(--tcsi-route-surface-hover) !important;
+    }
+
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-Message-bubble,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-orvexa-transcript,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-orvexa-message-assistant {
+        color: var(--tcsi-route-text) !important;
+        background: var(--tcsi-route-page) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-Composer-input,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-orvexa textarea {
+        color: var(--tcsi-route-ink) !important;
+        background: var(--tcsi-route-surface-soft) !important;
+        border-color: var(--tcsi-route-line) !important;
+    }
+
+    .o-mail-ChatWindow.tcsi-chat-window .o-mail-Message-date,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-chat-title::after,
+    .o-mail-ChatWindow.tcsi-chat-window .tcsi-orvexa small {
+        color: var(--tcsi-route-muted) !important;
+    }
+
+    .o-mail-ChatWindow.tcsi-chat-window .o-selfAuthored .o-mail-Message-bubble {
+        background: #342b3f !important;
+    }
+
+    .tcsi-app-catalog {
+        --apps-ink: #edf2f8;
+        --apps-muted: #aab7c7;
+        --apps-line: #344453;
+        color: var(--apps-ink);
+        background: var(--tcsi-route-page);
+
+        .tcsi-app-card,
+        .tcsi-apps-detail,
+        select,
+        input {
+            color: var(--apps-ink);
+            background: var(--tcsi-route-surface);
+            border-color: var(--apps-line);
+        }
+    }
+
+    .tcsi-orvexa-message-user {
+        color: #d9eafb;
+        background: #233b4e;
+    }
+
+    .tcsi-orvexa small {
+        color: var(--tcsi-route-muted);
+    }
+}
+
+html[data-tcsi-theme="dark"] .tcsi-login-shell {
+    --tcsi-paper: #101720;
+    --tcsi-ink: #edf2f8;
+    --tcsi-muted: #aab7c7;
+    --tcsi-line: #344453;
+    --tcsi-lilac: #302947;
+    --tcsi-violet: #bca6ff;
+    --tcsi-violet-deep: #d4c5ff;
+    color: var(--tcsi-ink);
+    background: #101720 !important;
+
+    .o_database_list,
+    .o_database_list .card-body,
+    .tcsi-login-brand,
+    .tcsi-login-panel-header,
+    .tcsi-login-footer,
+    .oe_login_form,
+    .oe_signup_form,
+    .oe_reset_password_form {
+        color: var(--tcsi-ink);
+        background: #18222d !important;
+        border-color: var(--tcsi-line) !important;
+    }
+
+    .tcsi-login-brand {
+        background: #1e2936 !important;
+    }
+
+    .tcsi-login-panel-header .tcsi-login-back,
+    .tcsi-theme-toggle,
+    .oe_login_form .form-control,
+    .oe_signup_form .form-control,
+    .oe_reset_password_form .form-control {
+        color: var(--tcsi-ink);
+        background: #1e2936 !important;
+        border-color: #485a6c !important;
+    }
+
+    .tcsi-login-panel-header .tcsi-login-back:hover,
+    .tcsi-theme-toggle:hover {
+        background: #293747 !important;
+    }
+
+    .tcsi-login-visual,
+    .tcsi-login-mark-shell {
+        color: var(--tcsi-ink);
+        background: #263442 !important;
+        border-color: var(--tcsi-line) !important;
+    }
+
+    .tcsi-login-visual svg .tcsi-login-grid-line {
+        stroke: #485a6c;
+    }
+
+    .tcsi-login-chart-fill {
+        fill: #3a3155 !important;
+    }
+
+    .oe_login_buttons .btn-primary {
+        color: #fff !important;
+        background: #7353c4 !important;
+        border-color: #7353c4 !important;
+    }
+
+    .oe_login_buttons .btn-primary:hover,
+    .oe_login_buttons .btn-primary:focus-visible {
+        background: #6242b2 !important;
+        border-color: #6242b2 !important;
+    }
+}
+
+@media (max-width: 430px) {
+    .tcsi-login-panel-actions {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+}
