@@ -1,5 +1,8 @@
 # TCSI Accounting Workspace
 
+For employee workflows and the five-company setup sequence, see
+[`docs/accounting-user-guide.md`](docs/accounting-user-guide.md).
+
 Third Code Solutions Inc. local implementation of the feasible portions of `Accounting_System_PRD_v0.1`
 using Odoo Community 18.0, PostgreSQL 16, pinned OCA modules, and the separate
 `thirdcode_accounting` addon. The repository is a working synthetic-data

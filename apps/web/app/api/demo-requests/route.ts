@@ -17,7 +17,29 @@ export async function POST(request: Request) {
 
   let body: unknown;
   try {
-    body = await request.json();
+    if (!request.body) {
+      throw new SyntaxError("Missing request body");
+    }
+    const reader = request.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let receivedBytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      receivedBytes += value.byteLength;
+      if (receivedBytes > MAX_BODY_BYTES) {
+        await reader.cancel();
+        return NextResponse.json({ error: { code: "payload_too_large", message: "The request is too large." } }, { status: 413 });
+      }
+      chunks.push(value);
+    }
+    const bytes = new Uint8Array(receivedBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    body = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   } catch {
     return NextResponse.json({ error: { code: "invalid_json", message: "Send a valid request." } }, { status: 400 });
   }
