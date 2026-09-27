@@ -8,13 +8,12 @@ import { useState } from "react";
 import { getPublicEnv } from "../lib/env";
 import { getSupabaseBrowserClient } from "../lib/supabase/browser";
 
-type AuthMode = "signin" | "signup" | "reset";
+type AuthMode = "signin" | "reset";
 
-export function LoginForm() {
+export function LoginForm({ pilotPortal }: { pilotPortal: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>("signin");
   const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,9 +36,7 @@ export function LoginForm() {
 
     const result = mode === "signin"
       ? await supabase.auth.signInWithPassword({ email, password })
-      : mode === "signup"
-        ? await supabase.auth.signUp({ email, password, options: { data: { display_name: name } } })
-        : await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/login` });
+      : await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/login` });
 
     setBusy(false);
     if (result.error) {
@@ -49,16 +46,13 @@ export function LoginForm() {
 
     if (mode === "signin") {
       router.push("/dashboard");
-    } else if (mode === "signup") {
-      setMessage("Check your inbox to confirm your TCSI account, then sign in.");
-      setMode("signin");
     } else {
       setMessage("If that email belongs to a TCSI account, a reset link is on its way.");
     }
   };
 
-  const title = mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your workspace access" : "Reset your password";
-  const submitLabel = mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link";
+  const title = mode === "signin" ? "Welcome back" : "Reset your password";
+  const submitLabel = mode === "signin" ? "Sign in" : "Send reset link";
 
   return (
     <main className="auth-page">
@@ -84,7 +78,7 @@ export function LoginForm() {
           <div className="auth-heading">
             <span className="eyebrow">Secure workspace access</span>
             <h2>{title}</h2>
-            <p>{mode === "signin" ? "Sign in with your TCSI workspace credentials." : mode === "signup" ? "Create an account to request workspace access." : "Enter your email and we’ll send a secure reset link."}</p>
+            <p>{mode === "signin" ? pilotPortal ? "Sign in with your assigned TCSI owner credentials. Accounting staff use the customer workspace." : "Sign in with your assigned TCSI workspace credentials." : "Enter your email and we’ll send a secure reset link."}</p>
           </div>
 
           {!configured && (
@@ -92,13 +86,10 @@ export function LoginForm() {
           )}
 
           <form className="auth-form" onSubmit={submit}>
-            {mode === "signup" && (
-              <label className="field-label">Full name<input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" required /></label>
-            )}
             <label className="field-label">Email address<input autoComplete="email" inputMode="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" required /></label>
             {mode !== "reset" && (
               <label className="field-label">Password
-                <span className="password-field"><input autoComplete={mode === "signup" ? "new-password" : "current-password"} type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" minLength={8} required /><button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></span>
+                <span className="password-field"><input autoComplete="current-password" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your password" minLength={8} required /><button type="button" className="password-toggle" aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></span>
               </label>
             )}
             {mode === "signin" && <a className="form-link form-link--right" href="#reset" onClick={(event) => { event.preventDefault(); setMode("reset"); setError(""); }}>Forgot password?</a>}
@@ -109,7 +100,7 @@ export function LoginForm() {
           {message && <p className="form-message form-message--success" role="status"><Check aria-hidden="true" size={16} />{message}</p>}
 
           <div className="auth-switch">
-            {mode === "signin" ? <>New to TCSI? <a href="#signup" onClick={(event) => { event.preventDefault(); setMode("signup"); setError(""); }}>Create an account</a></> : <>Already have access? <a href="#signin" onClick={(event) => { event.preventDefault(); setMode("signin"); setError(""); }}>Return to sign in</a></>}
+            {mode === "signin" ? pilotPortal ? <>Accounting staff? <Link href="/web/login">Open the customer workspace</Link></> : <>Access is assigned by your administrator.</> : <>Already have access? <a href="#signin" onClick={(event) => { event.preventDefault(); setMode("signin"); setError(""); }}>Return to sign in</a></>}
           </div>
           <div className="auth-trust"><LockKeyhole aria-hidden="true" size={15} /><span>Protected workspace · access follows your assigned role</span></div>
         </div>
