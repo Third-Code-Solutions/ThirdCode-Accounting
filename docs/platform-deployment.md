@@ -112,9 +112,27 @@ Next middleware body buffering and shared caching is disabled. Sessions remain
 host-only on the customer domain. The origin still performs authentication and
 authorization. Do not replace these rewrites with a catch-all that exposes the
 unfinished standalone app. Portal mode blocks its API routes and redirects its
-pages to the entry page. `/api/readiness` probes Supabase Auth; it does not certify ledger
-correctness. Do not switch portal mode off for customer use until standalone
-accounting has passed its release gates.
+pages to the entry page. `/api/readiness` probes Supabase Auth and the Odoo
+login endpoint; it detects basic availability but does not certify ledger
+correctness or company setup. Public Supabase signup and workspace
+self-provisioning are disabled for the hosted pilot. Do not switch portal mode
+off for customer use until standalone accounting has passed its release gates.
+
+Before allowing a company to post real entries, run the read-only structural
+preflight as a company Administrator. The password is prompted without echo,
+or supplied through `TCSI_ODOO_PASSWORD` in the operator's process. For a
+five-company installation:
+
+```powershell
+python scripts/check_company_readiness.py --url https://tcsi-accounting-production.up.railway.app --database tcsi_pilot --login <administrator-login> --expected-companies 5
+```
+
+The preflight exits nonzero if the account cannot see all five companies or a
+company lacks its chart, journals, current open period, approved tax profile,
+document controls/samples, or named backup and restore owners. It makes no
+accounting writes. Its `structurally_ready` result is only a configuration
+gate; approved source balances, user isolation, a parallel month, actual
+backup recovery, and client/legal sign-off still require independent evidence.
 
 `/websocket` uses a small same-origin Vercel Function relay because external CDN
 rewrites do not preserve the accounting WebSocket handshake. It forwards only
