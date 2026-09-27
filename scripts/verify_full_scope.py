@@ -565,6 +565,12 @@ def main() -> int:
         recon = required_row(admin.first("thirdcode.bank.reconciliation", [("id", "=", recon_id)], ["id", "state", "difference"]), "bank reconciliation")
     recon_id = int(recon["id"])
     if recon["state"] != "reconciled":
+        admin.call("thirdcode.bank.reconciliation", "action_compute_ledger_balance", [[recon_id]])
+        book_balance = required_row(
+            admin.first("thirdcode.bank.reconciliation", [("id", "=", recon_id)], ["ledger_balance"]),
+            "computed posted bank ledger balance",
+        )["ledger_balance"]
+        admin.call("thirdcode.bank.reconciliation", "write", [[recon_id], {"closing_balance": book_balance}])
         admin.call("thirdcode.bank.reconciliation", "action_reconcile", [[recon_id]])
     recon = required_row(admin.first("thirdcode.bank.reconciliation", [("id", "=", recon_id)], ["state", "difference"]), "reconciled bank record")
     checks["bank_reconciliation"] = {"id": recon_id, "state": recon["state"], "difference": str(money(recon["difference"]))}
