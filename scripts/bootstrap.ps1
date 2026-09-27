@@ -1,8 +1,11 @@
 param(
-    [string]$Database = $(if ($env:ODOO_DB) { $env:ODOO_DB } else { 'thirdcode_accounting' })
+    [string]$Database = $(if ($env:ODOO_DB) { $env:ODOO_DB } else { 'thirdcode_accounting' }),
+    [ValidateRange(1, 65535)]
+    [int]$Port = $(if ($env:ODOO_PORT) { [int]$env:ODOO_PORT } else { 8069 })
 )
 
 $ErrorActionPreference = 'Stop'
+$env:ODOO_PORT = [string]$Port
 
 docker compose up -d db
 $deadline = (Get-Date).AddSeconds(60)
@@ -31,9 +34,9 @@ $deadline = (Get-Date).AddSeconds(60)
 do {
     Start-Sleep -Seconds 2
     try {
-        $response = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8069/web/login' -TimeoutSec 5
+        $response = Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:$Port/web/login" -TimeoutSec 5
         if ($response.StatusCode -eq 200) {
-            Write-Output "Odoo is available at http://localhost:8069/web/login using database '$Database'."
+            Write-Output "Odoo is available at http://localhost:$Port/web/login using database '$Database'."
             exit 0
         }
     } catch {

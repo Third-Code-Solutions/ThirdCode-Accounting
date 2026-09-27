@@ -12,6 +12,7 @@ class TCSIDashboard extends Component {
 
     setup() {
         this.action = useService("action");
+        this.company = useService("company");
         this.state = useState({
             loading: true,
             error: false,
@@ -24,7 +25,9 @@ class TCSIDashboard extends Component {
         this.state.loading = true;
         this.state.error = false;
         try {
-            this.state.data = await rpc("/thirdcode_accounting/dashboard", {});
+            this.state.data = await rpc("/thirdcode_accounting/dashboard", {
+                company_id: this.company.currentCompany.id,
+            });
         } catch (error) {
             console.error("TCSI dashboard failed to load", error);
             this.state.error = true;
@@ -51,6 +54,19 @@ class TCSIDashboard extends Component {
             day: "numeric",
             year: "numeric",
         }).format(new Date(`${value}T00:00:00`));
+    }
+
+    formatTimestamp(value) {
+        if (!value) {
+            return "just now";
+        }
+        return new Intl.DateTimeFormat(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+        }).format(new Date(`${value.replace(" ", "T")}Z`));
     }
 
     chartHeight(value) {

@@ -22,7 +22,7 @@
         <field name="arch" type="xml">
             <form string="Manual bank reconciliation">
                 <header>
-                    <button name="action_compute_ledger_balance" type="object" string="Compute ledger balance" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+                    <button name="action_compute_ledger_balance" type="object" string="Compute ledger balance" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator" invisible="state == 'reconciled'"/>
                     <button name="action_reconcile" type="object" string="Sign off reconciliation" class="oe_highlight" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator" invisible="state == 'reconciled'"/>
                     <button name="action_reopen" type="object" string="Reopen" groups="thirdcode_accounting.group_thirdcode_administrator" invisible="state != 'reconciled'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,reconciled"/>
@@ -30,30 +30,30 @@
                 <sheet>
                     <group col="2" class="tcsi-form-sections">
                         <group string="Reconciliation details" class="tcsi-form-section">
-                            <field name="name"/>
-                            <field name="company_id"/>
-                            <field name="journal_id"/>
-                            <field name="statement_reference"/>
-                            <field name="date_start"/>
-                            <field name="date_end"/>
-                            <field name="owner_id"/>
+                            <field name="name" readonly="state == 'reconciled'"/>
+                            <field name="company_id" readonly="state == 'reconciled'"/>
+                            <field name="journal_id" readonly="state == 'reconciled'"/>
+                            <field name="statement_reference" readonly="state == 'reconciled'"/>
+                            <field name="date_start" readonly="state == 'reconciled'"/>
+                            <field name="date_end" readonly="state == 'reconciled'"/>
+                            <field name="owner_id" readonly="state == 'reconciled'"/>
                         </group>
                         <group string="Balances" class="tcsi-form-section">
-                            <field name="opening_balance"/>
-                            <field name="closing_balance"/>
+                            <field name="opening_balance" readonly="state == 'reconciled'"/>
+                            <field name="closing_balance" readonly="state == 'reconciled'"/>
                             <field name="ledger_balance" readonly="1"/>
-                            <field name="outstanding_deposits"/>
-                            <field name="outstanding_payments"/>
+                            <field name="outstanding_deposits" readonly="state == 'reconciled'"/>
+                            <field name="outstanding_payments" readonly="state == 'reconciled'"/>
                             <field name="expected_bank_balance" readonly="1"/>
                             <field name="difference" readonly="1"/>
                         </group>
                         <group string="Paper/PDF evidence" class="tcsi-form-section tcsi-form-section-wide">
-                            <field name="evidence_filename"/>
-                            <field name="evidence_file" filename="evidence_filename"/>
-                            <field name="definition"/>
+                            <field name="evidence_filename" readonly="state == 'reconciled'"/>
+                            <field name="evidence_file" filename="evidence_filename" readonly="state == 'reconciled'"/>
+                            <field name="definition" readonly="state == 'reconciled'"/>
                         </group>
                     </group>
-                    <field name="bank_statement_line_ids">
+                    <field name="bank_statement_line_ids" readonly="state == 'reconciled'">
                         <list editable="bottom">
                             <field name="date"/>
                             <field name="payment_ref"/>

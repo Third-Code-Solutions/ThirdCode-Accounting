@@ -2,6 +2,7 @@
 
 import { router } from "@web/core/browser/router";
 import { registry } from "@web/core/registry";
+import { syncThemeButtons } from "./tcsi_theme";
 
 const TCSI_WEB_PREFIX = "/workspace";
 const INTERNAL_WEB_PREFIX = "/odoo";
@@ -132,7 +133,7 @@ const NATIVE_ROUTE_COPY = Object.freeze({
     "bank reconciliation": {
         eyebrow: "LEDGER CONTROLS",
         title: "Bank reconciliation",
-        description: "Clear imported bank activity against the ledger with confidence.",
+        description: "Compare a bank statement with posted ledger activity and sign off the difference.",
     },
     "analytic reporting": {
         eyebrow: "REPORTING",
@@ -1001,6 +1002,10 @@ function mountWorkspaceNavigation(env) {
         <div class="tcsi-sidebar-footer">
             <span class="tcsi-sidebar-status-dot" aria-hidden="true"></span>
             <span class="tcsi-sidebar-link-label">Workspace ready</span>
+            <button class="tcsi-theme-toggle" type="button" data-tcsi-theme-toggle aria-pressed="false">
+                <span class="tcsi-theme-toggle-icon" aria-hidden="true">◐</span>
+                <span data-tcsi-theme-label>Dark mode</span>
+            </button>
         </div>
     `;
 
@@ -1069,6 +1074,7 @@ function mountWorkspaceNavigation(env) {
 
     document.body.prepend(sidebar);
     document.body.classList.add("tcsi-shell-active");
+    syncThemeButtons();
     renderSidebar(sidebar, menuService);
 }
 

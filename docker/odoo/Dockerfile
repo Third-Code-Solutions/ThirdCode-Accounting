@@ -44,10 +44,8 @@ RUN apt-get update \
     && cp -a /opt/oca-account-reconcile/account_reconcile_oca /opt/extra-addons/account_reconcile_oca \
     && cp -a /opt/oca-account-reconcile/account_statement_reconcile_status /opt/extra-addons/account_statement_reconcile_status
 
-COPY addons /opt/extra-addons
+COPY --chown=odoo:odoo addons /opt/extra-addons
 COPY docker/odoo/cloud_start.py /opt/tcsi/cloud_start.py
-
-RUN chown -R odoo:odoo /opt/extra-addons /opt/oca-server-tools /opt/oca-server-ux /opt/oca-reporting-engine /opt/oca-account-financial-reporting /opt/oca-account-reconcile
 
 COPY docker/odoo/test-requirements.txt /tmp/tcsi-odoo-test-requirements.txt
 RUN if [ "$INSTALL_ODOO_TEST_HELPER" = "true" ]; then \
