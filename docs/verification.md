@@ -1,5 +1,26 @@
 # Full local verification
 
+## 28 September 2026 isolated pilot checks
+
+These checks used the `ThirdCode-Accounting-pilot-release` checkout and synthetic
+databases. They did not alter the hosted `tcsi_pilot` ledger.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Client demo restart and accounting acceptance | **PASSED** | `scripts/start_client_demo.ps1` started the isolated `tcsi_demo` containers; `check_client_demo.py` passed for five fictional companies, ten or more posted documents, five restricted accountant logins, payment batches, recurring entries, bank reconciliation, and 15 financial reports. The fixture date was 28 September 2026. |
+| Saved fixture date regression | **PASSED** | `python scripts/test_check_client_demo.py`: two tests passed; saved demo data does not expire merely because the workstation date advances. |
+| Addon package | **PASSED** | `python scripts/validate-odoo-package.py`: 47 resources validated. |
+| Fresh Odoo installation and full addon suite | **PASSED** | Isolated `tcsi_readiness_20260928` database on PostgreSQL 16 / Odoo 18: 33 post-install tests, zero failures or errors. |
+| Employee expense through reimbursement | **PASSED** | Native expense submitted, approved by its assigned expense manager, posted by Accountant, and paid through the bank journal; an unassigned Accountant was denied approval. The test uses synthetic data and does not approve a company reimbursement policy. |
+| Hosted company configuration preflight | **BLOCKED** | Read-only preflight of `tcsi_pilot` found one visible company, no chart accounts or required journals, no open period or tax profile, and no approved samples or assigned control/backup owners. Portal and Odoo service health do not prove financial readiness. |
+| Hosted company legal identity | **BLOCKED** | The live company has no country or legal identifier recorded and currently uses USD. The intended country, book currency, and registration details require company approval before any live change. |
+| Production backup schedules | **PASSED** | Railway lists daily six-day backup schedules for both the PostgreSQL and Odoo filestore volumes; current database and prior-day filestore snapshots exist. |
+| Fresh paired Railway snapshot | **BLOCKED** | Railway rejected creation of a new database volume snapshot with `Plan limit of 10 backups per volume exceeded`; no new volume snapshot was created and existing backups were left intact. |
+| Fresh paired logical backup and isolated restore | **PASSED** | A PostgreSQL custom dump and Odoo filestore archive were copied from the live container into `private-pilot-access/bookkeeping-prep-20260928` outside Git with a private hash manifest. Remote and local SHA-256 hashes matched. PostgreSQL 18 restored the dump in a disposable container with no network; it contained one company, zero posted moves, and addon version `18.0.2.7.4`. Every one of its 558 stored attachment references appeared in the 883-entry filestore archive. The disposable restore container was stopped and removed. |
+| Temporary backup cleanup | **BLOCKED** | Automatic command review refused deletion of two temporary `/tmp/tcsi-bookkeeping-20260928-*` files on the live container and the revoked temporary SSH key files on this workstation. The Railway SSH key registration was removed and confirmed absent; no live access remains through that key. |
+
+## 21 September 2026 local baseline
+
 Last verified: 21 September 2026 in the local workspace. All records used by
 these checks are synthetic. This document distinguishes implementation evidence
 from client acceptance, production operations, and regulatory approval.

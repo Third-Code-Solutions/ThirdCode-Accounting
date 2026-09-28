@@ -66,6 +66,12 @@ jobs:
       - name: Validate accounting deployment package
         run: python scripts/validate-odoo-package.py
 
+      - name: Check saved client demo validation
+        run: python scripts/test_check_client_demo.py
+
+      - name: Check live company readiness validation
+        run: python scripts/test_check_company_readiness.py
+
       - name: Verify branding regression
         run: |
           node --test scripts/test-branding.mjs

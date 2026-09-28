@@ -20,6 +20,17 @@ def check(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
+def confirm_fixture_date(expected: date | None, value: str | bool, label: str) -> date:
+    check(isinstance(value, str) and bool(value), f"{label} has no invoice date")
+    try:
+        posted_date = date.fromisoformat(value)
+    except ValueError as error:
+        raise RuntimeError(f"{label} has an invalid invoice date") from error
+    check(expected is None or posted_date == expected,
+          f"{label} is dated differently from the demo fixture")
+    return posted_date
+
+
 def dashboard(account: dict[str, str], origin: str, database: str,
               company_id: int) -> dict:
     opener = build_opener(HTTPCookieProcessor(CookieJar()))
@@ -54,7 +65,7 @@ def main() -> int:
     admin = Odoo(origin, database, presenter["login"], presenter["password"])
     signup_scope = admin.call("ir.config_parameter", "get_param", ["auth_signup.invitation_scope"])
     check(signup_scope == "b2b", "Public self-signup is enabled")
-    today = date.today().isoformat()
+    demo_date: date | None = None
     company_ids: list[int] = []
     for index, name in enumerate(COMPANIES, start=1):
         company = required(admin.first("res.company", [("name", "=", name)], ["id", "currency_id"]),
@@ -77,8 +88,9 @@ def main() -> int:
                 ["id", "state", "move_type", "amount_total", "invoice_date"], company_id),
                 f"{name} {kind}")
             check(move["state"] == "posted" and move["move_type"] == move_type and
-                  abs(move["amount_total"] - amount) < 0.01 and
-                  move["invoice_date"] == today, f"{name} {kind} is not a current posted document")
+                  abs(move["amount_total"] - amount) < 0.01 and move["invoice_date"],
+                  f"{name} {kind} is not a dated posted document")
+            demo_date = confirm_fixture_date(demo_date, move["invoice_date"], f"{name} {kind}")
         tax = required(admin.first("thirdcode.tax.profile", [
             ("company_id", "=", company_id),
             ("name", "=", "DEMO ONLY | No statutory tax determination")],
@@ -86,6 +98,8 @@ def main() -> int:
         check(tax["status"] == "configured", f"{name} tax disclosure not configured")
 
     check(len(set(company_ids)) == 5, "The five demo company records are not distinct")
+    check(demo_date is not None, "The demo has no dated posted documents")
+    fixture_date = demo_date.isoformat()
     for index, company_id in enumerate(company_ids, start=1):
         selected = dashboard(presenter, origin, database, company_id)
         result = selected.get("result", {})
@@ -133,16 +147,16 @@ def main() -> int:
         ("company_id", "=", company_ids[0]),
         ("reference", "=", "DEMO-01-MONTHLY-SERVICE")],
         ["id", "last_run", "generated_move_ids"], company_ids[0]), "Meridian recurring invoice")
-    check(recurring["last_run"] == today and len(recurring["generated_move_ids"]) == 1,
-          "The recurring invoice did not generate exactly one current invoice")
+    check(recurring["last_run"] == fixture_date and len(recurring["generated_move_ids"]) == 1,
+          "The recurring invoice did not generate exactly one fixture invoice")
     recurring_journal = required(admin.first("thirdcode.recurring.journal", [
         ("company_id", "=", company_ids[0]),
         ("reference", "=", "DEMO-01-MONTHLY-ACCRUAL")],
         ["id", "last_run", "generated_move_ids"], company_ids[0]),
         "Meridian recurring journal")
-    check(recurring_journal["last_run"] == today and
+    check(recurring_journal["last_run"] == fixture_date and
           len(recurring_journal["generated_move_ids"]) == 1,
-          "The recurring journal did not generate exactly one current entry")
+          "The recurring journal did not generate exactly one fixture entry")
     reconciliation = required(admin.first("thirdcode.bank.reconciliation", [
         ("company_id", "=", company_ids[0]),
         ("name", "=", "DEMO | Meridian bank reconciliation")],
@@ -158,7 +172,7 @@ def main() -> int:
         for report_type in ("balance_sheet", "profit_loss", "cash_flow"):
             wizard_id = admin.call("thirdcode.financial.report.wizard", "create", [{
                 "company_id": company_id, "report_type": report_type,
-                "date_from": f"{date.today().year}-01-01", "date_to": today,
+                "date_from": f"{demo_date.year}-01-01", "date_to": fixture_date,
                 "target_move": "posted",
             }], company_id)
             report = admin.call("thirdcode.financial.report.wizard", "get_report_data",
@@ -195,7 +209,8 @@ def main() -> int:
         check("error" in other_dashboard and "result" not in other_dashboard,
               f"Accountant {index} dashboard exposed another company's data")
 
-    print(json.dumps({"status": "passed", "companies": len(company_ids),
+    print(json.dumps({"status": "passed", "fixture_date": fixture_date,
+                      "companies": len(company_ids),
                       "posted_documents_minimum": 10, "restricted_accountants": 5,
                       "approved_customer_and_supplier_payments": True,
                       "recurring_invoice": True, "recurring_journal": True,
