@@ -131,14 +131,27 @@ section 5 of the user guide.
 | Platform owner bootstrap | **PASSED** | `scripts/bootstrap-platform-owner.mjs` created a probe owner, verified password sign-in through Supabase Auth, and `/api/platform/analytics` returned 200 with a real session through the deployed portal; `/owner` rendered the analytics view; probe user and assignment removed afterwards |
 | Engine availability | **PASSED** | Odoo 18.0 engine answers `/web/login` (200) and `/web/webclient/version_info` reports `18.0-20260908` |
 
+### Team readiness verification — 2 October 2026 (evening)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Production role accounts | **PASSED** | All four named logins (`administrator@`, `accountant@`, `encoder@`, `readonly@tcsi.local`) authenticate against the hosted engine (uids 6–9), both directly and through the portal origin, each holding the correct TCSI role group and the Third Code Solutions Inc. company assignment |
+| Company currency | **PASSED** | PHP activated through the pilot Administrator session; the hosted company previously defaulted to USD with no country set |
+| Company baseline automation | **READY** | `scripts/configure_company_setup.py` (idempotent country/currency/chart/journals/period provisioning over the engine API) added; execution requires the engine administrator login (`pilot-admin@thirdcodesolutions.com`, the Railway `TCSI_ADMIN_*` account), which this workspace does not hold |
+| Portal set-password flow | **PASSED (deployed)** | `/auth/confirm` token-hash route deployed at commit `f01e92e` (invalid tokens redirect to `/login?state=link_invalid`; verified live); `/login?mode=update` and `/login?state=link_invalid` return 200; recovery and invite email templates updated to the `{{ .TokenHash }}` pattern (verified through the Management API) |
+| Platform-owner account | **PASSED (created)** | Auth user created for the approved owner address through the GoTrue admin API without a password; `platform_owner_access` points at it (exactly one row). The first set-password email is pending the project email sender's rate-limit window; afterwards `/login` → `/owner` serves the cross-tenant analytics console |
+
 Still open after this verification:
 
-- The hosted engine database remains in the pilot state described in the user
-  guide (companies need their approved chart of accounts, journals, periods,
-  tax profiles, and users). Five-company provisioning and acceptance require
-  the Railway administrator credentials, which were not available in this
-  workspace; use section 1 of the user guide and
-  `scripts/check_company_readiness.py`.
-- No production platform-owner account has been assigned yet. Run
-  `node scripts/bootstrap-platform-owner.mjs --email <approved-address>` with
-  the owner's own password prompt to enable `/login` and `/owner`.
+- The hosted engine company still needs its chart of accounts, journals, and
+  open period — now one reviewed, idempotent command
+  (`scripts/configure_company_setup.py`) to be run once the engine
+  administrator credentials (`pilot-admin@thirdcodesolutions.com` / the Railway
+  `TCSI_ADMIN_*` values) are supplied. Tax profiles, BIR values, and
+  report-sample approvals remain accountant-owned and must not be invented.
+  Then run `scripts/check_company_readiness.py` and section 1 of the user
+  guide for acceptance.
+- The first set-password email for the owner address is queued behind the
+  project email sender's rate limit. Either wait for the window to clear and
+  press "Forgot password?" on the live `/login`, or re-run
+  `node scripts/bootstrap-platform-owner.mjs --email <approved-address> --send-recovery`.
