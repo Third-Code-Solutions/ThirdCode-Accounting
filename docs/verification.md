@@ -102,3 +102,43 @@ restore, MYOB migration, report sign-off, regulatory registration, parallel
 run, and cutover require the client-owned gates in
 [`docs/decisions-and-blockers.md`](decisions-and-blockers.md) and
 [`docs/cas-control-pack.md`](cas-control-pack.md).
+
+## Hosted platform verification — 2 October 2026
+
+Verified from the repository checkout against the deployed hosting: the Vercel
+production portal (`tcsi-accounting-portal`), the Railway pilot engine
+(`tcsi-accounting-production`), and Supabase project `zcalwevgunkevwzficvm`.
+All probe records were removed after each check; the hosted systems carry no
+test data. These checks prove platform wiring, tenant isolation, and role
+enforcement. They are not a substitute for the client accounting acceptance in
+section 5 of the user guide.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Quality gates | **PASSED** | `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` (60 tests: contracts 4, worker 2, web 54), `npm run validate:migrations`, `npm run build`, `npm audit --audit-level=high` — zero findings after upgrading Next.js to 16.3.8 (GHSA-vcvr-r3jv-pc5j) |
+| CI on pushed commit | **PASSED** | GitHub Actions run for `ea3ac40`: `verify` and `orvexa-integration` (Odoo Docker suite with the ten-company isolation tests) both succeeded |
+| Provider deployments | **PASSED** | Commit `ea3ac40` produced a Vercel Production deployment and a Railway engine deployment; both commit statuses report success |
+| Supabase migration history | **PASSED** | Repository files reconciled to the applied versions (`20260922090204` … `20260927172751`); `supabase db push --dry-run` reports `Remote database is up to date` |
+| Supabase schema hardening | **PASSED** | 14 public tables with RLS enabled and forced, 29 policies, verified directly via `pg_class`/`pg_policies`; `create_workspace` revoked from `authenticated`, `rls_auto_enable` revoked from `anon`/`authenticated` (pg_proc ACL audit) |
+| Multi-tenant RBAC matrix | **PASSED 25/25** | `npm run verify:rbac` against the hosted project: two probe organizations, six probe users, full role matrix; every assertion rolled back and all probe rows deleted |
+| Cross-organization isolation | **PASSED** | Owner B could not read, write, or rename anything in organization A (and vice versa): workspace, chart of accounts, invoices, and journal entries all filtered to zero rows or rejected |
+| Role enforcement | **PASSED** | Viewer read-only; encoder may create drafts but cannot update accounts, post entries, or forge `created_by`; accountant may update accounts and post; owner may rename the organization; deletes are denied for every role |
+| Anonymous surfaces | **PASSED** | `anon` cannot read accounting tables, leads, or the platform-owner table; may insert one website lead per submission and cannot read leads back |
+| Platform-owner gating | **PASSED** | Non-owner customers receive `Platform owner access required`; `platform_owner_access` is unreadable to customers |
+| Portal pages | **PASSED** | `/`, `/platform`, `/controls`, `/pilot`, `/contact`, `/login`, `/owner`, `/web/login` all return 200; standalone accounting pages and APIs redirect or 404 in portal mode |
+| Portal readiness | **PASSED** | `/api/readiness` → `{"status":"ready","mode":"pilot_portal","checks":{"supabaseAuth":true,"accountingEngine":true}}` |
+| Website lead intake | **PASSED** | Live `POST /api/demo-requests` returned 201 and the row appeared in `demo_requests`; the probe row was deleted afterwards |
+| Platform owner bootstrap | **PASSED** | `scripts/bootstrap-platform-owner.mjs` created a probe owner, verified password sign-in through Supabase Auth, and `/api/platform/analytics` returned 200 with a real session through the deployed portal; `/owner` rendered the analytics view; probe user and assignment removed afterwards |
+| Engine availability | **PASSED** | Odoo 18.0 engine answers `/web/login` (200) and `/web/webclient/version_info` reports `18.0-20260908` |
+
+Still open after this verification:
+
+- The hosted engine database remains in the pilot state described in the user
+  guide (companies need their approved chart of accounts, journals, periods,
+  tax profiles, and users). Five-company provisioning and acceptance require
+  the Railway administrator credentials, which were not available in this
+  workspace; use section 1 of the user guide and
+  `scripts/check_company_readiness.py`.
+- No production platform-owner account has been assigned yet. Run
+  `node scripts/bootstrap-platform-owner.mjs --email <approved-address>` with
+  the owner's own password prompt to enable `/login` and `/owner`.

@@ -174,6 +174,30 @@ boundary, and explicit function-grant hardening. Never run an unreviewed bulk
 migration push against this project. The event-trigger hardening revokes public
 execution without disabling automatic RLS.
 
+The repository migration files were reconciled with the applied project
+history on 2 October 2026: the files now carry the versions recorded in the
+project's `supabase_migrations.schema_migrations` table (20260922090204 ...
+20260927172751), so `supabase db push --dry-run` reports `Remote database is
+up to date` instead of replaying already-applied SQL. The migration validator
+resolves files by suffix, so the renumbering cannot silently break the gate.
+
+Live tenant verification: `SUPABASE_ACCESS_TOKEN=... npm run verify:rbac`
+provisions two throwaway organizations and six probe users, then asserts the
+cross-organization read/write isolation and the full owner/admin/accountant/
+encoder/viewer matrix (25 checks) directly against the hosted database. Every
+assertion runs inside a rolled-back transaction and the probe data is deleted
+afterwards. Run it after any policy, function, or migration change and before
+onboarding a customer organization.
+
+Platform owner: 
+`SUPABASE_ACCESS_TOKEN=... node scripts/bootstrap-platform-owner.mjs --email <approved-address>`
+creates or reuses the owner's Supabase Auth user through the supported GoTrue
+admin API, verifies that password sign-in works, and points the single
+`platform_owner_access` row at that user (re-running rotates the assignment).
+The password is read from a hidden prompt and must go into the team password
+manager; never paste it into chat, tickets, or email. Without this step the
+`/login` and `/owner` console has no account that can sign in.
+
 The marketing routes are `/`, `/platform`, `/controls`, `/pilot`, and
 `/contact`; each is a real page rather than a hash-scroll section. `/contact`
 accepts a company demo request and writes only a `new` website lead. The
@@ -265,10 +289,16 @@ Configure the project with root `apps/web` and these build settings:
 
 Set `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_APP_URL`, and the two publishable
 Supabase values in the Vercel environment settings. Preview and production
-should use separate Supabase projects or explicit isolated environments. Do
-not add `SUPABASE_SERVICE_ROLE_KEY` to Vercel. Attach the approved custom
+should use separate Supabase projects or explicit isolated environments.
+Do not add `SUPABASE_SERVICE_ROLE_KEY` to Vercel. Attach the approved custom
 domain so Vercel terminates HTTPS, then verify `/api/health` and
-`/api/readiness` after each promotion.
+`/api/readiness` after each promotion. Pushes to `main` deploy through the
+provider Git integrations: every commit produces a Vercel Production
+deployment and a Railway engine deployment, both reported on the commit's
+status. `/api/health` returns the deployed `commit` (the first 12 characters
+of `VERCEL_GIT_COMMIT_SHA`), so an operator can confirm which revision is
+serving without provider access; after a promotion, compare it with `git
+rev-parse main`.
 
 ## Railway
 

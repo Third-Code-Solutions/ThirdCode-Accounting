@@ -143,8 +143,12 @@ client's on-premise hardware, data volume, browser, or network.
 
 ## Repository status and boundaries
 
-- The source is in the local working tree on `main`; no commit, push, external
-  deployment, or production database change was performed by this task.
+- The source of truth is `main` on GitHub. Pushes deploy through the Vercel
+  and Railway Git integrations: the portal at
+  <https://tcsi-accounting-portal.vercel.app>, the engine on Railway, and the
+  Supabase project `zcalwevgunkevwzficvm` for portal leads and the hardened
+  standalone schema. Verify tenant isolation and the role matrix with
+  `npm run verify:rbac` before onboarding a new organization.
 - Client-specific report samples, BIR acknowledgement/control values, tax and
   withholding rates, EIS classification, MYOB extraction/mapping, live-history
   policy, parallel run, production roles, infrastructure, and statutory/legal
