@@ -1,17 +1,30 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const migrationPath = resolve(root, "supabase/migrations/20260922000000_tcsi_foundation.sql");
+const migrationsDir = resolve(root, "supabase/migrations");
+
+// Resolve migration files by suffix so version renumbering stays safe.
+async function findMigration(suffix) {
+  const entries = await readdir(migrationsDir);
+  const match = entries.filter((name) => name.endsWith(suffix)).sort();
+  if (match.length !== 1) {
+    console.error(JSON.stringify({ migrationsDir, suffix, matches: match }, null, 2));
+    process.exit(1);
+  }
+  return resolve(migrationsDir, match[0]);
+}
+
+const migrationPath = await findMigration("_tcsi_foundation.sql");
 const sql = await readFile(migrationPath, "utf8");
-const portalMigrationPath = resolve(root, "supabase/migrations/20260922103000_portal_leads_and_platform_owner.sql");
+const portalMigrationPath = await findMigration("_portal_leads_and_platform_owner.sql");
 const portalSql = await readFile(portalMigrationPath, "utf8");
-const hardeningMigrationPath = resolve(root, "supabase/migrations/20260922150000_harden_platform_function_grants.sql");
+const hardeningMigrationPath = await findMigration("_harden_platform_function_grants.sql");
 const hardeningSql = await readFile(hardeningMigrationPath, "utf8");
-const workspaceHardeningMigrationPath = resolve(root, "supabase/migrations/20260922152000_harden_workspace_function.sql");
+const workspaceHardeningMigrationPath = await findMigration("_harden_workspace_function.sql");
 const workspaceHardeningSql = await readFile(workspaceHardeningMigrationPath, "utf8");
-const privateSchemaMigrationPath = resolve(root, "supabase/migrations/20260922153000_grant_private_schema_usage.sql");
+const privateSchemaMigrationPath = await findMigration("_grant_private_schema_usage.sql");
 const privateSchemaSql = await readFile(privateSchemaMigrationPath, "utf8");
 
 const requiredTables = [
