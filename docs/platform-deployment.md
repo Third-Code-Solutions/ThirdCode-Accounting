@@ -189,11 +189,17 @@ assertion runs inside a rolled-back transaction and the probe data is deleted
 afterwards. Run it after any policy, function, or migration change and before
 onboarding a customer organization.
 
-Platform owner: 
+Platform owner:
 `SUPABASE_ACCESS_TOKEN=... node scripts/bootstrap-platform-owner.mjs --email <approved-address>`
 creates or reuses the owner's Supabase Auth user through the supported GoTrue
 admin API, verifies that password sign-in works, and points the single
 `platform_owner_access` row at that user (re-running rotates the assignment).
+With `--send-recovery` the script instead creates the account **without** a
+password and emails a set-password link; the portal's `/auth/confirm` route
+consumes `{{ .TokenHash }}` links from any device and lands the user on the
+`/login` set-password screen (the hosted project's recovery and invite email
+templates use that pattern, and `site_url`/allow-list include the portal
+origin). Handle the emailed value only through the portal page itself.
 The password is read from a hidden prompt and must go into the team password
 manager; never paste it into chat, tickets, or email. Without this step the
 `/login` and `/owner` console has no account that can sign in.

@@ -16,8 +16,13 @@
  *   SUPABASE_OWNER_PASSWORD   environment variable
  *   hidden interactive prompt (recommended when run by a person)
  *
+ *   --send-recovery           create the account without a password and email a
+ *                             set-password link instead (no password input).
+ *                             The link completes on the portal /login page.
+ *
  * Usage:
  *   SUPABASE_ACCESS_TOKEN=sbp_... node scripts/bootstrap-platform-owner.mjs --email owner@thirdcodesolutions.com
+ *   SUPABASE_ACCESS_TOKEN=sbp_... node scripts/bootstrap-platform-owner.mjs --email owner@thirdcodesolutions.com --send-recovery
  */
 import { createInterface } from "node:readline";
 
@@ -26,6 +31,8 @@ const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const emailIndex = process.argv.indexOf("--email");
 const email = emailIndex >= 0 ? process.argv[emailIndex + 1] : null;
 const passwordStdin = process.argv.includes("--password-stdin");
+const sendRecovery = process.argv.includes("--send-recovery");
+const portalOrigin = process.env.TCSI_PORTAL_ORIGIN ?? "https://tcsi-accounting-portal.vercel.app";
 
 if (!ACCESS_TOKEN) {
   console.error("SUPABASE_ACCESS_TOKEN is required (Supabase personal access token).");
@@ -129,6 +136,8 @@ async function findUserByEmail(serviceRoleKey, address) {
 }
 
 async function createUser(serviceRoleKey, address, password) {
+  const payload = { email: address, email_confirm: true };
+  if (password) payload.password = password;
   const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
     method: "POST",
     headers: {
@@ -136,7 +145,7 @@ async function createUser(serviceRoleKey, address, password) {
       apikey: serviceRoleKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email: address, password, email_confirm: true }),
+    body: JSON.stringify(payload),
   });
   const text = await response.text();
   if (!response.ok) throw new Error(`user creation failed (${response.status}): ${text.slice(0, 240)}`);
@@ -152,6 +161,16 @@ async function verifyPasswordSignIn(anonKey, address, password) {
   return response.ok;
 }
 
+async function requestRecoveryEmail(anonKey, address, redirectTo) {
+  const response = await fetch(`${supabaseUrl}/auth/v1/recover`, {
+    method: "POST",
+    headers: { apikey: anonKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ email: address, redirect_to: redirectTo }),
+  });
+  const text = await response.text();
+  return { ok: response.ok, status: response.status, body: text.slice(0, 200) };
+}
+
 async function main() {
   console.log(`TCSI platform owner bootstrap against project ${PROJECT_REF}`);
   const { serviceRoleKey, anonKey } = await fetchApiKeys();
@@ -162,12 +181,17 @@ async function main() {
   let canVerify = false;
 
   if (!user) {
-    password = await readPassword();
-    assertStrongEnough(password);
-    user = await createUser(serviceRoleKey, email, password);
-    createdNow = true;
-    canVerify = true;
-    console.log(`Created the auth user ${email} (id ${user.id}).`);
+    if (sendRecovery) {
+      user = await createUser(serviceRoleKey, email, null);
+      console.log(`Created the auth user ${email} (id ${user.id}) without a password; the owner sets it from the emailed link.`);
+    } else {
+      password = await readPassword();
+      assertStrongEnough(password);
+      user = await createUser(serviceRoleKey, email, password);
+      createdNow = true;
+      canVerify = true;
+      console.log(`Created the auth user ${email} (id ${user.id}).`);
+    }
   } else {
     console.log(`An auth user for ${email} already exists (id ${user.id}); password left unchanged.`);
     if (passwordStdin || process.env.SUPABASE_OWNER_PASSWORD) {
@@ -184,6 +208,17 @@ async function main() {
   );
   console.log(`platform_owner_access now points at user ${user.id}.`);
 
+  if (sendRecovery) {
+    const result = await requestRecoveryEmail(anonKey, email, `${portalOrigin}/login`);
+    if (result.ok) {
+      console.log(`Recovery email requested; the set-password link opens ${portalOrigin}/login.`);
+    } else if (result.status === 429) {
+      console.warn("The project's email sender is rate limited right now. Wait a few minutes, then use 'Forgot password?' on the live /login page — it sends the same email.");
+    } else {
+      console.warn(`Recovery email request returned ${result.status}: ${result.body}`);
+    }
+  }
+
   if (canVerify) {
     const ok = await verifyPasswordSignIn(anonKey, email, password);
     if (!ok) {
@@ -191,7 +226,7 @@ async function main() {
       process.exit(1);
     }
     console.log("Password sign-in verified against Supabase Auth.");
-  } else {
+  } else if (!sendRecovery) {
     console.log("Existing account reused; password sign-in not re-verified. Reset the password in the dashboard if needed.");
   }
 
@@ -199,12 +234,16 @@ async function main() {
     `select count(*)::int as owner_rows from public.platform_owner_access;`,
   );
   console.log(`Owner rows: ${ownerCheck?.[0]?.owner_rows ?? "?"} (must be exactly 1).`);
-  console.log(
-    createdNow
-      ? "Done. Sign in at https://tcsi-accounting-portal.vercel.app/login and open /owner."
-      : "Done. The existing credentials keep working; open /owner after signing in.",
-  );
-  console.log("Reminder: never paste this password into a chat, ticket, or email. Store it in the team password manager.");
+  if (sendRecovery) {
+    console.log(`Done. Check the inbox for ${email}, open the set-password link, then sign in at ${portalOrigin}/login and open /owner.`);
+  } else {
+    console.log(
+      createdNow
+        ? `Done. Sign in at ${portalOrigin}/login and open /owner.`
+        : "Done. The existing credentials keep working; open /owner after signing in.",
+    );
+    console.log("Reminder: never paste this password into a chat, ticket, or email. Store it in the team password manager.");
+  }
 }
 
 main().catch((error) => {
