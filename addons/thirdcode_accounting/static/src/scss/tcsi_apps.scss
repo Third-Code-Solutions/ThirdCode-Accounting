@@ -56,7 +56,7 @@
     input:focus-visible,
     select:focus-visible { outline: 2px solid var(--tcsi-route-purple, #337457); outline-offset: 2px; }
     .tcsi-apps-results { margin-block: 20px 12px; font-size: 12px; }
-    .tcsi-apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 256px), 1fr)); gap: 16px; }
+    .tcsi-apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(Min(100%, 256px), 1fr)); gap: 16px; }
     .tcsi-app-card {
         display: flex;
         min-width: 0;
