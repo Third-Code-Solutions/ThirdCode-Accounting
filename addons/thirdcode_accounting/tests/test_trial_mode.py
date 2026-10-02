@@ -10,12 +10,12 @@ class TestTrialMode(AccountTestInvoicingCommon):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.company_data["company"]
-        # A report layout must be selected, otherwise report_action() returns
-        # the document-layout configurator action instead of the report.
+        # A report layout view must be selected, otherwise report_action()
+        # returns the document-layout configurator action instead of the report.
         cls.company.sudo().write(
             {
                 "thirdcode_trial_mode": True,
-                "external_report_layout_id": cls.env.ref("web.report_layout_standard").id,
+                "external_report_layout_id": cls.env.ref("web.external_layout_standard").id,
             }
         )
 

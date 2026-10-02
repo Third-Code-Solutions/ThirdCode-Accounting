@@ -273,12 +273,20 @@ class ThirdCodeSetupService(models.AbstractModel):
         else:
             steps.append("currency %s not found; left unchanged" % currency_code)
         layout_xmlid = str(
-            payload.get("external_report_layout") or "web.report_layout_standard"
+            payload.get("external_report_layout") or "web.external_layout_standard"
         )
-        if not company.external_report_layout_id:
-            layout = self.env.ref(layout_xmlid, raise_if_not_found=False)
-            if layout:
-                updates["external_report_layout_id"] = layout.id
+        current_layout = company.external_report_layout_id
+        if not current_layout or "external_layout" not in (current_layout.key or ""):
+            layout_ref = self.env.ref(layout_xmlid, raise_if_not_found=False)
+            layout_view = layout_ref
+            if (
+                layout_ref
+                and layout_ref._name != "ir.ui.view"
+                and "view_id" in layout_ref._fields
+            ):
+                layout_view = layout_ref.view_id
+            if layout_view and layout_view._name == "ir.ui.view" and layout_view.key:
+                updates["external_report_layout_id"] = layout_view.id
             else:
                 steps.append(
                     "external report layout %s not found; left unchanged" % layout_xmlid
