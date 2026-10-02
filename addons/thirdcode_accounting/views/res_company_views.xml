@@ -8,6 +8,7 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Third Code Accounting" groups="thirdcode_accounting.group_thirdcode_administrator,thirdcode_accounting.group_thirdcode_accountant">
                     <group string="Regulatory configuration">
+                        <field name="thirdcode_trial_mode"/>
                         <field name="thirdcode_bir_ack_control_number"/>
                         <field name="thirdcode_bir_ack_approved"/>
                         <field name="thirdcode_eis_status"/>

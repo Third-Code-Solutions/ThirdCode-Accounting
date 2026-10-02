@@ -214,8 +214,11 @@ class AccountPayment(models.Model):
             if payment.payment_type != "inbound" or payment.partner_type != "customer":
                 raise UserError(_("Official Receipts are only for incoming customer payments."))
             if not (
-                payment.company_id.thirdcode_bir_ack_approved
-                and payment.company_id.thirdcode_bir_ack_control_number
+                payment.company_id.thirdcode_trial_mode
+                or (
+                    payment.company_id.thirdcode_bir_ack_approved
+                    and payment.company_id.thirdcode_bir_ack_control_number
+                )
             ):
                 raise UserError(
                     _(

@@ -218,6 +218,17 @@ Create the owner's Supabase Auth user first, then assign that user through a
 reviewed administrative database operation. Do not add a service-role key to
 Vercel or the browser.
 
+### Pilot provisioning endpoint (`/tcsi/setup`)
+
+The addon exposes a token-gated POST endpoint on the engine (`/tcsi/setup`,
+controller `thirdcode_accounting/controllers/setup.py`, service
+`thirdcode.setup.service`) used to provision pilot companies, charts of
+accounts, journals, open periods and named users idempotently. The plaintext
+token is held by the operator outside the repository; only its SHA-256 lives in
+the controller. Unauthorized attempts are logged and answered with 401; every
+executed action is logged. Rotate the token or remove the endpoint once pilot
+provisioning is finished.
+
 Rollback: restore the last verified application deployment through the provider.
 Keep database and filestore volumes intact. A code rollback does not roll back
 database changes. Before customer onboarding, configure paired database and

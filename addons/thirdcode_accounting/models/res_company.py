@@ -14,6 +14,14 @@ class ResCompany(models.Model):
         string="BIR control number approved",
         copy=False,
     )
+    thirdcode_trial_mode = fields.Boolean(
+        string="Trial mode (no legal approvals required)",
+        copy=False,
+        help="Free-trial / personal use only. While enabled, invoice, receipt and "
+             "report output is allowed without BIR control numbers or approved client "
+             "samples, and prints carry a TRIAL COPY marking instead of being blocked. "
+             "Do not use this mode for official statutory documents.",
+    )
     thirdcode_eis_status = fields.Selection(
         [
             ("assessment_required", "Coverage assessment required"),

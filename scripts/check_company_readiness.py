@@ -13,8 +13,19 @@ import xmlrpc.client
 from datetime import date
 from typing import Any
 
+LEGAL_GATED_CHECKS = frozenset(
+    {
+        "approved_tax_profile",
+        "approved_bir_control",
+        "eis_assessed",
+        "report_samples_approved",
+        "backup_owner",
+        "restore_owner",
+    }
+)
 
-def check_company(call: Any, company: dict[str, Any], on_date: str) -> dict[str, Any]:
+
+def check_company(call: Any, company: dict[str, Any], on_date: str, trial: bool = False) -> dict[str, Any]:
     company_id = company["id"]
     context = {"allowed_company_ids": [company_id]}
 
@@ -55,10 +66,16 @@ def check_company(call: Any, company: dict[str, Any], on_date: str) -> dict[str,
         "backup_owner": bool(company["thirdcode_backup_owner"]),
         "restore_owner": bool(company["thirdcode_restore_owner"]),
     }
+    trial_deferred: dict[str, Any] = {}
+    if trial:
+        trial_deferred = {
+            key: checks.pop(key) for key in list(checks) if key in LEGAL_GATED_CHECKS
+        }
     return {
         "id": company_id,
         "name": company["name"],
         "checks": checks,
+        "trial_deferred": trial_deferred,
         "counts": {"accounts": accounts, "journals": journals, "open_periods_today": periods,
                    "configured_tax_profiles": tax_profiles, "approved_report_samples": approved_samples},
         "structurally_ready": all(checks.values()),
@@ -71,6 +88,9 @@ def main() -> int:
     parser.add_argument("--database", required=True)
     parser.add_argument("--login", required=True)
     parser.add_argument("--expected-companies", type=int, default=5)
+    parser.add_argument("--trial", action="store_true",
+                        help="Trial/personal use: BIR, EIS, report-sample and backup-owner items are "
+                             "reported separately as trial-deferred instead of blocking.")
     parser.add_argument("--date", default=date.today().isoformat())
     args = parser.parse_args()
     if args.expected_companies < 1:
@@ -98,11 +118,12 @@ def main() -> int:
         "thirdcode_eis_status", "thirdcode_report_samples_approved",
         "thirdcode_backup_owner", "thirdcode_restore_owner",
     ]})
-    checked = [check_company(call, company, args.date) for company in companies]
+    checked = [check_company(call, company, args.date, trial=args.trial) for company in companies]
     checks = {"expected_company_count": len(checked) == args.expected_companies,
               "all_company_structures": all(item["structurally_ready"] for item in checked)}
     print(json.dumps({
         "status": "structurally_ready" if all(checks.values()) else "blocked",
+        "trial_mode": args.trial,
         "checks": checks,
         "companies": checked,
         "manual_gates_not_verified": [

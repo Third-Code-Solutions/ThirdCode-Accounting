@@ -19,6 +19,8 @@ infrastructure owner. The PRD is still version 0.1 review draft.
 | Unapproved report templates are visibly provisional | A report sample approval flag and revision are required before a custom layout can be represented as approved. |
 | Migration is source-identifier driven | Validation, dry-run, explicit `--apply`, duplicate-safe load, and reconciliation records precede any real cutover. |
 | Backup/restore targets are explicit and disposable | The scripts cover database, filestore, config, image metadata, hashes, and restore inspection; production scheduling is still client-owned. |
+| Trial mode relaxes only the legal-approval output gates | Companies flagged `thirdcode_trial_mode` may print invoice/receipt/statement output without BIR control numbers or approved client samples; every such print carries a visible TRIAL COPY marking and the readiness preflight reports the legal items as trial-deferred instead of blocking. Production companies keep the original gates. |
+| Privileged pilot provisioning rides a token-gated module endpoint | `/tcsi/setup` (plaintext token held by the operator outside the repository; only its SHA-256 is in the addon) provisions companies, charts, journals, open periods and named users idempotently on the hosted engine, so pilot setup does not depend on the technical administrator's password. |
 
 ## Client decisions required before acceptance or production
 

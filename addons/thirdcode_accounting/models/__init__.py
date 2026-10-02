@@ -16,6 +16,7 @@ from . import recurring_journal
 from . import report_sample
 from . import report_access
 from . import res_company
+from . import setup_service
 from . import tax_profile
 from . import year_end_close
 from . import orvexa

@@ -172,8 +172,11 @@ class AccountMove(models.Model):
             if move.state != "posted":
                 raise UserError(_("Only posted invoices may be printed."))
             if not (
-                move.company_id.thirdcode_bir_ack_approved
-                and move.company_id.thirdcode_bir_ack_control_number
+                move.company_id.thirdcode_trial_mode
+                or (
+                    move.company_id.thirdcode_bir_ack_approved
+                    and move.company_id.thirdcode_bir_ack_control_number
+                )
             ):
                 raise UserError(
                     _(
