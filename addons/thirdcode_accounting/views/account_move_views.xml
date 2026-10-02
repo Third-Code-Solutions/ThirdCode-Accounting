@@ -9,11 +9,21 @@
                 <button name="action_print_thirdcode_invoice" type="object" string="Third Code invoice" class="btn-secondary" invisible="state != 'posted' or move_type == 'entry'" groups="account.group_account_invoice"/>
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
-                <field name="thirdcode_document_class" readonly="1"/>
-                <field name="thirdcode_source_identifier" readonly="state == 'posted'"/>
-                <field name="thirdcode_is_opening_balance" readonly="state == 'posted'"/>
-                <field name="thirdcode_recurring_journal_id" readonly="1"/>
-                <field name="thirdcode_recurring_run_date" readonly="1"/>
+                <field name="thirdcode_document_class" string="Document type" readonly="1"/>
+            </xpath>
+            <xpath expr="//sheet/notebook" position="inside">
+                <page name="thirdcode_document_details" string="Document details" class="tcsi-record-metadata">
+                    <div class="tcsi-form-sections">
+                        <group string="Document reference" class="tcsi-form-section">
+                            <field name="thirdcode_source_identifier" string="Source identifier" readonly="state == 'posted'"/>
+                            <field name="thirdcode_is_opening_balance" string="Opening balance" readonly="state == 'posted'"/>
+                        </group>
+                        <group string="Automation" class="tcsi-form-section">
+                            <field name="thirdcode_recurring_journal_id" string="Schedule" readonly="1"/>
+                            <field name="thirdcode_recurring_run_date" string="Run date" readonly="1"/>
+                        </group>
+                    </div>
+                </page>
             </xpath>
         </field>
     </record>

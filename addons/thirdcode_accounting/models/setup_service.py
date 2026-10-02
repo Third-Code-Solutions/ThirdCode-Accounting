@@ -176,34 +176,77 @@ class ThirdCodeSetupService(models.AbstractModel):
         }
 
     def _action_create_user(self, payload):
-        login = str(payload.get("login") or "").strip()
+        return self.provision_user(
+            login=payload.get("login"),
+            name=payload.get("name"),
+            password=payload.get("password"),
+            company=self._get_company(payload),
+            role=str(payload.get("role") or "").strip(),
+            extra_group_xmlids=payload.get("extra_groups"),
+            all_companies=bool(payload.get("all_companies")),
+            company_ids=payload.get("company_ids"),
+            regroup=bool(payload.get("regroup")),
+        )
+
+    def provision_user(
+        self,
+        login,
+        name=None,
+        password=None,
+        company=None,
+        role="accountant",
+        extra_group_xmlids=None,
+        all_companies=False,
+        company_ids=None,
+        regroup=True,
+        require_new=False,
+    ):
+        """Create or update a role user inside a company.
+
+        Callers are responsible for access checks: the setup controller is
+        token-gated, and the in-app wizards verify administrator rights.
+        """
+        login = str(login or "").strip().lower()
         if not login:
             raise UserError(_("A login is required."))
-        name = str(payload.get("name") or login).strip()
-        password = str(payload.get("password") or "")
-        role = str(payload.get("role") or "").strip()
+        name = str(name or login).strip()
+        role = str(role or "").strip()
         if role not in TRIAL_ROLE_GROUPS:
             raise UserError(
                 _("Unknown role '%s'. Expected one of: %s")
                 % (role, ", ".join(sorted(TRIAL_ROLE_GROUPS)))
             )
-        company = self._get_company(payload)
+        if not company:
+            raise UserError(_("A company is required."))
         role_group = self.env.ref(TRIAL_ROLE_GROUPS[role])
         base_group = self.env.ref("base.group_user")
+        group_ids = [base_group.id, role_group.id]
+        for xmlid in extra_group_xmlids or []:
+            extra_group = self.env.ref(str(xmlid), raise_if_not_found=False)
+            if not extra_group:
+                raise UserError(_("Unknown security group: %s") % xmlid)
+            group_ids.append(extra_group.id)
+        target_company_ids = [company.id]
+        if all_companies:
+            target_company_ids = self.env["res.company"].sudo().search([]).ids
+        elif company_ids:
+            target_company_ids = [int(cid) for cid in company_ids]
         user = (
             self.env["res.users"]
             .sudo()
             .with_context(active_test=False)
             .search([("login", "=", login)], limit=1)
         )
+        if user and require_new:
+            raise UserError(_("This login is not available."))
         if user:
             updates = {"name": name, "active": True}
             if password:
                 updates["password"] = password
-            if payload.get("regroup"):
+            if regroup:
                 updates["company_id"] = company.id
-                updates["company_ids"] = [Command.set([company.id])]
-                updates["groups_id"] = [Command.set([base_group.id, role_group.id])]
+                updates["company_ids"] = [Command.set(target_company_ids)]
+                updates["groups_id"] = [Command.set(group_ids)]
             user.write(updates)
             action = "updated"
         else:
@@ -215,8 +258,8 @@ class ThirdCodeSetupService(models.AbstractModel):
                     "login": login,
                     "password": password,
                     "company_id": company.id,
-                    "company_ids": [Command.set([company.id])],
-                    "groups_id": [Command.set([base_group.id, role_group.id])],
+                    "company_ids": [Command.set(target_company_ids)],
+                    "groups_id": [Command.set(group_ids)],
                 }
             )
             action = "created"

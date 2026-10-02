@@ -28,7 +28,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,reconciled"/>
                 </header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Reconciliation details" class="tcsi-form-section">
                             <field name="name" readonly="state == 'reconciled'"/>
                             <field name="company_id" readonly="state == 'reconciled'"/>
@@ -52,7 +52,7 @@
                             <field name="evidence_file" filename="evidence_filename" readonly="state == 'reconciled'"/>
                             <field name="definition" readonly="state == 'reconciled'"/>
                         </group>
-                    </group>
+                    </div>
                     <field name="bank_statement_line_ids" readonly="state == 'reconciled'">
                         <list editable="bottom">
                             <field name="date"/>

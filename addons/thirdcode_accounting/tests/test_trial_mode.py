@@ -190,3 +190,140 @@ class TestTrialMode(AccountTestInvoicingCommon):
         sequence_a = self.company._thirdcode_receipt_sequence()
         self.assertNotEqual(sequence_a, sequence)
         self.assertTrue(sequence_a.next_by_id().startswith("OR/"))
+
+    def _provision_admin(self, login, company):
+        result = (
+            self.env["thirdcode.setup.service"]
+            .sudo()
+            ._action_create_user(
+                {
+                    "login": login,
+                    "name": login,
+                    "password": "Passw0rd-%s" % login,
+                    "company_id": company.id,
+                    "role": "administrator",
+                    "regroup": True,
+                }
+            )
+        )
+        return self.env["res.users"].sudo().browse(result["uid"])
+
+    def test_organization_administrator_manages_own_company_users(self):
+        company_b = self.env["res.company"].sudo().create({"name": "Tenant B"})
+        admin_a = self._provision_admin("tenant-a-admin", self.company)
+        admin_b = self._provision_admin("tenant-b-admin", company_b)
+
+        # User records are only visible inside the administrator's companies.
+        visible_a = self.env["res.users"].with_user(admin_b).search([("id", "=", admin_a.id)])
+        self.assertFalse(visible_a)
+        own = self.env["res.users"].with_user(admin_b).search([("id", "=", admin_b.id)])
+        self.assertEqual(own.ids, [admin_b.id])
+
+        # The administrator creates an employee account through the wizard.
+        wizard = (
+            self.env["thirdcode.employee.wizard"]
+            .with_user(admin_b)
+            .create(
+                {
+                    "name": "Tenant B Staff",
+                    "login": "tenant-b-staff",
+                    "role": "accountant",
+                    "password": "Staff-Passw0rd",
+                }
+            )
+        )
+        wizard.action_create_employee()
+        staff = self.env["res.users"].sudo().search([("login", "=", "tenant-b-staff")])
+        self.assertEqual(staff.company_id, company_b)
+        self.assertEqual(staff.company_ids.ids, [company_b.id])
+        self.assertTrue(staff.has_group("thirdcode_accounting.group_thirdcode_accountant"))
+
+        # An existing login from another company is never reassigned.
+        duplicate = (
+            self.env["thirdcode.employee.wizard"]
+            .with_user(admin_b)
+            .create(
+                {
+                    "name": "Impostor",
+                    "login": admin_a.login,
+                    "role": "administrator",
+                    "password": "Impostor-Pass1",
+                }
+            )
+        )
+        with self.assertRaises(UserError):
+            duplicate.action_create_employee()
+
+        # Password resets: own company allowed, other companies denied.
+        before = staff.sudo().password
+        reset_own = (
+            self.env["thirdcode.employee.password.wizard"]
+            .with_user(admin_b)
+            .create({"user_id": staff.id, "new_password": "Staff-NewPass1"})
+        )
+        reset_own.action_reset_password()
+        self.assertNotEqual(staff.sudo().password, before)
+        with self.assertRaises(AccessError):
+            reset_cross = (
+                self.env["thirdcode.employee.password.wizard"]
+                .with_user(admin_b)
+                .create({"user_id": admin_a.id, "new_password": "Cross-Passw0rd"})
+            )
+            reset_cross.action_reset_password()
+
+        # Encoders cannot provision accounts.
+        encoder = self.env["res.users"].sudo().create(
+            {
+                "name": "Tenant B Encoder",
+                "login": "tenant-b-encoder",
+                "company_id": company_b.id,
+                "company_ids": [Command.set([company_b.id])],
+                "groups_id": [
+                    Command.set([self.env.ref("thirdcode_accounting.group_thirdcode_encoder").id])
+                ],
+            }
+        )
+        with self.assertRaises(AccessError):
+            self.env["thirdcode.employee.wizard"].with_user(encoder).create(
+                {
+                    "name": "Nope",
+                    "login": "nope-login",
+                    "role": "encoder",
+                    "password": "Nope-Passw0rd",
+                }
+            )
+
+    def test_platform_owner_wizard_provisions_any_company(self):
+        company_c = self.env["res.company"].sudo().create({"name": "Tenant C"})
+        owner = self.env["res.users"].sudo().create(
+            {
+                "name": "Platform Owner",
+                "login": "platform-owner-test",
+                "company_id": self.company.id,
+                "groups_id": [
+                    Command.set(
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref("base.group_system").id,
+                        ]
+                    )
+                ],
+            }
+        )
+        wizard = (
+            self.env["thirdcode.employee.wizard"]
+            .with_user(owner)
+            .create(
+                {
+                    "name": "Tenant C Admin",
+                    "login": "tenant-c-admin",
+                    "role": "administrator",
+                    "password": "Tenant-C-Pass1",
+                    "company_id": company_c.id,
+                }
+            )
+        )
+        wizard.action_create_employee()
+        admin_c = self.env["res.users"].sudo().search([("login", "=", "tenant-c-admin")])
+        self.assertEqual(admin_c.company_ids.ids, [company_c.id])
+        self.assertTrue(admin_c.has_group("thirdcode_accounting.group_thirdcode_administrator"))

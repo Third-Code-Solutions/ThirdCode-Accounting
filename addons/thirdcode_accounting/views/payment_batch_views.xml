@@ -7,7 +7,7 @@
             <form string="Payment batch">
                 <header><button name="action_submit" type="object" string="Submit" class="oe_highlight" invisible="state != 'draft'"/><button name="action_approve" type="object" string="Approve" class="oe_highlight" invisible="state != 'pending_approval'" groups="thirdcode_accounting.group_thirdcode_administrator"/><button name="action_post" type="object" string="Post batch" class="oe_highlight" invisible="state not in ('draft', 'approved')" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/><button name="action_cancel" type="object" string="Cancel" invisible="state in ('posted', 'cancelled')"/><field name="state" widget="statusbar" statusbar_visible="draft,pending_approval,approved,posted"/></header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Payment details" class="tcsi-form-section">
                             <field name="name" readonly="1"/>
                             <field name="company_id"/>
@@ -24,7 +24,7 @@
                             <field name="approved_by" readonly="1"/>
                             <field name="approved_at" readonly="1"/>
                         </group>
-                    </group>
+                    </div>
                     <field name="line_ids"><list editable="bottom"><field name="move_id"/><field name="partner_id"/><field name="amount"/><field name="communication"/><field name="payment_instrument"/><field name="instrument_reference"/><field name="payment_id" readonly="1"/></list></field>
                     <chatter/>
                 </sheet>

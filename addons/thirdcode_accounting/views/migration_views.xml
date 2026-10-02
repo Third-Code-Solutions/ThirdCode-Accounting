@@ -7,7 +7,7 @@
             <form string="Migration batch">
                 <header><button name="action_validate" type="object" string="Validate" class="oe_highlight" invisible="state != 'draft'"/><button name="action_mark_loaded" type="object" string="Mark loaded" invisible="state != 'validated'"/><button name="action_mark_reconciled" type="object" string="Sign off reconciliation" class="oe_highlight" invisible="state != 'loaded'"/><field name="state" widget="statusbar" statusbar_visible="draft,validated,loaded,reconciled"/></header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Migration details" class="tcsi-form-section">
                             <field name="name" readonly="1"/>
                             <field name="source_system"/>
@@ -23,7 +23,7 @@
                             <field name="matched_count" readonly="1"/>
                             <field name="error_count" readonly="1"/>
                         </group>
-                    </group>
+                    </div>
                     <field name="row_ids"><list editable="bottom"><field name="source_identifier"/><field name="target_model"/><field name="target_id"/><field name="source_debit"/><field name="source_credit"/><field name="target_debit"/><field name="target_credit"/><field name="state" widget="badge"/><field name="error_message"/></list></field>
                     <field name="notes"/><chatter/>
                 </sheet>

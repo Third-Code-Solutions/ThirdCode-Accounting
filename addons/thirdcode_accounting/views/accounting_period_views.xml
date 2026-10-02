@@ -20,7 +20,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="open,closed"/>
                 </header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Period details" class="tcsi-form-section">
                             <field name="name"/>
                             <field name="company_id"/>
@@ -34,7 +34,7 @@
                             <field name="reopened_at"/>
                             <field name="close_note"/>
                         </group>
-                    </group>
+                    </div>
                     <chatter/>
                 </sheet>
             </form>

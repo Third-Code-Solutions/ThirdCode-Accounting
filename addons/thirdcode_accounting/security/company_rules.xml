@@ -91,5 +91,15 @@
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
         </record>
+        <!-- Scoped user visibility: role users only see accounts that belong
+             to companies they are members of, so trial organizations can
+             never read each other's user records (names, logins). -->
+        <record id="rule_thirdcode_res_users_company" model="ir.rule">
+            <field name="name">Users: within own companies (TCSI tenants)</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="global" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_thirdcode_readonly')), (4, ref('group_thirdcode_encoder')), (4, ref('group_thirdcode_accountant')), (4, ref('group_thirdcode_administrator'))]"/>
+            <field name="domain_force">[('company_ids', 'in', company_ids)]</field>
+        </record>
     </data>
 </odoo>
