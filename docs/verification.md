@@ -172,3 +172,14 @@ Still open after this verification (superseded in part on 3 October 2026 — see
 Notes: legal/BIR items are trial-deferred by design; no SMTP is configured, so
 trial passwords are distributed and rotated out-of-band. Each push to `main`
 restarts the engine — schedule pushes outside trial working hours.
+
+### Organization management & superadmin verification — 3 October 2026 (later run)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| In-app org user management | **PASSED (live, 12/12)** | Trial Client 01 administrator, entirely through `TCSI Accounting → Organization` wizards: created an employee account, signed in as it, reset its password (old password rejected afterwards), enabled/disabled it, was refused for another company's user, refused for an encoder, listed only own-company users, and the created user carried the correct TCSI role group. Runner: `~/tcsi-private/verify_org_admin.py`. |
+| Cross-tenant user visibility | **PASSED (live)** | The scoped `res.users` rule keeps each tenant's user list to its own people: Trial Client 01 sees exactly its four logins, Trial Client 02's users are invisible. |
+| Platform owner (superadmin) | **PASSED (live)** | `superadmin@tcsi.local` provisioned through the token-gated endpoint (`extra_groups: [base.group_system]`, all companies): sees all 11 organizations and 47 internal users and can target any company in the New Employee Account wizard. Master credentials live in `~/tcsi-private/owner-credentials.txt` (mode 600, outside the repository); operator guide `~/tcsi-private/OWNER-GUIDE.md`. Runner: `~/tcsi-private/owner_admin.py`. |
+| Superadmin hidden & protected from tenants | **PASSED (live)** | The `thirdcode_platform_owner` flag keeps the superadmin out of every tenant user list (tenant search returns none) and tenant admins are denied reset/enable/disable against it server-side ("You can only manage accounts of your own company."). Regression-checked: tenants still manage their own staff freely. |
+| Backend stylesheet compile | **PASSED (fixed, deployed)** | The redesigned `tcsi_apps.scss` used lowercase `min(100%, 256px)`; libsass (both the engine's asset compiler and the CI "production Sass runtime") evaluates that as the Sass builtin and aborted the whole `web.assets_web` bundle with `Incompatible units: 'px' and '%'` — Odoo served stale fallback CSS with a red error banner. Fixed to the pass-through `Min(` form in `6606a31`; the live bundle now recompiles clean (1.3 MB, redesigned classes present, no error banner). |
+| Quality gates | **PASSED** | CI run [37071399442](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37071399442) at `6606a31`: `verify` and `orvexa-integration` both success (module install + full test suite incl. the new employee-management and platform-owner protection tests). Portal health reports commit `6606a31d9092`; engine serves HTTP 200. |
