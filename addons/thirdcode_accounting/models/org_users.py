@@ -53,7 +53,7 @@ class ThirdcodeEmployeeWizard(models.TransientModel):
         company = self._target_company()
         if not company:
             raise UserError(_("Choose a company for this account."))
-        user = (
+        provisioned = (
             self.env["thirdcode.setup.service"]
             .sudo()
             .provision_user(
@@ -71,7 +71,7 @@ class ThirdcodeEmployeeWizard(models.TransientModel):
             "res_model": "res.users",
             "view_mode": "list",
             "views": [[self.env.ref("thirdcode_accounting.view_thirdcode_employee_list").id, "list"]],
-            "domain": [("id", "=", user["uid"])],
+            "domain": [("id", "=", provisioned["uid"])],
             "target": "current",
         }
 

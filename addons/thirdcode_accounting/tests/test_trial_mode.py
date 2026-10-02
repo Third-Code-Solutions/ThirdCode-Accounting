@@ -263,7 +263,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
         )
         reset_own.action_reset_password()
         self.assertNotEqual(staff.sudo().password, before)
-        with self.assertRaises(AccessError):
+        with self.assertRaises(UserError):
             reset_cross = (
                 self.env["thirdcode.employee.password.wizard"]
                 .with_user(admin_b)
