@@ -190,9 +190,7 @@ class AccountPayment(models.Model):
             if not payment.thirdcode_receipt_number:
                 payment.sudo().write(
                     {
-                        "thirdcode_receipt_number": self.env["ir.sequence"].next_by_code(
-                            "thirdcode.official.receipt"
-                        ),
+                        "thirdcode_receipt_number": payment.company_id._thirdcode_receipt_sequence().next_by_id(),
                         "thirdcode_receipt_issued_at": fields.Datetime.now(),
                     }
                 )

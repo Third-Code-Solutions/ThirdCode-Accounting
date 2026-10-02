@@ -164,3 +164,15 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
         rerun_steps = service._ensure_period(company, {})
         self.assertTrue(any("reused" in step for step in rerun_steps))
+
+    def test_receipt_sequence_is_per_company(self):
+        company_b = self.env["res.company"].sudo().create({"name": "Second Trial Company"})
+        sequence = company_b._thirdcode_receipt_sequence()
+        self.assertEqual(sequence.company_id, company_b)
+        self.assertEqual(sequence.next_by_id(), "OR/00000001")
+        self.assertEqual(company_b._thirdcode_receipt_sequence(), sequence)  # idempotent
+
+        # the original company keeps its own sequence, independent numbering
+        sequence_a = self.company._thirdcode_receipt_sequence()
+        self.assertNotEqual(sequence_a, sequence)
+        self.assertTrue(sequence_a.next_by_id().startswith("OR/"))

@@ -107,6 +107,27 @@ class ResCompany(models.Model):
                     )
                 )
 
+    def _thirdcode_receipt_sequence(self):
+        """Return the receipt numbering sequence for this company (created if missing)."""
+        self.ensure_one()
+        sequence_model = self.env["ir.sequence"].sudo()
+        sequence = sequence_model.search(
+            [("code", "=", "thirdcode.official.receipt"), ("company_id", "=", self.id)],
+            limit=1,
+        )
+        if not sequence:
+            template = self.env.ref(
+                "thirdcode_accounting.seq_thirdcode_official_receipt"
+            ).sudo()
+            sequence = template.copy(
+                {
+                    "name": "%s - %s" % (template.name, self.display_name),
+                    "company_id": self.id,
+                    "number_next": 1,
+                }
+            )
+        return sequence
+
     def action_validate_thirdcode_configuration(self):
         if not (
             self.env.user.has_group("thirdcode_accounting.group_thirdcode_accountant")
