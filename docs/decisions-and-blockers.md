@@ -67,3 +67,20 @@ infrastructure owner. The PRD is still version 0.1 review draft.
 
 These blockers do not prevent independent technical work, but no synthetic
 result should be labeled client acceptance or regulatory compliance.
+
+### Trial-launch engineering decisions — 3 October 2026
+
+- Privileged provisioning runs through the token-gated `/tcsi/setup` endpoint
+  as the superuser user (`with_user(SUPERUSER_ID)`), so pilot setup does not
+  depend on the Railway `TCSI_ADMIN_*` password.
+- Company creation passes country/currency explicitly; partial/anonymous
+  environments otherwise hit `currency_id` NULL inserts or
+  `Expected singleton: res.users()` from core defaults.
+- `report_action()` requires `company.external_report_layout_id` to point at
+  the layout view (`web.external_layout_standard`); otherwise admins get the
+  layout configurator action instead of the report (live symptom:
+  `AssertionError: template is required`).
+- Receipt numbering is per company: `res.company._thirdcode_receipt_sequence`
+  creates the `OR/…` sequence lazily for each company.
+- Engine runs prefork with request recycling (`limit_time_real`); database
+  maintenance ops are available through the setup endpoint.

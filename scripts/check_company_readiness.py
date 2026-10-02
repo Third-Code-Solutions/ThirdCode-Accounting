@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import http.client
 import json
 import os
 import socket
 import sys
+import time
 import xmlrpc.client
 from datetime import date
 from typing import Any
@@ -109,7 +111,19 @@ def main() -> int:
         return 2
 
     def call(model: str, method: str, positional: list[Any], keyword: dict[str, Any] | None = None) -> Any:
-        return models.execute_kw(args.database, uid, password, model, method, positional, keyword or {})
+        # Read-only preflight: retry once the origin edge drops a connection
+        # mid-response (IncompleteRead / reset), which the hosted proxy
+        # occasionally does.
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                return models.execute_kw(
+                    args.database, uid, password, model, method, positional, keyword or {}
+                )
+            except (OSError, http.client.HTTPException, xmlrpc.client.ProtocolError) as error:
+                last_error = error
+                time.sleep(1.5 * (attempt + 1))
+        raise last_error  # type: ignore[misc]
 
     user = call("res.users", "read", [[uid]], {"fields": ["company_ids"]})[0]
     allowed = user["company_ids"]

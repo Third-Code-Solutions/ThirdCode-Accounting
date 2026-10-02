@@ -107,6 +107,17 @@ period). Checklist for a company that is ready to post:
 7. Opening balances / open items loaded through Migration batches, reconciled
    to source counts.
 
+**Trial mode (current pilot use).** The pilot company and the ten trial
+organisations are provisioned structurally (items 1–3 above) through the
+token-gated provisioning endpoint: PHP currency, PH chart of accounts,
+journals, an open FY 2026 period and a report layout. With **Trial mode**
+enabled on the company (company form → Regulatory configuration), items 4–6
+are deferred by design: invoices and receipts print without BIR control values
+and every output is watermarked "TRIAL COPY" until real approvals exist.
+Receipt numbering is per company (`OR/…`, sequence created on first receipt).
+There is no email sending configured for the trial: distribute and rotate
+logins out-of-band from the engine.
+
 ## 5. Daily input workflows
 
 **5.1 Customer invoice (Encoder or Accountant drafts; Accountant posts)**

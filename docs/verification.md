@@ -141,7 +141,7 @@ section 5 of the user guide.
 | Portal set-password flow | **PASSED (deployed)** | `/auth/confirm` token-hash route deployed at commit `f01e92e` (invalid tokens redirect to `/login?state=link_invalid`; verified live); `/login?mode=update` and `/login?state=link_invalid` return 200; recovery and invite email templates updated to the `{{ .TokenHash }}` pattern (verified through the Management API) |
 | Platform-owner account | **PASSED (created)** | Auth user created for the approved owner address through the GoTrue admin API without a password; `platform_owner_access` points at it (exactly one row). The first set-password email is pending the project email sender's rate-limit window; afterwards `/login` → `/owner` serves the cross-tenant analytics console |
 
-Still open after this verification:
+Still open after this verification (superseded in part on 3 October 2026 — see the trial-launch verification below):
 
 - The hosted engine company still needs its chart of accounts, journals, and
   open period — now one reviewed, idempotent command
@@ -155,3 +155,20 @@ Still open after this verification:
   project email sender's rate limit. Either wait for the window to clear and
   press "Forgot password?" on the live `/login`, or re-run
   `node scripts/bootstrap-platform-owner.mjs --email <approved-address> --send-recovery`.
+
+### Trial launch verification — 3 October 2026
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Token-gated provisioning endpoint | **PASSED (live)** | `POST /tcsi/setup` on the Railway engine: wrong token → 401; valid token → status/provisioning as superuser (`uid: 1`). Plaintext token held outside the repository; only its SHA-256 is committed. |
+| Pilot company baseline | **PASSED** | Third Code Solutions Inc.: PHP, Philippines, trial mode, report layout, 104-account PH chart, 7 journals, 60 taxes, FY 2026 period open. |
+| Ten trial organisations | **PASSED** | Trial Client 01–10 created with the same baseline; role logins (administrator/accountant/encoder/readonly per org, 40 users); credentials recorded outside the repository. |
+| End-to-end posting per company | **PASSED** | 22/22 steps for administrator@ and accountant@ (pilot) and trial01/trial02: customer → invoice post → TRIAL-watermarked print + PDF → payment → receipt (`OR/00000001+`, per company) → manual journal entry → financial report → trial balance. |
+| Role guards | **PASSED** | Encoder: drafts allowed, posting denied, reports denied. Read-only: input denied, reading and report wizards allowed. Verified on the pilot and trial02. |
+| Company isolation | **PASSED** | Pilot admin session rejected when addressing a trial company (`Access to unauthorized or invalid companies`); multi-company rules hold outside tests. |
+| Readiness preflight (trial) | **PASSED** | `scripts/check_company_readiness.py --trial` exit 0 for all 11 companies (legal gates reported as trial-deferred, not blockers). |
+| Engine stability | **PASSED (hardened)** | Intermittent stalls root-caused to single-process threaded mode; engine now prefork (`workers=2`, `limit_time_real=600`) with token-gated maintenance ops (`locks`, `terminate_idle`, `terminate_pids`). Readiness script retries transport-level connection drops. |
+
+Notes: legal/BIR items are trial-deferred by design; no SMTP is configured, so
+trial passwords are distributed and rotated out-of-band. Each push to `main`
+restarts the engine — schedule pushes outside trial working hours.
