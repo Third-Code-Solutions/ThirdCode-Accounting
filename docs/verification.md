@@ -183,3 +183,16 @@ restarts the engine — schedule pushes outside trial working hours.
 | Superadmin hidden & protected from tenants | **PASSED (live)** | The `thirdcode_platform_owner` flag keeps the superadmin out of every tenant user list (tenant search returns none) and tenant admins are denied reset/enable/disable against it server-side ("You can only manage accounts of your own company."). Regression-checked: tenants still manage their own staff freely. |
 | Backend stylesheet compile | **PASSED (fixed, deployed)** | The redesigned `tcsi_apps.scss` used lowercase `min(100%, 256px)`; libsass (both the engine's asset compiler and the CI "production Sass runtime") evaluates that as the Sass builtin and aborted the whole `web.assets_web` bundle with `Incompatible units: 'px' and '%'` — Odoo served stale fallback CSS with a red error banner. Fixed to the pass-through `Min(` form in `6606a31`; the live bundle now recompiles clean (1.3 MB, redesigned classes present, no error banner). |
 | Quality gates | **PASSED** | CI run [37071399442](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37071399442) at `6606a31`: `verify` and `orvexa-integration` both success (module install + full test suite incl. the new employee-management and platform-owner protection tests). Portal health reports commit `6606a31d9092`; engine serves HTTP 200. |
+
+### Platform console verification — 3 October 2026 (later run)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Console deployed and wired | **PASSED (live)** | Module 18.0.2.9.3; menu `TCSI Accounting → Platform Console` resolves to `ir.actions.client,480`; the superadmin's home action points at the console (`console_bootstrap.py`). |
+| Console payload (live, JSON-RPC, as superadmin) | **PASSED** | `get_console_data` returns 4 KPI cards, 11 organisations with trial windows, 20 attention items, 24 recent documents and 12 sign-ins; per-organisation user counts exclude platform-owner accounts and match what each tenant itself sees (4 users on trial clients, 5 on Trial Client 01). |
+| Trial lifecycle actions | **PASSED (live + unit)** | Live: pilot set to `active`, the 10 trial clients re-marked onto fresh 30-day windows. Unit tests (green in CI): extend (+7/+120 validation), convert (trial mode off), start trial, suspend (deactivates users, remembers ids) and exact resume. |
+| Tenant isolation | **PASSED (live)** | Trial Client 01 administrator: console read and suspend both refused ("The platform console is reserved to the system owner."); its own user list is unchanged. Menu is invisible to role users. |
+| Quality gates | **PASSED** | CI runs 37076657100, 37077197462, 37077469123, 37078195738 (`fcc3788` → `2ca9b8c`) all success. |
+| Live-vs-CI note | recorded | `res.users.login_date` is a non-stored computed field on the engine's Odoo build (`18.0-20260908`) — ordering a search by it raises `ValueError` live, while the CI image's older build tolerated it (tests were green). The sign-in feed now reads `res.users.log` directly; live JSON-RPC verification is the acceptance path for console changes. |
+
+Owner-facing documentation for the console: `~/tcsi-private/OWNER-GUIDE.md` § 6.
