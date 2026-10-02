@@ -255,14 +255,20 @@ class TestTrialMode(AccountTestInvoicingCommon):
             duplicate.action_create_employee()
 
         # Password resets: own company allowed, other companies denied.
-        before = staff.sudo().password
+        # res.users.password is write-only in Odoo 18 (reads return ''), so
+        # compare the stored hash directly at the database layer.
+        def password_hash():
+            self.env.cr.execute("SELECT password FROM res_users WHERE id = %s", (staff.id,))
+            return self.env.cr.fetchone()[0]
+
+        before = password_hash()
         reset_own = (
             self.env["thirdcode.employee.password.wizard"]
             .with_user(admin_b)
             .create({"user_id": staff.id, "new_password": "Staff-NewPass1"})
         )
         reset_own.action_reset_password()
-        self.assertNotEqual(staff.sudo().password, before)
+        self.assertNotEqual(password_hash(), before)
         with self.assertRaises(UserError):
             reset_cross = (
                 self.env["thirdcode.employee.password.wizard"]
