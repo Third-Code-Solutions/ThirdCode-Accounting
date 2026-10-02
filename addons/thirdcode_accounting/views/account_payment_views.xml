@@ -9,15 +9,23 @@
                 <button name="action_print_thirdcode_receipt" type="object" string="Official Receipt" class="btn-secondary" invisible="state not in ('in_process', 'paid')" groups="account.group_account_invoice"/>
             </xpath>
             <xpath expr="//field[@name='memo']" position="after">
-                <field name="thirdcode_receipt_number" readonly="1"/>
-                <field name="thirdcode_receipt_control_number" readonly="1"/>
-                <field name="thirdcode_amount_in_words" readonly="1"/>
-                <field name="thirdcode_receipt_customer_tin" readonly="1"/>
-                <field name="thirdcode_receipt_vat_amount" readonly="1"/>
-                <field name="thirdcode_receipt_vat_breakdown" readonly="1"/>
-                <field name="thirdcode_report_status" readonly="1"/>
-                <field name="thirdcode_payment_instrument"/>
-                <field name="thirdcode_instrument_reference"/>
+                <field name="thirdcode_payment_instrument" string="Payment instrument"/>
+                <field name="thirdcode_instrument_reference" string="Instrument reference"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <div class="tcsi-form-sections">
+                    <group string="Receipt details" class="tcsi-form-section">
+                        <field name="thirdcode_receipt_number" string="Receipt number" readonly="1"/>
+                        <field name="thirdcode_receipt_control_number" string="BIR control number" readonly="1"/>
+                        <field name="thirdcode_receipt_customer_tin" string="Customer TIN" readonly="1"/>
+                        <field name="thirdcode_report_status" string="Layout status" readonly="1"/>
+                    </group>
+                    <group string="Amount and tax" class="tcsi-form-section">
+                        <field name="thirdcode_amount_in_words" string="Amount in words" readonly="1"/>
+                        <field name="thirdcode_receipt_vat_amount" string="Invoice VAT amount" readonly="1"/>
+                        <field name="thirdcode_receipt_vat_breakdown" string="Invoice VAT breakdown" readonly="1"/>
+                    </group>
+                </div>
             </xpath>
         </field>
     </record>

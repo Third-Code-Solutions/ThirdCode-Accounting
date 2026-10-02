@@ -42,13 +42,19 @@
         <field name="model">thirdcode.employee.wizard</field>
         <field name="arch" type="xml">
             <form string="New Employee Account">
-                <group>
-                    <field name="name" placeholder="e.g. Maria Santos"/>
-                    <field name="login" placeholder="e.g. maria@company.ph"/>
-                    <field name="role" widget="radio"/>
-                    <field name="company_id" groups="base.group_system" options="{'no_create': True, 'no_open': True}"/>
-                    <field name="password" password="True"/>
-                </group>
+                <sheet>
+                    <div class="tcsi-form-sections">
+                        <group string="Employee details" class="tcsi-form-section">
+                            <field name="name" string="Full name" placeholder="e.g. Maria Santos"/>
+                            <field name="login" string="Login email" placeholder="e.g. maria@company.ph"/>
+                        </group>
+                        <group string="Account access" class="tcsi-form-section">
+                            <field name="role" widget="radio"/>
+                            <field name="company_id" groups="base.group_system" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="password" password="True"/>
+                        </group>
+                    </div>
+                </sheet>
                 <footer>
                     <button name="action_create_employee" type="object" string="Create Account" class="btn-primary"/>
                     <button special="cancel" string="Cancel" class="btn-secondary"/>
@@ -62,10 +68,14 @@
         <field name="model">thirdcode.employee.password.wizard</field>
         <field name="arch" type="xml">
             <form string="Reset Password">
-                <group>
-                    <field name="user_id" readonly="1" options="{'no_open': True}"/>
-                    <field name="new_password" password="True"/>
-                </group>
+                <sheet>
+                    <div class="tcsi-form-sections">
+                        <group string="Account credentials" class="tcsi-form-section tcsi-form-section-wide">
+                            <field name="user_id" string="Employee" readonly="1" options="{'no_open': True}"/>
+                            <field name="new_password" string="New password" password="True"/>
+                        </group>
+                    </div>
+                </sheet>
                 <footer>
                     <button name="action_reset_password" type="object" string="Set Password" class="btn-primary"/>
                     <button special="cancel" string="Cancel" class="btn-secondary"/>

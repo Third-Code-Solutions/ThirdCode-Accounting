@@ -1,0 +1,348 @@
+// Accounting customer portal. Selectors follow Odoo 18 portal/account templates.
+// Screen-only: invoice report iframes, PDF assets and print layouts stay native.
+@media screen {
+    #wrapwrap:is(.o_portal, :has(.o_portal_wrap, #o_payment_portal_home)) {
+        --tcsi-portal-page: #fbfbfd;
+        --tcsi-portal-surface: #ffffff;
+        --tcsi-portal-soft: #f8fafb;
+        --tcsi-portal-ink: #1d2b33;
+        --tcsi-portal-text: #3d4d56;
+        --tcsi-portal-muted: #6e7c84;
+        --tcsi-portal-line: #e1e7ea;
+        --tcsi-portal-line-strong: #cbd5da;
+        --tcsi-portal-accent: #6b48d8;
+        --tcsi-portal-accent-deep: #5130b3;
+        --tcsi-portal-accent-soft: #f1edff;
+        color: var(--tcsi-portal-text);
+        background: var(--tcsi-portal-page);
+        font-family: "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+
+        > header,
+        > header .navbar,
+        > footer {
+            color: var(--tcsi-portal-text);
+            background: var(--tcsi-portal-surface) !important;
+            box-shadow: none;
+        }
+
+        > header { border-bottom: 1px solid var(--tcsi-portal-line); }
+        > footer { border-top: 1px solid var(--tcsi-portal-line); }
+        > header .navbar { min-height: 56px; }
+
+        .o_portal_wrap > .container,
+        .wrap:has(#o_payment_portal_home) > .container {
+            padding-top: 24px !important;
+            padding-bottom: 40px !important;
+        }
+
+        .o_portal_wrap h1,
+        .o_portal_wrap h2,
+        .o_portal_wrap h3 {
+            color: var(--tcsi-portal-ink);
+            font-size: 24px;
+            font-weight: 650;
+            line-height: 1.25;
+            letter-spacing: -.025em;
+        }
+
+        .o_portal_wrap h4,
+        .o_portal_wrap h5,
+        .o_portal_wrap h6 {
+            color: var(--tcsi-portal-ink);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        a:not(.btn):not(.dropdown-item):not(.page-link):not(.o_portal_index_card > a) {
+            color: var(--tcsi-portal-accent-deep);
+        }
+
+        .text-muted,
+        .form-text,
+        .navbar-text {
+            color: var(--tcsi-portal-muted) !important;
+        }
+
+        .o_portal_submenu {
+            gap: 4px;
+            padding-block: 8px;
+            color: var(--tcsi-portal-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .o_portal_navbar {
+            gap: 16px;
+            min-height: 40px;
+            margin-bottom: 24px !important;
+
+            .navbar-brand {
+                color: var(--tcsi-portal-ink);
+                font-size: 24px;
+                font-weight: 650;
+                letter-spacing: -.025em;
+                white-space: normal;
+            }
+        }
+
+        .btn {
+            min-height: 36px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            --btn-bg: var(--tcsi-portal-accent);
+            --btn-border-color: var(--tcsi-portal-accent);
+            --btn-color: var(--tcsi-portal-surface);
+            --btn-hover-bg: var(--tcsi-portal-accent-deep);
+            --btn-hover-border-color: var(--tcsi-portal-accent-deep);
+            --btn-hover-color: var(--tcsi-portal-surface);
+            --btn-active-bg: var(--tcsi-portal-accent-deep);
+            --btn-active-border-color: var(--tcsi-portal-accent-deep);
+            --btn-active-color: var(--tcsi-portal-surface);
+        }
+
+        .btn-light,
+        .btn-secondary,
+        .btn-outline-secondary {
+            --btn-color: var(--tcsi-portal-text);
+            --btn-bg: var(--tcsi-portal-surface);
+            --btn-border-color: var(--tcsi-portal-line-strong);
+            --btn-hover-color: var(--tcsi-portal-ink);
+            --btn-hover-bg: var(--tcsi-portal-soft);
+            --btn-hover-border-color: var(--tcsi-portal-line-strong);
+            --btn-active-color: var(--tcsi-portal-accent-deep);
+            --btn-active-bg: var(--tcsi-portal-accent-soft);
+        }
+
+        .btn-link { color: var(--tcsi-portal-accent-deep); }
+
+        .form-control,
+        .form-select {
+            min-height: 40px;
+            color: var(--tcsi-portal-ink);
+            background-color: var(--tcsi-portal-surface);
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+
+            &:not(.is-invalid):not(.is-valid) { border-color: var(--tcsi-portal-line-strong); }
+            &::placeholder { color: var(--tcsi-portal-muted); }
+            &:disabled,
+            &[readonly] { background-color: var(--tcsi-portal-soft); }
+            &:focus:not(.is-invalid):not(.is-valid) {
+                border-color: var(--tcsi-portal-accent);
+                box-shadow: 0 0 0 2px var(--tcsi-portal-accent-soft);
+            }
+        }
+
+        label,
+        .col-form-label {
+            margin-bottom: 4px;
+            color: var(--tcsi-portal-text);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .o_portal_search_panel {
+            min-width: 0;
+
+            .input-group {
+                border: 1px solid var(--tcsi-portal-line-strong);
+                border-radius: 6px;
+            }
+
+            .form-control { background: var(--tcsi-portal-surface) !important; }
+        }
+
+        .dropdown-menu,
+        .modal-content,
+        .offcanvas {
+            color: var(--tcsi-portal-text);
+            background: var(--tcsi-portal-surface);
+            border-color: var(--tcsi-portal-line);
+            border-radius: 6px;
+        }
+
+        .dropdown-item {
+            padding: 8px 12px;
+            color: var(--tcsi-portal-text);
+            font-size: 13px;
+
+            &:hover,
+            &:focus,
+            &.active {
+                color: var(--tcsi-portal-accent-deep);
+                background: var(--tcsi-portal-accent-soft);
+            }
+        }
+
+        .o_portal_index_card > a {
+            padding: 20px !important;
+            color: var(--tcsi-portal-text);
+            border: 1px solid var(--tcsi-portal-line);
+            border-radius: 6px !important;
+            box-shadow: none;
+
+            // Keep semantic warning/success cards in their existing colors.
+            &.bg-100 { background: var(--tcsi-portal-surface) !important; }
+            &:hover { border-color: var(--tcsi-portal-accent); }
+            .fs-5 { font-size: 16px !important; font-weight: 600 !important; line-height: 1.4 !important; }
+        }
+
+        .o_portal_my_doc_table {
+            --table-color: var(--tcsi-portal-text);
+            --table-bg: var(--tcsi-portal-surface);
+            --table-striped-bg: var(--tcsi-portal-soft);
+            --table-striped-color: var(--tcsi-portal-text);
+            border-color: var(--tcsi-portal-line);
+            font-size: 13px;
+
+            th,
+            td {
+                padding: 12px 16px;
+                vertical-align: middle;
+            }
+
+            th {
+                color: var(--tcsi-portal-muted);
+                background: var(--tcsi-portal-soft);
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            td.text-end { font-variant-numeric: tabular-nums; white-space: nowrap; }
+            .badge { padding: 4px 8px; font-size: 11px; font-weight: 600; line-height: 1.4; }
+        }
+
+        .o_portal_pager .page-link {
+            padding: 8px 12px;
+            color: var(--tcsi-portal-text);
+            background: var(--tcsi-portal-surface);
+            border-color: var(--tcsi-portal-line);
+        }
+
+        .o_portal_pager .active > .page-link {
+            color: var(--tcsi-portal-accent-deep);
+            background: var(--tcsi-portal-accent-soft);
+            border-color: var(--tcsi-portal-accent);
+        }
+
+        .o_portal_sidebar_content {
+            padding: 20px !important;
+            background: var(--tcsi-portal-surface);
+            border: 1px solid var(--tcsi-portal-line);
+            border-radius: 6px;
+        }
+
+        .o_portal_html_view {
+            border: 1px solid var(--tcsi-portal-line);
+            border-radius: 6px;
+            box-shadow: none !important;
+        }
+
+        // Report contents remain in the original iframe and retain document styling.
+        #invoice_communication {
+            padding: 20px;
+            background: var(--tcsi-portal-surface);
+            border: 1px solid var(--tcsi-portal-line);
+            border-radius: 6px;
+        }
+
+        // Payment pay/status/confirm/method routes share this native breadcrumb.
+        .wrap:has(#o_payment_portal_home) .text-bg-light {
+            color: var(--tcsi-portal-text) !important;
+            background: var(--tcsi-portal-soft) !important;
+            border: 1px solid var(--tcsi-portal-line);
+            border-radius: 6px !important;
+        }
+
+        #o_payment_form {
+            .list-group-item {
+                color: var(--tcsi-portal-text);
+                background: var(--tcsi-portal-surface);
+                border-color: var(--tcsi-portal-line);
+                padding: 16px;
+            }
+
+            .list-group-item:has(.form-check-input:checked) {
+                border-color: var(--tcsi-portal-accent);
+            }
+
+            .form-check-input:checked {
+                background-color: var(--tcsi-portal-accent);
+                border-color: var(--tcsi-portal-accent);
+            }
+
+            h4 {
+                color: var(--tcsi-portal-ink);
+                font-size: 13px !important;
+                font-weight: 600 !important;
+                text-transform: none !important;
+            }
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        .alert-dismissible { padding-right: 48px; }
+
+        :is(a, button, input, select, textarea):focus-visible {
+            outline: 2px solid var(--tcsi-portal-accent);
+            outline-offset: 2px;
+        }
+    }
+
+    html[data-tcsi-theme="dark"] #wrapwrap:is(.o_portal, :has(.o_portal_wrap, #o_payment_portal_home)) {
+        --tcsi-portal-page: #101720;
+        --tcsi-portal-surface: #18222d;
+        --tcsi-portal-soft: #1e2a36;
+        --tcsi-portal-ink: #edf2f8;
+        --tcsi-portal-text: #d1dbe6;
+        --tcsi-portal-muted: #aab7c7;
+        --tcsi-portal-line: #344453;
+        --tcsi-portal-line-strong: #485a6c;
+        --tcsi-portal-accent: #bca6ff;
+        --tcsi-portal-accent-deep: #d4c5ff;
+        --tcsi-portal-accent-soft: #302947;
+    }
+
+    // Signup and recovery use the existing branded login layout as well.
+    #wrapwrap .tcsi-login-shell :is(.oe_signup_form, .oe_reset_password_form) {
+        font-size: 13px;
+        line-height: 1.5;
+
+        label { margin-bottom: 4px; font-size: 12px; font-weight: 600; }
+        .form-control { min-height: 40px; border-radius: 6px; font-size: 13px; }
+        .btn { min-height: 40px; border-radius: 6px; font-size: 13px; }
+        .alert { margin-block: 16px; padding: 12px 16px; border-radius: 6px; }
+        .oe_login_buttons { gap: 8px; }
+    }
+}
+
+@media screen and (max-width: 767.98px) {
+    #wrapwrap:is(.o_portal, :has(.o_portal_wrap, #o_payment_portal_home)) {
+        .o_portal_wrap > .container,
+        .wrap:has(#o_payment_portal_home) > .container {
+            padding: 16px 16px 32px !important;
+        }
+
+        .o_portal_navbar { gap: 12px; }
+        .o_portal_search_panel { width: 100%; }
+        .o_portal_my_doc_table :is(th, td) { padding: 12px; }
+        .o_portal_sidebar_content,
+        #invoice_communication { padding: 16px !important; }
+    }
+}

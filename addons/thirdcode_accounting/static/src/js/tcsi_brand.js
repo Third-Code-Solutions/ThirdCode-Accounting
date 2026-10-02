@@ -185,7 +185,9 @@ function getNativeRouteTitle(actionManager) {
     const formTitle = actionManager?.querySelector(
         ".o_form_view .o_form_sheet h1, .o_form_view .o_form_sheet .o_form_title",
     )?.textContent;
-    const rawTitle = ((isForm ? formType || formTitle : title) || "").replace(/\s+/g, " ").trim();
+    // A field label such as "Company Name" is not a page title. Prefer the
+    // record heading so company, contact and configuration forms stay legible.
+    const rawTitle = ((isForm ? formTitle || title || formType : title) || "").replace(/\s+/g, " ").trim();
     if (!rawTitle) {
         const pathTitle = Object.entries(ROUTE_PATH_TITLES).find(([path]) =>
             window.location.pathname.endsWith(path) || window.location.pathname.includes(`${path}/`),
@@ -261,6 +263,9 @@ function getNativeRouteDetails(actionManager) {
     if (actionManager.querySelector(".o_account_dashboard_kanban_view")) {
         return { key: "accounting-dashboard", view: "kanban", ...NATIVE_ROUTE_COPY["accounting-dashboard"] };
     }
+    if (actionManager.querySelector(".o-mail-Discuss")) {
+        return { key: "messages", view: "other", title: "Messages" };
+    }
 
     const title = getNativeRouteTitle(actionManager);
     const normalizedTitle = title.toLowerCase();
@@ -277,30 +282,41 @@ function getNativeRouteDetails(actionManager) {
 }
 
 function ensureNativeRouteHeader(actionManager, details) {
-    if (!details || details.view === "form" || details.view === "dialog") {
+    if (!details || !actionManager) {
         return;
     }
     const action = actionManager.querySelector(".o_action") || actionManager.firstElementChild;
-    if (!action || action.matches(".tcsi-dashboard, .tcsi-app-catalog") || action.querySelector(":scope > .tcsi-native-route-header")) {
+    if (!action) {
         return;
     }
-    const header = document.createElement("header");
-    header.className = "tcsi-native-route-header";
+    let header = action.querySelector(":scope > .tcsi-native-route-header");
+    const supportedViews = ["list", "kanban", "graph", "pivot", "calendar", "hierarchy", "gantt", "activity"];
+    if (!supportedViews.includes(details.view) || action.matches(".tcsi-dashboard, .tcsi-app-catalog, .o-mail-Discuss, .o_base_settings_view")) {
+        header?.remove();
+        return;
+    }
+    if (!header) {
+        header = document.createElement("header");
+        header.className = "tcsi-native-route-header";
+        for (const [tag, className] of [["span", "eyebrow"], ["h1", "title"], ["p", "description"]]) {
+            const element = document.createElement(tag);
+            element.className = `tcsi-native-route-${className}`;
+            header.append(element);
+        }
+        const controlPanel = action.querySelector(":scope > .o_control_panel") || action.querySelector(".o_control_panel");
+        action.insertBefore(header, controlPanel || action.firstChild);
+    }
     header.dataset.tcsiRouteKey = details.key;
-
-    const eyebrow = document.createElement("span");
-    eyebrow.className = "tcsi-native-route-eyebrow";
-    eyebrow.textContent = details.eyebrow;
-    const title = document.createElement("h1");
-    title.className = "tcsi-native-route-title";
-    title.textContent = details.title;
-    const description = document.createElement("p");
-    description.className = "tcsi-native-route-description";
-    description.textContent = details.description;
-    header.append(eyebrow, title, description);
-
-    const controlPanel = action.querySelector(":scope > .o_control_panel") || action.querySelector(".o_control_panel");
-    action.insertBefore(header, controlPanel || action.firstChild);
+    // Native controllers can reuse their root across navigation. Update existing
+    // headings without causing an endless branding MutationObserver cycle.
+    for (const key of ["eyebrow", "title", "description"]) {
+        const element = header.querySelector(`.tcsi-native-route-${key}`);
+        const value = details[key] || "";
+        if (element.textContent !== value) {
+            element.textContent = value;
+        }
+        element.hidden = !value;
+    }
 }
 
 function brandNativeChrome(actionManager, details) {
@@ -332,17 +348,6 @@ function brandNativeChrome(actionManager, details) {
         }
     });
 
-    const formHeading = actionManager.querySelector(".o_form_view .o_form_sheet h1");
-    const formTitle = formHeading?.textContent?.replace(/\s+/g, " ").trim();
-    const formTitleMap = {
-        "VENDOR BILL": "Vendor bill",
-        "CUSTOMER INVOICE": "Customer invoice",
-        "CREDIT NOTE": "Credit note",
-        "CUSTOMER PAYMENT": "Customer payment",
-    };
-    if (formHeading && formTitleMap[formTitle]) {
-        formHeading.textContent = formTitleMap[formTitle];
-    }
     ensureNativeRouteHeader(actionManager, details);
 }
 
