@@ -272,6 +272,17 @@ class ThirdCodeSetupService(models.AbstractModel):
                 updates["currency_id"] = currency.id
         else:
             steps.append("currency %s not found; left unchanged" % currency_code)
+        layout_xmlid = str(
+            payload.get("external_report_layout") or "web.report_layout_standard"
+        )
+        if not company.external_report_layout_id:
+            layout = self.env.ref(layout_xmlid, raise_if_not_found=False)
+            if layout:
+                updates["external_report_layout_id"] = layout.id
+            else:
+                steps.append(
+                    "external report layout %s not found; left unchanged" % layout_xmlid
+                )
         if payload.get("trial_mode") is not None:
             updates["thirdcode_trial_mode"] = bool(payload["trial_mode"])
         if payload.get("payment_approval_enabled") is not None:

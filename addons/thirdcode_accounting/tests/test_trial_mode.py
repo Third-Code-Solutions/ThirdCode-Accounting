@@ -10,7 +10,14 @@ class TestTrialMode(AccountTestInvoicingCommon):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.company_data["company"]
-        cls.company.sudo().write({"thirdcode_trial_mode": True})
+        # A report layout must be selected, otherwise report_action() returns
+        # the document-layout configurator action instead of the report.
+        cls.company.sudo().write(
+            {
+                "thirdcode_trial_mode": True,
+                "external_report_layout_id": cls.env.ref("web.report_layout_standard").id,
+            }
+        )
 
     def _posted_invoice(self):
         invoice = self.env["account.move"].create(
@@ -66,21 +73,22 @@ class TestTrialMode(AccountTestInvoicingCommon):
             payment.action_print_thirdcode_receipt()
 
     def test_financial_report_layout_status_follows_trial_mode(self):
-        wizard = self.env["thirdcode.financial.report.wizard"].create(
-            {
-                "report_type": "balance_sheet",
-                "company_id": self.company.id,
-                "date_from": fields.Date.today().replace(month=1, day=1),
-                "date_to": fields.Date.today(),
-            }
-        )
+        def wizard():
+            return self.env["thirdcode.financial.report.wizard"].create(
+                {
+                    "report_type": "balance_sheet",
+                    "company_id": self.company.id,
+                    "date_from": fields.Date.today().replace(month=1, day=1),
+                    "date_to": fields.Date.today(),
+                }
+            )
 
-        self.assertEqual(wizard.report_status, "trial")
-        self.assertIn("TRIAL COPY", wizard.get_report_data()["layout_status"])
+        self.assertEqual(wizard().report_status, "trial")
+        self.assertIn("TRIAL COPY", wizard().get_report_data()["layout_status"])
 
         self.company.sudo().write({"thirdcode_trial_mode": False})
-        self.assertEqual(wizard.report_status, "draft")
-        self.assertIn("DRAFT LAYOUT", wizard.get_report_data()["layout_status"])
+        self.assertEqual(wizard().report_status, "draft")
+        self.assertIn("DRAFT LAYOUT", wizard().get_report_data()["layout_status"])
 
     def test_setup_service_requires_token_context(self):
         service = self.env["thirdcode.setup.service"]
