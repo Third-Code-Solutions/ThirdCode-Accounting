@@ -173,6 +173,12 @@ class TestTrialMode(AccountTestInvoicingCommon):
         rerun_steps = service._ensure_period(company, {})
         self.assertTrue(any("reused" in step for step in rerun_steps))
 
+    def test_maintenance_locks_reports_backends(self):
+        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        result = service._action_maintenance({"op": "locks"})
+        self.assertIn("backends", result)
+        self.assertIsInstance(result["backends"], list)
+
     def test_receipt_sequence_is_per_company(self):
         company_b = self.env["res.company"].sudo().create({"name": "Second Trial Company"})
         sequence = company_b._thirdcode_receipt_sequence()

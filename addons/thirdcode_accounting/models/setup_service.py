@@ -80,6 +80,58 @@ class ThirdCodeSetupService(models.AbstractModel):
             )
         return {"database": self.env.cr.dbname, "uid": self.env.uid, "companies": companies, "users": users}
 
+    def _action_maintenance(self, payload):
+        op = str(payload.get("op") or "locks")
+        if op == "locks":
+            self.env.cr.execute(
+                """
+                SELECT pid,
+                       state,
+                       wait_event_type,
+                       wait_event,
+                       EXTRACT(EPOCH FROM (now() - xact_start))::int AS xact_age_s,
+                       EXTRACT(EPOCH FROM (now() - query_start))::int AS query_age_s,
+                       left(query, 200) AS query
+                  FROM pg_stat_activity
+                 WHERE datname = current_database()
+                   AND pid <> pg_backend_pid()
+                 ORDER BY xact_start NULLS LAST
+                """
+            )
+            return {"backends": self.env.cr.dictfetchall()}
+        if op == "terminate_pids":
+            pids = [int(pid) for pid in payload.get("pids") or []]
+            terminated = {}
+            for pid in pids:
+                self.env.cr.execute("SELECT pg_terminate_backend(%s)", (pid,))
+                terminated[str(pid)] = self.env.cr.fetchone()[0]
+            return {"terminated": terminated}
+        if op == "terminate_idle":
+            min_age = int(payload.get("min_age_seconds") or 600)
+            self.env.cr.execute(
+                """
+                SELECT pid,
+                       EXTRACT(EPOCH FROM (now() - state_change))::int AS idle_age_s,
+                       left(query, 160) AS query
+                  FROM pg_stat_activity
+                 WHERE datname = current_database()
+                   AND pid <> pg_backend_pid()
+                   AND state = 'idle in transaction'
+                   AND now() - state_change > make_interval(secs => %s)
+                """,
+                (min_age,),
+            )
+            victims = self.env.cr.dictfetchall()
+            terminated = {}
+            for row in victims:
+                try:
+                    self.env.cr.execute("SELECT pg_terminate_backend(%s)", (row["pid"],))
+                    terminated[str(row["pid"])] = self.env.cr.fetchone()[0]
+                except Exception as exc:  # noqa: BLE001
+                    terminated[str(row["pid"])] = str(exc)[:120]
+            return {"examined": victims, "terminated": terminated, "min_age_seconds": min_age}
+        raise UserError(_("Unknown maintenance op: %s") % op)
+
     def _action_create_company(self, payload):
         name = str(payload.get("name") or "").strip()
         if not name:

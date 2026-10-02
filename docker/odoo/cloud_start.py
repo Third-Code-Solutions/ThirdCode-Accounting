@@ -48,9 +48,13 @@ def main():
         "addons_path": "/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons",
         "list_db": "False",
         "proxy_mode": "True",
-        "workers": "0",
+        # Prefork mode: workers get recycled by limit_time_real, so one stuck
+        # request cannot degrade the whole pilot the way single-process
+        # threaded mode did. Values sized for the Railway pilot container.
+        "workers": os.environ.get("TCSI_WORKERS", "2"),
         "max_cron_threads": "1",
-        "db_maxconn": "16",
+        "db_maxconn": os.environ.get("TCSI_DB_MAXCONN", "8"),
+        "limit_time_real": os.environ.get("TCSI_LIMIT_TIME_REAL", "600"),
         "http_port": os.environ.get("PORT", "8069"),
         "without_demo": "all",
         "log_level": "info",
