@@ -214,7 +214,30 @@ agent and never posts entries.
 | Report shows a provisional watermark | Report samples are not approved for the company yet. |
 | Something is unavailable | Note company, user, time, page, and the exact message, then report it. Do not retry a posting blindly until you know its result. |
 
-## 8. Related documents
+## 8. Organization and employee account management
+
+- One client = one organization (Odoo company). Organizations are fully
+  isolated: accounting data, reports, and even user lists.
+- Org administrators manage their own people inside
+  `TCSI Accounting → Organization`:
+  - *New Employee Account* — create logins for their staff (Accountant,
+    Encoder, Read-only, or another Administrator).
+  - *Employee Accounts* — list own users, reset passwords, enable/disable
+    accounts. Everything is company-scoped; a tenant administrator can
+    never see or touch another organization.
+- The platform owner holds the system superadmin (`superadmin@tcsi.local`,
+  credentials outside the repo) with the whole-system console:
+  - Create a new organization: *Settings → Companies → New*, then click
+    *Provision TCSI Baseline* on the company form (chart, journals, taxes,
+    open period, trial mode).
+  - Create any organization's first administrator from
+    *Organization → New Employee Account* (the Company selector is
+    superadmin-only).
+- The `res.users` visibility rule scopes role users to their own
+  companies; base Odoo would otherwise expose every internal user record
+  (names and logins) across tenants.
+
+## 9. Related documents
 
 - `docs/accounting-user-guide.md` — setup sequence and the five-company
   acceptance checklist in full detail.

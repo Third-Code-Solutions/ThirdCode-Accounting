@@ -89,7 +89,9 @@ class ThirdcodeEmployeePasswordWizard(models.TransientModel):
         if not self.env.user.has_group(SYSTEM_GROUP):
             if not self.env.user.has_group(ADMIN_GROUP):
                 raise AccessError(_("Only company administrators can reset passwords."))
-            if not (set(target.company_ids.ids) & set(self.env.user.company_ids.ids)):
+            if target.has_group(SYSTEM_GROUP) or not (
+                set(target.company_ids.ids) & set(self.env.user.company_ids.ids)
+            ):
                 raise AccessError(_("You can only manage accounts of your own company."))
         if len((self.new_password or "").strip()) < MIN_PASSWORD_LENGTH:
             raise UserError(_("Use a password with at least %s characters.") % MIN_PASSWORD_LENGTH)
@@ -112,6 +114,13 @@ class ThirdcodeEmployeePasswordWizard(models.TransientModel):
 class ResUsers(models.Model):
     _inherit = "res.users"
 
+    thirdcode_platform_owner = fields.Boolean(
+        string="Platform owner account",
+        default=False,
+        help="Platform-owner accounts are visible only to themselves and are "
+        "managed only by the platform owner (superadmin).",
+    )
+
     def action_thirdcode_toggle_active(self):
         for user in self:
             if not self.env.user.has_group(SYSTEM_GROUP):
@@ -119,7 +128,9 @@ class ResUsers(models.Model):
                     raise AccessError(_("Only company administrators can enable or disable accounts."))
                 if user.id == self.env.user.id:
                     raise UserError(_("You cannot disable your own account."))
-                if not (set(user.company_ids.ids) & set(self.env.user.company_ids.ids)):
+                if user.has_group(SYSTEM_GROUP) or not (
+                    set(user.company_ids.ids) & set(self.env.user.company_ids.ids)
+                ):
                     raise AccessError(_("You can only manage accounts of your own company."))
             user.sudo().write({"active": not user.active})
         return True

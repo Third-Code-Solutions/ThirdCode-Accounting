@@ -84,3 +84,13 @@ result should be labeled client acceptance or regulatory compliance.
   creates the `OR/…` sequence lazily for each company.
 - Engine runs prefork with request recycling (`limit_time_real`); database
   maintenance ops are available through the setup endpoint.
+- Organization administrators manage their own employee accounts through
+  in-app wizards instead of Odoo's Settings app: granting
+  `base.group_erp_manager` would have exposed every company and every
+  internal user record (base rules give erp managers all companies).
+- `res.users` visibility is scoped by a TCSI record rule for all four role
+  groups (`company_ids in user companies`), closing cross-tenant
+  readability of names and logins that vanilla Odoo allows.
+- The platform owner superadmin is provisioned through the setup endpoint
+  (`extra_groups: [base.group_system]`); the service helper `provision_user`
+  is shared by the endpoint and the in-app wizards.

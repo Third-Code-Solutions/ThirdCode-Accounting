@@ -231,6 +231,7 @@ class ThirdCodeSetupService(models.AbstractModel):
             target_company_ids = self.env["res.company"].sudo().search([]).ids
         elif company_ids:
             target_company_ids = [int(cid) for cid in company_ids]
+        platform_owner = "base.group_system" in (extra_group_xmlids or [])
         user = (
             self.env["res.users"]
             .sudo()
@@ -247,6 +248,7 @@ class ThirdCodeSetupService(models.AbstractModel):
                 updates["company_id"] = company.id
                 updates["company_ids"] = [Command.set(target_company_ids)]
                 updates["groups_id"] = [Command.set(group_ids)]
+                updates["thirdcode_platform_owner"] = platform_owner
             user.write(updates)
             action = "updated"
         else:
@@ -260,6 +262,7 @@ class ThirdCodeSetupService(models.AbstractModel):
                     "company_id": company.id,
                     "company_ids": [Command.set(target_company_ids)],
                     "groups_id": [Command.set(group_ids)],
+                    "thirdcode_platform_owner": platform_owner,
                 }
             )
             action = "created"

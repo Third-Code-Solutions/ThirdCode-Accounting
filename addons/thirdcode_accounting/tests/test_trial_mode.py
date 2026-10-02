@@ -327,3 +327,43 @@ class TestTrialMode(AccountTestInvoicingCommon):
         admin_c = self.env["res.users"].sudo().search([("login", "=", "tenant-c-admin")])
         self.assertEqual(admin_c.company_ids.ids, [company_c.id])
         self.assertTrue(admin_c.has_group("thirdcode_accounting.group_thirdcode_administrator"))
+
+    def test_platform_owner_accounts_are_hidden_and_protected(self):
+        company_d = self.env["res.company"].sudo().create({"name": "Tenant D"})
+        admin_d = self._provision_admin("tenant-d-admin", company_d)
+        platform = self.env["res.users"].sudo().create(
+            {
+                "name": "Platform Guard",
+                "login": "platform-guard-test",
+                "company_id": company_d.id,
+                "company_ids": [Command.set([company_d.id])],
+                "groups_id": [
+                    Command.set(
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref("base.group_system").id,
+                        ]
+                    )
+                ],
+                "thirdcode_platform_owner": True,
+            }
+        )
+
+        # The platform account is invisible to the tenant even though the
+        # company overlaps.
+        self.assertFalse(
+            self.env["res.users"].with_user(admin_d).search([("id", "=", platform.id)])
+        )
+
+        # Tenant administrators cannot reset its password...
+        with self.assertRaises(UserError):
+            reset = (
+                self.env["thirdcode.employee.password.wizard"]
+                .with_user(admin_d)
+                .create({"user_id": platform.id, "new_password": "Guard-Passw0rd"})
+            )
+            reset.action_reset_password()
+
+        # ...and cannot enable or disable it.
+        with self.assertRaises(UserError):
+            platform.with_user(admin_d).action_thirdcode_toggle_active()

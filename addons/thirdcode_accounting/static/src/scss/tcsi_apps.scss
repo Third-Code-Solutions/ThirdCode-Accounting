@@ -1,35 +1,109 @@
 .tcsi-app-catalog {
-    --apps-ink: #20352f; --apps-muted: #586761; --apps-line: #dfe6e2;
-    padding: clamp(1.25rem, 4vw, 3rem); overflow-y: auto; height: 100%; background: #f8faf9; color: var(--apps-ink);
+    --apps-ink: var(--tcsi-route-ink, #20352f);
+    --apps-muted: var(--tcsi-route-muted, #586761);
+    --apps-line: var(--tcsi-route-line, #dfe6e2);
+    height: 100%;
+    min-width: 0;
+    padding: 24px 32px 48px;
+    overflow-y: auto;
+    background: var(--tcsi-route-page, #f8faf9);
+    color: var(--apps-ink);
+    font-size: 13px;
+    line-height: 1.5;
     font-family: inherit;
-    select { max-width: 20rem; padding: .75rem; border: 1px solid var(--apps-line); border-radius: .375rem; background: white; color: var(--apps-ink); }
-    .tcsi-app-status { font-size: .75rem; color: var(--apps-muted); margin: 0 0 1rem; }
-    .tcsi-app-status.is-installed { color: #245b43; }
-    .tcsi-app-monogram rect { fill: #edf2ef; }
-    .tcsi-app-monogram text { fill: #365b49; font-size: 15px; font-weight: 600; }
-    .tcsi-apps-detail { max-width: 76rem; margin: 1.5rem auto; padding: 1.5rem; background: #eaf1ed; border-left: 3px solid #365b49; }
-    .tcsi-apps-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; max-width: 76rem; margin: 0 auto 2rem; }
-    h1 { font: inherit; font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; letter-spacing: -.04em; margin: .5rem 0; }
-    p { color: var(--apps-muted); line-height: 1.6; }
-    .tcsi-apps-kicker { font-size: .8rem; margin: 0; }
-    .tcsi-apps-count { white-space: nowrap; font-size: .85rem; color: var(--apps-muted); }
-    .tcsi-apps-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; max-width: 76rem; margin: auto; }
-    label { display: block; font-size: .8rem; margin-bottom: .5rem; }
-    input { width: Min(100%, 22rem); min-width: 15rem; padding: .75rem 1rem; border: 1px solid var(--apps-line); border-radius: .375rem; background: white; color: var(--apps-ink); }
-    .tcsi-apps-filters { display: flex; flex-wrap: wrap; gap: .25rem; }
-    .tcsi-apps-filters button { border: 0; background: transparent; padding: .65rem .85rem; border-radius: .375rem; color: var(--apps-muted); }
-    .tcsi-apps-filters button[aria-pressed="true"] { background: #e5ede8; color: #254e3e; }
-    button:focus-visible, input:focus-visible { outline: 2px solid #337457; outline-offset: 3px; }
-    .tcsi-apps-results { max-width: 76rem; margin: 1.5rem auto .75rem; font-size: .8rem; }
-    .tcsi-apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(Min(100%, 16rem), 1fr)); gap: 1rem; max-width: 76rem; margin: auto; }
-    .tcsi-app-card { display: flex; flex-direction: column; align-items: start; padding: 1.5rem; background: white; border: 1px solid var(--apps-line); border-radius: .5rem; }
-    .tcsi-app-category { margin: 1.25rem 0 .4rem; font-size: .7rem; letter-spacing: .04em; color: var(--apps-muted); }
-    h2 { font: inherit; font-size: 1.15rem; font-weight: 600; margin: 0 0 .65rem; }
-    .tcsi-app-card p { font-size: .875rem; margin-bottom: 1.5rem; }
-    .tcsi-app-card button { margin-top: auto; display: flex; justify-content: space-between; width: 100%; border: 0; border-top: 1px solid var(--apps-line); padding: 1rem 0 0; background: transparent; color: #245b43; font-weight: 600; }
-    .tcsi-app-card button:hover { color: #112e22; }
+
+    .tcsi-apps-heading,
+    .tcsi-apps-toolbar,
+    .tcsi-apps-results,
+    .tcsi-apps-grid,
+    .tcsi-apps-empty,
+    .tcsi-apps-note { max-width: 1216px; margin-inline: auto; }
+
+    .tcsi-apps-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+    h1 { margin: 8px 0; font-size: 24px; font-weight: 650; letter-spacing: -.025em; line-height: 1.25; }
+    h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; line-height: 1.4; }
+    p { margin: 0; color: var(--apps-muted); line-height: 1.5; }
+    .tcsi-apps-kicker,
+    .tcsi-apps-count { font-size: 12px; color: var(--apps-muted); }
+    .tcsi-apps-count { flex-shrink: 0; }
+
+    .tcsi-apps-toolbar { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; }
+    .tcsi-apps-search { flex: 1 1 240px; }
+    label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 500; color: var(--apps-muted); }
+    input,
+    select {
+        max-width: 100%;
+        min-height: 36px;
+        padding: 8px 12px;
+        color: var(--apps-ink);
+        background: var(--tcsi-route-surface, #fff);
+        border: 1px solid var(--apps-line);
+        border-radius: 6px;
+        font: inherit;
+    }
+    input { width: 100%; min-width: 0; }
+    select { width: 240px; }
+    .tcsi-apps-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tcsi-apps-filters button { min-height: 36px; padding: 8px 12px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--apps-muted); font: inherit; }
+    .tcsi-apps-filters button[aria-pressed="true"] { background: var(--tcsi-route-purple-soft, #e5ede8); color: var(--tcsi-route-purple-deep, #254e3e); }
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible { outline: 2px solid var(--tcsi-route-purple, #337457); outline-offset: 2px; }
+    .tcsi-apps-results { margin-block: 20px 12px; font-size: 12px; }
+    .tcsi-apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 256px), 1fr)); gap: 16px; }
+    .tcsi-app-card {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        align-items: start;
+        padding: 20px;
+        background: var(--tcsi-route-surface, #fff);
+        border: 1px solid var(--apps-line);
+        border-radius: 6px;
+    }
+    .tcsi-app-category { margin: 16px 0 4px; font-size: 12px; color: var(--apps-muted); }
+    .tcsi-app-card p { font-size: 13px; margin-bottom: 16px; }
+    .tcsi-app-card button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        min-height: 36px;
+        margin-top: auto;
+        padding: 12px 0 0;
+        border: 0;
+        border-top: 1px solid var(--apps-line);
+        background: transparent;
+        color: var(--tcsi-route-purple-deep, #245b43);
+        font: inherit;
+        font-weight: 600;
+    }
+    .tcsi-app-card button:hover { color: var(--tcsi-route-purple, #112e22); }
     button:disabled { opacity: .6; cursor: wait; }
-    .tcsi-apps-empty { max-width: 76rem; margin: 2rem auto; padding: 2rem 0; }
-    .tcsi-apps-note { max-width: 76rem; margin: 2rem auto 0; color: var(--apps-muted); font-size: .8rem; line-height: 1.6; }
+    .tcsi-app-status { margin: 0 0 16px; font-size: 12px; color: var(--apps-muted); }
+    .tcsi-app-status.is-installed { color: var(--tcsi-route-purple-deep, #245b43); }
+    .tcsi-app-monogram rect { fill: var(--tcsi-route-surface-soft, #edf2ef); }
+    .tcsi-app-monogram text { fill: var(--tcsi-route-purple-deep, #365b49); font-size: 15px; font-weight: 600; }
+    .tcsi-apps-detail { grid-column: 1 / -1; width: 100%; margin: 0; padding: 20px; background: var(--tcsi-route-surface-soft, #eaf1ed); border: 1px solid var(--apps-line); border-left: 3px solid var(--tcsi-route-purple, #365b49); border-radius: 6px; }
+    .tcsi-apps-detail p { margin-top: 8px; }
+    .tcsi-apps-empty { margin-block: 24px; padding: 32px 20px; border: 1px solid var(--apps-line); border-radius: 6px; text-align: center; }
+    .tcsi-apps-empty button { margin-top: 16px; }
+    .tcsi-apps-note { margin-top: 24px; color: var(--apps-muted); font-size: 12px; line-height: 1.5; }
 }
-@media(max-width: 575px) { .tcsi-app-catalog .tcsi-apps-heading { align-items: start; flex-direction: column; } }
+
+@media (max-width: 720px) {
+    .tcsi-app-catalog {
+        padding: 20px 16px 40px;
+        .tcsi-apps-heading { align-items: start; flex-direction: column; gap: 12px; }
+        .tcsi-apps-toolbar > div { width: 100%; }
+        select { width: 100%; }
+        .tcsi-app-card { padding: 16px; }
+    }
+}
