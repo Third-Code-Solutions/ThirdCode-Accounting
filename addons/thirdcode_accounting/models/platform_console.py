@@ -99,6 +99,7 @@ class PlatformConsole(models.TransientModel):
             .with_context(active_test=False)
             .search([("share", "=", False), ("company_ids", "in", company.id)])
         )
+        users = users.filtered(lambda user: not user.thirdcode_platform_owner)
         active_users = users.filtered("active")
         signed_week = active_users.filtered(
             lambda user: user.login_date and user.login_date >= week_start
