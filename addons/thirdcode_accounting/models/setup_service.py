@@ -232,6 +232,13 @@ class ThirdCodeSetupService(models.AbstractModel):
         elif company_ids:
             target_company_ids = [int(cid) for cid in company_ids]
         platform_owner = "base.group_system" in (extra_group_xmlids or [])
+        if platform_owner:
+            console_group = self.env.ref(
+                "thirdcode_accounting.group_thirdcode_platform_console",
+                raise_if_not_found=False,
+            )
+            if console_group and console_group.id not in group_ids:
+                group_ids.append(console_group.id)
         user = (
             self.env["res.users"]
             .sudo()

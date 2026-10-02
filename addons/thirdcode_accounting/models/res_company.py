@@ -22,6 +22,22 @@ class ResCompany(models.Model):
              "samples, and prints carry a TRIAL COPY marking instead of being blocked. "
              "Do not use this mode for official statutory documents.",
     )
+    thirdcode_platform_status = fields.Selection(
+        [
+            ("trial", "Trial"),
+            ("active", "Active"),
+            ("suspended", "Suspended"),
+        ],
+        string="Platform status",
+        default="trial",
+        copy=False,
+        help="Lifecycle state in the platform console: trial window, converted "
+             "(active, watermarks off), or suspended (users disabled).",
+    )
+    thirdcode_trial_start = fields.Date(string="Trial start", copy=False)
+    thirdcode_trial_end = fields.Date(string="Trial end", copy=False)
+    thirdcode_suspended_from_status = fields.Char(string="Status before suspension", copy=False)
+    thirdcode_suspended_user_ids = fields.Text(string="Users deactivated by suspension", copy=False)
     thirdcode_eis_status = fields.Selection(
         [
             ("assessment_required", "Coverage assessment required"),

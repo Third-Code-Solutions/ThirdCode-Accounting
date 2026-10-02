@@ -1,0 +1,90 @@
+.tcsi-console {
+    --console-ink: var(--tcsi-route-ink, #20352f);
+    --console-muted: var(--tcsi-route-muted, #586761);
+    --console-line: var(--tcsi-route-line, #dfe6e2);
+    --console-surface: var(--tcsi-route-surface, #fff);
+    height: 100%;
+    min-width: 0;
+    padding: 24px 32px 56px;
+    overflow-y: auto;
+    background: var(--tcsi-route-page, #f8faf9);
+    color: var(--console-ink);
+    font-size: 13px;
+    line-height: 1.5;
+    font-family: inherit;
+
+    h1 { margin: 4px 0; font-size: 26px; font-weight: 650; letter-spacing: -.02em; }
+    h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+
+    .tcsi-console-kicker { margin: 0; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; color: var(--console-muted); }
+    .tcsi-console-sub { margin: 0 0 20px; color: var(--console-muted); }
+    .tcsi-console-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; max-width: 1240px; margin-inline: auto; }
+    .tcsi-console-meta { display: flex; align-items: center; gap: 12px; color: var(--console-muted); font-size: 12px; }
+    .tcsi-console-muted { color: var(--console-muted); }
+    .tcsi-console-empty { color: var(--console-muted); }
+
+    .tcsi-console-error { max-width: 1240px; margin: 0 auto 16px; padding: 12px 16px; border: 1px solid #e4b9b2; border-left: 3px solid #b42318; border-radius: 6px; background: var(--console-surface); }
+    .tcsi-console-loading { max-width: 1240px; margin: 24px auto; color: var(--console-muted); }
+
+    section, footer { max-width: 1240px; margin: 0 auto 28px; }
+
+    .tcsi-console-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(Min(100%, 220px), 1fr)); gap: 12px; }
+    .tcsi-console-kpi { padding: 16px 18px; background: var(--console-surface); border: 1px solid var(--console-line); border-radius: 8px; }
+    .tcsi-console-kpi-label { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--console-muted); }
+    .tcsi-console-kpi-value { margin: 6px 0 2px; font-size: 28px; font-weight: 650; letter-spacing: -.02em; }
+    .tcsi-console-kpi-sub { margin: 0; font-size: 12px; color: var(--console-muted); }
+
+    .tcsi-console-bars { display: flex; align-items: end; gap: 6px; height: 110px; padding: 8px 12px; background: var(--console-surface); border: 1px solid var(--console-line); border-radius: 8px; }
+    .tcsi-console-bar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 6px; height: 100%; }
+    .tcsi-console-bar-track { width: 100%; flex: 1 1 auto; display: flex; align-items: end; }
+    .tcsi-console-bar-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--tcsi-route-purple, #337457); min-height: 0; }
+    .tcsi-console-bar span { font-size: 10px; color: var(--console-muted); white-space: nowrap; }
+
+    .tcsi-console-alerts h2 { margin-bottom: 10px; }
+    .tcsi-console-alert { padding: 10px 14px; margin-bottom: 8px; background: var(--console-surface); border: 1px solid var(--console-line); border-left-width: 3px; border-radius: 6px; }
+    .tcsi-console-alert.is-critical { border-left-color: #b42318; }
+    .tcsi-console-alert.is-warning { border-left-color: #b54708; }
+    .tcsi-console-alert.is-info { border-left-color: #175cd3; }
+    .tcsi-console-alert-title { margin: 0; font-weight: 600; }
+    .tcsi-console-alert-org { font-weight: 400; color: var(--console-muted); }
+    .tcsi-console-alert-detail { margin: 2px 0 0; color: var(--console-muted); }
+
+    .tcsi-console-table-wrap { overflow-x: auto; background: var(--console-surface); border: 1px solid var(--console-line); border-radius: 8px; }
+    .tcsi-console-table { width: 100%; border-collapse: collapse; }
+    .tcsi-console-table th, .tcsi-console-table td { padding: 10px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--console-line); }
+    .tcsi-console-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--console-muted); font-weight: 600; }
+    .tcsi-console-table tbody tr:last-child td { border-bottom: 0; }
+    .tcsi-console-table tbody tr:hover { background: color-mix(in srgb, var(--tcsi-route-purple, #337457) 4%, transparent); }
+    .tcsi-console-org-name { margin: 0; font-weight: 600; }
+    .tcsi-console-org-warn { margin: 2px 0 0; font-size: 12px; color: #b54708; }
+    .tcsi-console-table p { margin: 0; }
+    .tcsi-console-days { font-size: 12px; }
+    .tcsi-console-days.is-soon { color: #b54708; font-weight: 600; }
+    .tcsi-console-days.is-over { color: #b42318; font-weight: 600; }
+
+    .tcsi-console-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+    .tcsi-console-badge.is-trial { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .tcsi-console-badge.is-active { background: #d1fadf; color: #067647; border-color: #a6f4c5; }
+    .tcsi-console-badge.is-suspended { background: #f2f4f7; color: #475467; border-color: #e4e7ec; }
+
+    .tcsi-console-actions { min-width: 300px; }
+    .tcsi-console-actions .btn-link { padding: 2px 6px; font-size: 12px; text-decoration: none; white-space: nowrap; }
+    .tcsi-console-actions .btn-link:hover { text-decoration: underline; }
+
+    .tcsi-console-cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+    .tcsi-console-col { padding: 16px 18px; background: var(--console-surface); border: 1px solid var(--console-line); border-radius: 8px; min-width: 0; }
+    .tcsi-console-list { list-style: none; margin: 0; padding: 0; max-height: 380px; overflow-y: auto; }
+    .tcsi-console-list li { padding: 8px 0; border-bottom: 1px solid var(--console-line); }
+    .tcsi-console-list li:last-child { border-bottom: 0; }
+    .tcsi-console-list p { margin: 0; }
+
+    .tcsi-console-system dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(Min(100%, 200px), 1fr)); gap: 10px 20px; margin: 0; }
+    .tcsi-console-system dt { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--console-muted); }
+    .tcsi-console-system dd { margin: 2px 0 0; font-weight: 600; }
+}
+
+@media (max-width: 900px) {
+    .tcsi-console { padding: 20px 16px 48px; }
+    .tcsi-console-head { flex-direction: column; }
+    .tcsi-console-cols { grid-template-columns: 1fr; }
+}
