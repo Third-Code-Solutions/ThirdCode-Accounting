@@ -8,5 +8,5 @@
         <field name="tag">tcsi_platform_console</field>
         <field name="path">console</field>
     </record>
-    <menuitem id="menu_thirdcode_platform_console" name="Platform Console" parent="menu_thirdcode_accounting_root" sequence="1" groups="thirdcode_accounting.group_thirdcode_platform_console,base.group_system"/>
+    <menuitem id="menu_thirdcode_platform_console" name="Platform Console" parent="menu_thirdcode_accounting_root" action="action_thirdcode_platform_console" sequence="1" groups="thirdcode_accounting.group_thirdcode_platform_console,base.group_system"/>
 </odoo>
