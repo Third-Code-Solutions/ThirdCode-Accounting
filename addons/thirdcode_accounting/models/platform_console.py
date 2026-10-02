@@ -261,26 +261,34 @@ class PlatformConsole(models.TransientModel):
             }
             for move in moves
         ]
-        signins = (
-            self.env["res.users"]
+        signins = []
+        logs = (
+            self.env["res.users.log"]
             .sudo()
             .search_read(
-                [("login_date", "!=", False), ("share", "=", False)],
-                ["name", "login", "login_date", "company_id"],
+                [],
+                ["create_uid", "create_date"],
                 limit=12,
-                order="login_date desc",
+                order="create_date desc, id desc",
             )
         )
-        sessions = [
-            {
-                "name": user["name"],
-                "login": user["login"],
-                "company": user["company_id"][1] if user["company_id"] else "",
-                "when": self._fmt(user["login_date"]),
-            }
-            for user in signins
-        ]
-        return {"documents": documents, "signins": sessions}
+        for log in logs:
+            user = (
+                self.env["res.users"].sudo().browse(log["create_uid"][0])
+                if log["create_uid"]
+                else None
+            )
+            if not user or not user.exists():
+                continue
+            signins.append(
+                {
+                    "name": user.name,
+                    "login": user.login,
+                    "company": user.company_id.name or "",
+                    "when": self._fmt(log["create_date"]),
+                }
+            )
+        return {"documents": documents, "signins": signins}
 
     @api.model
     def _system(self):
