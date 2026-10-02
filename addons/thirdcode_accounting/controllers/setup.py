@@ -2,8 +2,9 @@ import hashlib
 import hmac
 import json
 import logging
+import traceback
 
-from odoo import http
+from odoo import SUPERUSER_ID, http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
@@ -45,15 +46,25 @@ class ThirdCodeSetupController(http.Controller):
                 {"ok": False, "error": "unauthorized"}, status=401
             )
         action = str(payload.get("action") or "")
-        service = request.env["thirdcode.setup.service"].sudo().with_context(
-            tcsi_setup_token_ok=True
+        # Run as the superuser *user* (not just sudo mode): core code paths such
+        # as module installation and res.company/user defaults access
+        # env.user, which is an empty recordset on an anonymous request.
+        service = (
+            request.env["thirdcode.setup.service"]
+            .with_user(SUPERUSER_ID)
+            .sudo()
+            .with_context(tcsi_setup_token_ok=True)
         )
         try:
             result = service.dispatch(action, payload)
         except Exception as exc:  # noqa: BLE001 - reported to the token holder for debugging
             _logger.exception("TCSI setup: action %s failed", action)
-            return request.make_json_response(
-                {"ok": False, "action": action, "error": "%s: %s" % (type(exc).__name__, exc)},
-                status=400,
-            )
+            error = {
+                "ok": False,
+                "action": action,
+                "error": "%s: %s" % (type(exc).__name__, exc),
+            }
+            if payload.get("debug"):
+                error["traceback"] = traceback.format_exc()[-4000:]
+            return request.make_json_response(error, status=400)
         return request.make_json_response({"ok": True, "action": action, "result": result})

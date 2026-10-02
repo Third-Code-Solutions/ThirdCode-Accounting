@@ -78,7 +78,7 @@ class ThirdCodeSetupService(models.AbstractModel):
                     "roles": roles,
                 }
             )
-        return {"database": self.env.cr.dbname, "companies": companies, "users": users}
+        return {"database": self.env.cr.dbname, "uid": self.env.uid, "companies": companies, "users": users}
 
     def _action_create_company(self, payload):
         name = str(payload.get("name") or "").strip()
@@ -92,7 +92,16 @@ class ThirdCodeSetupService(models.AbstractModel):
         if company:
             steps = ["company already exists: %s" % name]
         else:
-            company = self.env["res.company"].sudo().create({"name": name})
+            create_vals = {"name": name}
+            country = self._find_country(payload)
+            if country:
+                create_vals["country_id"] = country.id
+            currency = self._find_currency(payload)
+            if currency:
+                if not currency.active:
+                    currency.sudo().write({"active": True})
+                create_vals["currency_id"] = currency.id
+            company = self.env["res.company"].sudo().create(create_vals)
             steps = ["created company: %s" % name]
         baseline = self._action_ensure_baseline(dict(payload, company_id=company.id))
         return {
@@ -234,22 +243,27 @@ class ThirdCodeSetupService(models.AbstractModel):
             "open_periods_today": open_periods,
         }
 
-    def _ensure_country_currency(self, company, payload):
-        steps = []
-        country_code = str(payload.get("country_code") or "PH").upper()
-        currency_code = str(payload.get("currency") or "PHP").upper()
-        updates = {}
-        country = self.env["res.country"].sudo().search(
-            [("code", "=", country_code)], limit=1
-        )
-        if country and company.country_id != country:
-            updates["country_id"] = country.id
-        currency = (
+    def _find_country(self, payload):
+        code = str(payload.get("country_code") or "PH").upper()
+        return self.env["res.country"].sudo().search([("code", "=", code)], limit=1)
+
+    def _find_currency(self, payload):
+        code = str(payload.get("currency") or "PHP").upper()
+        return (
             self.env["res.currency"]
             .sudo()
             .with_context(active_test=False)
-            .search([("name", "=", currency_code)], limit=1)
+            .search([("name", "=", code)], limit=1)
         )
+
+    def _ensure_country_currency(self, company, payload):
+        steps = []
+        currency_code = str(payload.get("currency") or "PHP").upper()
+        updates = {}
+        country = self._find_country(payload)
+        if country and company.country_id != country:
+            updates["country_id"] = country.id
+        currency = self._find_currency(payload)
         if currency:
             if not currency.active:
                 currency.sudo().write({"active": True})
@@ -340,7 +354,7 @@ class ThirdCodeSetupService(models.AbstractModel):
                 period.sudo().write(
                     {
                         "state": "open",
-                        "reopened_by": self.env.user.id,
+                        "reopened_by": self.env.uid,
                         "reopened_at": fields.Datetime.now(),
                     }
                 )
