@@ -28,6 +28,8 @@ const canonical = [
 ];
 
 function declarations(source, opener) {
+  // Normalize CRLF checkouts so the gate matches CI on Windows too.
+  source = source.replace(/\r\n/g, "\n");
   const start = source.indexOf(opener);
   assert.notEqual(start, -1, `missing block: ${opener}`);
   const body = source.slice(start + opener.length);

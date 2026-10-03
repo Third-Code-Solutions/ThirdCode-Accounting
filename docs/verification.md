@@ -233,3 +233,18 @@ route, viewport and theme.
 | Graceful-updates service (18.0.2.9.7) | **FIXED & live-verified** | The new backend service `tcsi_updates` intercepts both notices: the reconnect false alarm is suppressed; a genuine stale notice silently refreshes the tab when no work is at risk (no dirty form, dialog, blocking overlay or pending input) and keeps the native prompt when edits are pending; a 5-minute cooldown prevents reload loops. Live on 18.0.2.9.7, all branches exercised in the served client: (1) the exact stale-notice call in a clean tab auto-refreshed the session silently (no banner); (2) the same call on a dirty invoice form kept the prompt and did NOT reload; (3) the exact reconnect message produced no banner and no reload; (4) ordinary notifications still display normally (interceptor passthrough). Evidence: `~/tcsi-private/qa-evidence/ui-outdated-dirty-prompt.png`. |
 
 **Demo company state after the QA pass:** 15 posted documents, 0 drafts, 0 cancelled (probe artifacts removed; three empty auto-saved drafts from form probing were unlinked).
+
+### Production audit remediation — 4 October 2026 (latest)
+
+The unauthenticated production audit (`dogfood-output/prod-2026-10-04/REPORT.md`) findings H1-H6,
+M1-M8 and L1-L5 are fixed in this working tree. The per-finding table, the new system parameters
+and the deploy steps are in `docs/security-hardening.md`; nothing was applied to the live systems
+from this workspace.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Addon syntax, data and package | **PASSED** | `python -m py_compile` over every model, controller and test module; `xml.dom.minidom` parse of `data/tcsi_security_data.xml`; `python scripts/validate-odoo-package.py` (57 manifest resources present and deployable); `python scripts/test-branding.py` (5 tests OK) |
+| Addon install and test suite | **PASSED** | Pinned runtime image (`docker/odoo/Dockerfile`, `INSTALL_ODOO_TEST_HELPER=true`) against PostgreSQL 16 with the CI command (`-i thirdcode_accounting --without-demo=all --test-enable --test-tags /thirdcode_accounting --no-http --max-cron-threads=0`): 59 tests, 0 failed, 0 errors. The new `tests/test_auth_hardening.py` covers the committed throttle counters, blocking, clearing, window reset, the disabled limit, the login-oracle helpers, the silent password reset and the header/cookie helpers |
+| Throttle counter isolation | **VERIFIED** | The counter is written on a cursor of its own and committed immediately, because `res.users._login` rolls its cursor back as soon as `AccessDenied` leaves the `with` block. Odoo opens every connection at `REPEATABLE READ`, so the tests read committed counters through a cursor of their own — exactly what the next request does in production |
+| Portal checks | **PASSED** | `npm run lint` (clean); `npm run typecheck` (contracts, web, worker); `npm test` (contracts 4, worker 2, web 55 tests); `npm run build` (the route table lists `/robots.txt`, `/sitemap.xml` and `/icon.svg` as served routes) |
+| Live re-verification of the engine surface | **PENDING** | The engine fixes take effect after `odoo -u thirdcode_accounting` on the running instance. The HTTP-level behaviour that needs a live server (database-manager refusal, security headers, session-cookie flags, `/favicon.ico`, `/robots.txt`, `/sitemap.xml`) was not re-probed against production from this workspace |

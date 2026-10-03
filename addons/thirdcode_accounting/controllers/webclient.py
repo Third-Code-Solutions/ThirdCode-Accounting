@@ -7,8 +7,19 @@ import re
 
 
 def branded_workspace_url(url):
-    """Change only the internal workspace prefix, preserving query and fragment."""
-    return re.sub(r"^/odoo(?=[/?#]|$)", "/workspace", url)
+    """Change only the internal workspace prefix, preserving query and fragment.
+
+    The login redirect chain produced ``/workspace?`` and ``/workspace/?`` for a
+    bare workspace request: ``Home.index`` builds the redirect from the raw
+    ``full_path``, so an empty query string survives as a lone ``?`` (finding
+    M6). Normalising the empty query and the redundant trailing slash keeps
+    every branded URL canonical.
+    """
+    if not url:
+        return url
+    branded = re.sub(r"^/odoo(?=[/?#]|$)", "/workspace", url)
+    branded = re.sub(r"^(/workspace)/?(?=[?#]|$)", r"\1", branded)
+    return branded[:-1] if branded.endswith("?") else branded
 
 
 class TCSIWebClient(Home):

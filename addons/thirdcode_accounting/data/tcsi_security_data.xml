@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Shared authentication throttle (H3). 0 disables a limit. -->
+        <record id="tcsi_param_auth_max_failures" model="ir.config_parameter">
+            <field name="key">tcsi.auth.max_failures</field>
+            <field name="value">10</field>
+        </record>
+        <record id="tcsi_param_auth_window_seconds" model="ir.config_parameter">
+            <field name="key">tcsi.auth.window_seconds</field>
+            <field name="value">900</field>
+        </record>
+        <record id="tcsi_param_auth_block_seconds" model="ir.config_parameter">
+            <field name="key">tcsi.auth.block_seconds</field>
+            <field name="value">900</field>
+        </record>
+        <record id="tcsi_param_auth_login_max_failures" model="ir.config_parameter">
+            <field name="key">tcsi.auth.login_max_failures</field>
+            <field name="value">5</field>
+        </record>
+        <record id="tcsi_param_auth_login_block_seconds" model="ir.config_parameter">
+            <field name="key">tcsi.auth.login_block_seconds</field>
+            <field name="value">900</field>
+        </record>
+        <!-- Addresses exempt from the throttle, e.g. "127.0.0.1,10.0.0.4". -->
+        <record id="tcsi_param_auth_allow_ips" model="ir.config_parameter">
+            <field name="key">tcsi.auth.allow_ips</field>
+            <field name="value"></field>
+        </record>
+        <!-- Database manager stays disabled unless explicitly enabled for an address. -->
+        <record id="tcsi_param_db_manager_enabled" model="ir.config_parameter">
+            <field name="key">tcsi.db_manager_enabled</field>
+            <field name="value">0</field>
+        </record>
+        <record id="tcsi_param_db_manager_allow_ips" model="ir.config_parameter">
+            <field name="key">tcsi.db_manager_allow_ips</field>
+            <field name="value"></field>
+        </record>
+        <!-- Addresses allowed to call /tcsi/setup; empty means "token is enough". -->
+        <record id="tcsi_param_setup_allow_ips" model="ir.config_parameter">
+            <field name="key">tcsi.setup_allow_ips</field>
+            <field name="value"></field>
+        </record>
+        <record id="tcsi_param_setup_max_failures" model="ir.config_parameter">
+            <field name="key">tcsi.setup.max_failures</field>
+            <field name="value">10</field>
+        </record>
+        <record id="tcsi_param_setup_block_seconds" model="ir.config_parameter">
+            <field name="key">tcsi.setup.block_seconds</field>
+            <field name="value">3600</field>
+        </record>
+        <record id="tcsi_param_hsts_max_age" model="ir.config_parameter">
+            <field name="key">tcsi.security.hsts_max_age</field>
+            <field name="value">31536000</field>
+        </record>
+    </data>
+</odoo>
