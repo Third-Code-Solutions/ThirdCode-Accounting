@@ -196,3 +196,19 @@ restarts the engine — schedule pushes outside trial working hours.
 | Live-vs-CI note | recorded | `res.users.login_date` is a non-stored computed field on the engine's Odoo build (`18.0-20260908`) — ordering a search by it raises `ValueError` live, while the CI image's older build tolerated it (tests were green). The sign-in feed now reads `res.users.log` directly; live JSON-RPC verification is the acceptance path for console changes. |
 
 Owner-facing documentation for the console: `~/tcsi-private/OWNER-GUIDE.md` § 6.
+
+### TCSI design-system unification — 3 October 2026 (later run)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Canonical token layer | **PASSED (source + compile)** | New `tcsi_tokens.scss` declares the palette once (light + dark) and is loaded first in `web.assets_backend` and `web.assets_frontend` (manifest 18.0.2.9.4). `tcsi_routes.scss` now reads the shared tokens instead of local hexes; the retired values (`#fbfbfd`, `#1d2b33`, `#6b48d8`, …) are gone from the route layer. |
+| Addon stylesheet compile | **PASSED** | Every addon stylesheet compiled standalone and as a bundle with libsass 3.6.6 — the runtime Odoo's asset compiler uses — ten stylesheets, 236,251 bytes of CSS, no errors. An SCSS error aborts the whole bundle and serves stale fallback CSS, so this is the gate that matters. |
+| Token parity portal ↔ addon | **PASSED (8/8)** | `scripts/test-design-tokens.mjs` (wired into CI) compares the light and dark palettes, shared radii, bundle order, route-layer token usage and the dashboard reference rules between `apps/web/app/globals.css` and `tcsi_tokens.scss`. |
+| Portal dark theme | **PASSED (rendered)** | `apps/web/app/globals.css` gained a `prefers-color-scheme: dark` theme built from the workspace dark palette. 84 rendered loads (14 routes × 1440/834/390 × light/dark) found no horizontal overflow, no unlabeled buttons, no clipped labels and **no light surface leaking into dark mode**. |
+| Pointer targets | **PASSED (rendered, fixed)** | The rendered sweep flagged standalone links below the WCAG 2.5.8 24px minimum. Marketing and auth links plus `.topbar-link` got the minimum height/width; the same audit now reports clean on `/`, `/contact`, `/login`, `/owner`, `/controls`, `/dashboard` and the section routes (was 8/7/3/1 per page). |
+| Workspace rendered verification | **BLOCKED** | No stored login for the engine origin (the vault prompt was declined) and Docker is unavailable locally, so no authenticated Odoo screen was exercised. `docs/workspace-ui-coverage.md` marks those rows `source-verified`, not rendered. |
+| Quality gates | **PASSED** | `npm run lint`, `npm run typecheck`, `npm test` (55), `npm run build` (web + worker), `npm run validate:migrations`, `scripts/validate-odoo-package.py` (55 resources), `node --test scripts/test-*.mjs` (31) and `python scripts/test-branding.py` (3). `npm audit` could not run: this host's egress allowlist refuses the npm registry. |
+
+Screenshots for the rendered sweeps are in `~/.hermes/cache/scratch/evidence/`
+(`before-deployed/` = the deployed portal, `final2/` = this change), one PNG per
+route, viewport and theme.

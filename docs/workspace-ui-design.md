@@ -35,6 +35,31 @@ finance overview and app catalog retain their dedicated components/styles.
   account digits inside the document. Activity toolbar buttons wrap without
   altering the Follow button's native overlay label.
 
+## Design tokens
+
+`addons/thirdcode_accounting/static/src/scss/tcsi_tokens.scss` is the single
+source of palette values for every TCSI surface. It is loaded first in both
+`web.assets_backend` and `web.assets_frontend`, so a later layer can still
+override a value deliberately. Light values come from the rendered finance
+overview; dark values are the workspace dark theme.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `canvas` / `surface` / `surface-soft` / `surface-hover` | `#f7f7fa` / `#ffffff` / `#f8f8fb` / `#f3f2f8` | `#101720` / `#18222d` / `#1e2a36` / `#263442` |
+| `ink` / `ink-muted` / `ink-soft` | `#151225` / `#6d6a7d` / `#9692a5` | `#edf2f8` / `#aab7c7` / `#91a3b5` |
+| `line` / `line-strong` | `#e7e5ee` / `#d8d5e2` | `#344453` / `#485a6c` |
+| `accent` / `accent-deep` / `accent-soft` | `#6944dc` / `#4d2daf` / `#f0ecff` | `#7353c4` / `#6343b3` / `#302947` |
+| `positive` / `attention` / `danger` | `#20ad88` / `#d87542` / `#cc4e5b` | `#43d3ac` / `#e39a6a` / `#e2737f` |
+| `radius-control` / `radius-surface` / `radius-panel` | `8px` / `11px` / `12px` | same |
+
+`tcsi_routes.scss` consumes these tokens instead of local hex values, so the
+workspace routes, the workspace dashboard and the public portal share one
+palette. The portal (`apps/web/app/globals.css`) declares the same values under
+`--tcsi-*` names and adds a `prefers-color-scheme: dark` theme built from the
+dark column above, including the accent-as-text switch to `#bca6ff` that keeps
+AA contrast on dark surfaces. `scripts/test-design-tokens.mjs` fails when the
+two surfaces drift apart.
+
 ## Route coverage
 
 Styling follows Odoo view types, not database-specific action numbers. All
@@ -61,7 +86,27 @@ Do not hide `.o_control_panel_breadcrumbs`: Odoo 18 nests New and other page
 actions inside it. Do not reintroduce borders on every level of relational
   widgets. Preserve Odoo's own scroll owners, field grids and semantic states.
 
-## Verification performed
+- The token parity test (`scripts/test-design-tokens.mjs`, eight assertions)
+  compares the portal and addon palettes in both modes, the shared radii, the
+  bundle order, and the absence of the retired hex values in the route layer.
+- Every addon stylesheet compiles standalone and as a bundle with libsass
+  3.6.6, the runtime Odoo uses: ten stylesheets, 236,247 bytes of CSS, no
+  errors. An SCSS error aborts the whole `web.assets_web` bundle, so this is the
+  gate that matters for presentation changes.
+- The production Next.js build passes with the portal token layer and dark
+  theme, and a rendered sweep of every portal route at 1440x900, 834x1000 and
+  390x844 in light and dark mode found no horizontal overflow, no clipped
+  labels, no unlabeled buttons and no light surface leaking into the dark theme.
+- The hosted sign-in screen was verified rendered against the live engine:
+  computed styles in both themes, no horizontal overflow, branded shell intact.
+
+The workspace routes in section 2 of `docs/workspace-ui-coverage.md` remain
+source-verified, not rendered: no engine login was available to this session and
+Docker is unavailable locally, so no authenticated Odoo screen was exercised.
+Close that gap by signing in to the handover browser session and re-running the
+sweep against `/workspace/...`.
+
+## Earlier verification performed
 
 - All view XML parsed; manifest resources validated.
 - Account move notebook inheritance matches exactly one notebook in the
@@ -85,7 +130,7 @@ actions inside it. Do not reintroduce borders on every level of relational
 - Native settings replay caught and resolved mobile tab clipping. Review also
   corrected dark selected-tab text contrast and the Follow label structure.
 
-These checks do not establish that every route has been manually exercised.
+These earlier checks do not establish that every route has been manually exercised.
 The fixtures are layout checks, not a full Odoo integration test. Docker/Odoo
 was unavailable locally. Before release, upgrade `thirdcode_accounting` in a
 staging database and smoke-test native creation, editing, dropdowns, tabs,

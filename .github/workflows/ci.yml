@@ -71,6 +71,7 @@ jobs:
           node --test scripts/test-branding.mjs
           node --test scripts/test-orvexa-chat.mjs
           node --test scripts/test-apps.mjs
+          node --test scripts/test-design-tokens.mjs
           python scripts/test-branding.py
 
       - name: Lint

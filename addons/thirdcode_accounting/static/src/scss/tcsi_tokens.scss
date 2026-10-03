@@ -1,0 +1,73 @@
+// TCSI design tokens — the single vocabulary for every TCSI surface.
+//
+// The public portal (apps/web/app/globals.css) mirrors these exact values and
+// scripts/test-design-tokens.mjs fails when the two drift apart. Light values
+// come from the rendered finance overview: violet neutrals, one violet accent,
+// thin lines, 8/12px radii. Dark values are the workspace dark theme, reused by
+// the portal so both surfaces read as the same product.
+//
+// Consumers keep their own variable names (--tcsi-route-*, --tcsi-ui-*,
+// --tcsi-console-*, --tcsi-*); this file only guarantees that the values behind
+// them are the same ones. Loaded before every other addon stylesheet so a later
+// layer can still override a value deliberately.
+:root {
+    --tcsi-color-canvas: #f7f7fa;
+    --tcsi-color-canvas-strong: #f0eff5;
+    --tcsi-color-surface: #ffffff;
+    --tcsi-color-surface-soft: #f8f8fb;
+    --tcsi-color-surface-hover: #f3f2f8;
+    --tcsi-color-ink: #151225;
+    --tcsi-color-ink-muted: #6d6a7d;
+    --tcsi-color-ink-soft: #9692a5;
+    --tcsi-color-line: #e7e5ee;
+    --tcsi-color-line-strong: #d8d5e2;
+    --tcsi-color-accent: #6944dc;
+    --tcsi-color-accent-deep: #4d2daf;
+    --tcsi-color-accent-soft: #f0ecff;
+    --tcsi-color-accent-line: #ddd5ff;
+    --tcsi-color-accent-wash: #faf8ff;
+    --tcsi-color-positive: #20ad88;
+    --tcsi-color-positive-bright: #43d3ac;
+    --tcsi-color-positive-soft: #eafaf5;
+    --tcsi-color-positive-text: #177d64;
+    --tcsi-color-attention: #d87542;
+    --tcsi-color-danger: #cc4e5b;
+    --tcsi-color-danger-soft: #fff1f2;
+    --tcsi-color-danger-text: #a63442;
+    --tcsi-radius-control: 8px;
+    --tcsi-radius-surface: 11px;
+    --tcsi-radius-panel: 12px;
+    --tcsi-shadow-surface: 0 3px 12px rgba(21, 18, 37, .02);
+    --tcsi-shadow-accent: 0 7px 16px rgba(105, 68, 220, .2);
+    --tcsi-focus-ring: 0 0 0 4px rgba(105, 68, 220, .11);
+    --tcsi-font-ui: "Inter", "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html[data-tcsi-theme="dark"] {
+    --tcsi-color-canvas: #101720;
+    --tcsi-color-canvas-strong: #18222d;
+    --tcsi-color-surface: #18222d;
+    --tcsi-color-surface-soft: #1e2a36;
+    --tcsi-color-surface-hover: #263442;
+    --tcsi-color-ink: #edf2f8;
+    --tcsi-color-ink-muted: #aab7c7;
+    --tcsi-color-ink-soft: #91a3b5;
+    --tcsi-color-line: #344453;
+    --tcsi-color-line-strong: #485a6c;
+    --tcsi-color-accent: #7353c4;
+    --tcsi-color-accent-deep: #6343b3;
+    --tcsi-color-accent-soft: #302947;
+    --tcsi-color-accent-line: #4a3f6b;
+    --tcsi-color-accent-wash: #241f36;
+    --tcsi-color-positive: #43d3ac;
+    --tcsi-color-positive-bright: #43d3ac;
+    --tcsi-color-positive-soft: #17332c;
+    --tcsi-color-positive-text: #7fe0c4;
+    --tcsi-color-attention: #e39a6a;
+    --tcsi-color-danger: #e2737f;
+    --tcsi-color-danger-soft: #35202a;
+    --tcsi-color-danger-text: #f0a5ae;
+    --tcsi-shadow-surface: 0 3px 12px rgba(0, 0, 0, .22);
+    --tcsi-shadow-accent: 0 7px 16px rgba(0, 0, 0, .3);
+    --tcsi-focus-ring: 0 0 0 4px rgba(188, 166, 255, .22);
+}

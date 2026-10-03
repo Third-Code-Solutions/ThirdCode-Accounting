@@ -2,29 +2,30 @@
 // Shared by every native view, including dialogs opened over another view type.
 // Keep Odoo's grid cells, field widgets, scroll owners and semantic status colors.
 body.tcsi-shell-active {
-    --tcsi-route-page: #fbfbfd;
-    --tcsi-route-surface: #ffffff;
-    --tcsi-route-surface-soft: #f8fafb;
-    --tcsi-route-surface-hover: #f3f6f7;
-    --tcsi-route-ink: #1d2b33;
-    --tcsi-route-text: #3d4d56;
-    --tcsi-route-muted: #6e7c84;
-    --tcsi-route-subtle: #8b98a1;
-    --tcsi-route-line: #e1e7ea;
-    --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #6b48d8;
-    --tcsi-route-accent-deep: #5130b3;
-    --tcsi-route-accent-soft: #f1edff;
+    // Values live in tcsi_tokens.scss; tcsi_dark.scss overrides them in dark mode.
+    --tcsi-route-page: var(--tcsi-color-canvas);
+    --tcsi-route-surface: var(--tcsi-color-surface);
+    --tcsi-route-surface-soft: var(--tcsi-color-surface-soft);
+    --tcsi-route-surface-hover: var(--tcsi-color-surface-hover);
+    --tcsi-route-ink: var(--tcsi-color-ink);
+    --tcsi-route-text: var(--tcsi-color-ink);
+    --tcsi-route-muted: var(--tcsi-color-ink-muted);
+    --tcsi-route-subtle: var(--tcsi-color-ink-soft);
+    --tcsi-route-line: var(--tcsi-color-line);
+    --tcsi-route-line-strong: var(--tcsi-color-line-strong);
+    --tcsi-route-accent: var(--tcsi-color-accent);
+    --tcsi-route-accent-deep: var(--tcsi-color-accent-deep);
+    --tcsi-route-accent-soft: var(--tcsi-color-accent-soft);
     --tcsi-route-purple: var(--tcsi-route-accent);
     --tcsi-route-purple-deep: var(--tcsi-route-accent-deep);
     --tcsi-route-purple-soft: var(--tcsi-route-accent-soft);
-    --tcsi-route-radius: 6px;
-    --tcsi-route-radius-sm: 4px;
+    --tcsi-route-radius: var(--tcsi-radius-panel);
+    --tcsi-route-radius-sm: var(--tcsi-radius-control);
     --tcsi-route-content-gutter: 24px;
 
     color: var(--tcsi-route-ink);
     background: var(--tcsi-route-page);
-    font-family: "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: var(--tcsi-font-ui);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
 
@@ -514,12 +515,14 @@ body.tcsi-shell-active {
     .o_search_panel { background: var(--tcsi-route-surface); border-color: var(--tcsi-route-line); }
     .o_search_panel .active { background: var(--tcsi-route-accent-soft); }
 
+    // Menus and popovers are controls, not surfaces: keep the control radius
+    // and the shared elevation so they match the dashboard's floating layers.
     .dropdown-menu, .o-dropdown--menu, .o_popover, .popover {
         color: var(--tcsi-route-text);
         background: var(--tcsi-route-surface);
         border: 1px solid var(--tcsi-route-line);
-        border-radius: var(--tcsi-route-radius);
-        box-shadow: 0 8px 24px rgba(27, 43, 54, .12);
+        border-radius: var(--tcsi-route-radius-sm);
+        box-shadow: var(--tcsi-shadow-surface);
     }
     .dropdown-item { min-height: 32px; padding: 7px 12px; &:hover, &:focus { background: var(--tcsi-route-surface-hover); } }
     .modal-content { background: var(--tcsi-route-surface); border: 1px solid var(--tcsi-route-line); border-radius: 8px; box-shadow: 0 16px 48px rgba(27, 43, 54, .16); }
