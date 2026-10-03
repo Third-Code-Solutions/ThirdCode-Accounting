@@ -15,18 +15,25 @@ def brand_invitation(body):
     body = re.sub(r"https?://(?:www\.)?odoo\.com[^\s\"<]*", "https://www.thirdcodesolutions.com", body)
     body = body.replace("http://yourcompany.odoo.com", "https://your-workspace.example")
     body = body.replace("OdooBot", "TCSI Workspace Assistant")
-    return re.sub(r"\bOdoo\b", "TCSI", body)
+    body = re.sub(r"\bodoo\.com\b", "thirdcodesolutions.com", body, flags=re.IGNORECASE)
+    return re.sub(r"\bodoo\b", "TCSI", body, flags=re.IGNORECASE)
 
 
 def brand_chat_body(body):
-    """Rebrand Odoo references inside stored message bodies — bot welcome
-    texts, fallback replies, and their links — so no future chat, preview, or
-    notification can surface the old brand again."""
+    """Rebrand Odoo references inside stored message text — bodies, subjects,
+    bot welcome texts, fallback replies, and their links — so no future chat,
+    preview, or notification can surface the old brand again.
+
+    The word-boundary rules deliberately leave `o_odoobot_command` alone: that
+    class is invisible styling plumbing (the client draws the emoji command
+    chip with it), so renaming it in a body would break the chip, not the brand.
+    """
     if not body or "odoo" not in body.lower():
         return body
     body = re.sub(r"https?://(?:www\.)?odoo\.com[^\s\"'<]*", "https://www.thirdcodesolutions.com", body)
+    body = re.sub(r"\bodoo\.com\b", "thirdcodesolutions.com", body, flags=re.IGNORECASE)
     body = body.replace("OdooBot", "TCSI Workspace Assistant")
-    return re.sub(r"\bOdoo\b", "TCSI", body)
+    return re.sub(r"\bodoo\b", "TCSI", body, flags=re.IGNORECASE)
 
 
 class CompanyBranding(models.Model):
@@ -70,4 +77,6 @@ class MailMessageBranding(models.Model):
         for vals in vals_list:
             if vals.get("body"):
                 vals["body"] = brand_chat_body(vals["body"])
+            if vals.get("subject"):
+                vals["subject"] = brand_chat_body(vals["subject"])
         return super().create(vals_list)

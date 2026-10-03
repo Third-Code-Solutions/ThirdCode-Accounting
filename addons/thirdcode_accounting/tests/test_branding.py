@@ -32,6 +32,24 @@ class TestChatBranding(TransactionCase):
         self.assertNotIn("OdooBot", message.body)
         self.assertNotIn("odoo.com", message.body)
 
+    def test_link_text_and_lowercase_brand_are_rebranded(self):
+        message = self._post(
+            '<p>Welcome to odoo. See <a href="https://thirdcodesolutions.com">odoo.com</a>.</p>'
+        )
+        self.assertNotIn("odoo", message.body.lower())
+        self.assertIn("thirdcodesolutions.com", message.body)
+
+    def test_subject_is_rebranded_at_create(self):
+        message = self.env["mail.message"].create({
+            "subject": "Welcome to Odoo!",
+            "body": "<p>hello</p>",
+            "message_type": "comment",
+            "subtype_id": self.env.ref("mail.mt_note").id,
+            "model": "res.partner",
+            "res_id": self.env.user.partner_id.id,
+        })
+        self.assertEqual(message.subject, "Welcome to TCSI!")
+
     def test_clickable_command_hook_survives_branding(self):
         # `o_odoobot_command` is invisible client plumbing, not brand: the
         # sanitizer must leave it alone or the emoji-command links break.
