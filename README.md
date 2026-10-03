@@ -1,8 +1,9 @@
 # TCSI Accounting Workspace
 
-For employee workflows and the five-company setup sequence, see
-[`docs/accounting-user-guide.md`](docs/accounting-user-guide.md). Per-role daily
-operations across every workspace route are in
+For the current client-facing guide, use [User Guide (PDF)](docs/userguide.pdf)
+([editable source](docs/userguide.md)), reviewed against the hosted workspace on
+3 October 2026. Historical setup and operator notes remain in
+[`docs/accounting-user-guide.md`](docs/accounting-user-guide.md) and
 [`docs/team-operations-guide.md`](docs/team-operations-guide.md).
 
 Third Code Solutions Inc. local implementation of the feasible portions of `Accounting_System_PRD_v0.1`
