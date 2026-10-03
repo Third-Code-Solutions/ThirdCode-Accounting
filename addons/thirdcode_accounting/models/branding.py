@@ -18,6 +18,17 @@ def brand_invitation(body):
     return re.sub(r"\bOdoo\b", "TCSI", body)
 
 
+def brand_chat_body(body):
+    """Rebrand Odoo references inside stored message bodies — bot welcome
+    texts, fallback replies, and their links — so no future chat, preview, or
+    notification can surface the old brand again."""
+    if not body or "odoo" not in body.lower():
+        return body
+    body = re.sub(r"https?://(?:www\.)?odoo\.com[^\s\"'<]*", "https://www.thirdcodesolutions.com", body)
+    body = body.replace("OdooBot", "TCSI Workspace Assistant")
+    return re.sub(r"\bOdoo\b", "TCSI", body)
+
+
 class CompanyBranding(models.Model):
     _inherit = "res.company"
 
@@ -49,3 +60,14 @@ class UserBranding(models.Model):
         help="Choose email delivery or notifications in your TCSI workspace inbox.",
     )
     odoobot_state = fields.Selection(string="Workspace Assistant Status")
+
+
+class MailMessageBranding(models.Model):
+    _inherit = "mail.message"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("body"):
+                vals["body"] = brand_chat_body(vals["body"])
+        return super().create(vals_list)

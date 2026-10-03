@@ -592,7 +592,7 @@ const TCSI_ASSISTANT = Object.freeze({
 
 const ASSISTANT_COPY_REPLACEMENTS = [
     {
-        marker: "Odoo's chat helps employees collaborate efficiently",
+        marker: "TCSI's chat helps employees collaborate efficiently",
         text: "Hi — I’m Orvexa, your TCSI finance workspace assistant. I can help you find invoices, review balances, and start the right accounting task.",
     },
     {
