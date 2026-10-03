@@ -895,3 +895,62 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             batch.action_validate()
 
         self.assertEqual(batch.state, "validated")
+
+    def test_posted_move_lines_reject_api_reclassification(self):
+        """Direct writes on move lines must not bypass the posted guard.
+
+        The move-level guard covers ``account.move`` writes; without a twin on
+        ``account.move.line`` an API client could reclassify posted amounts
+        between accounts (or alter price/quantity/label) while the entry
+        stayed balanced.
+        """
+        invoice = self._posted_invoice()
+        line = invoice.invoice_line_ids[0]
+        expense_account = self.company_data["default_account_expense"]
+        revenue_account = self.company_data["default_account_revenue"]
+
+        with self.assertRaises(UserError):
+            line.with_user(self.accountant).write(
+                {"account_id": expense_account.id}
+            )
+        with self.assertRaises(UserError):
+            line.with_user(self.accountant).write({"price_unit": 999})
+        with self.assertRaises(UserError):
+            line.with_user(self.accountant).write({"quantity": 7})
+        with self.assertRaises(UserError):
+            line.with_user(self.accountant).write({"name": "tampered label"})
+
+        self.assertEqual(line.account_id, revenue_account)
+        self.assertEqual(line.price_unit, 100)
+        self.assertEqual(line.quantity, 1)
+
+    def test_draft_lines_and_superuser_writes_stay_open(self):
+        draft = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "company_id": self.company.id,
+                "journal_id": self.company_data["default_journal_sale"].id,
+                "partner_id": self.partner_a.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "name": "Draft guard bypass item",
+                            "quantity": 1,
+                            "price_unit": 50,
+                            "account_id": self.company_data[
+                                "default_account_revenue"
+                            ].id,
+                        }
+                    )
+                ],
+            }
+        )
+        draft_line = draft.invoice_line_ids[0]
+        draft_line.with_user(self.accountant).write({"price_unit": 123})
+        self.assertEqual(draft_line.price_unit, 123)
+
+        posted = self._posted_invoice()
+        posted_line = posted.invoice_line_ids[0]
+        posted_line.sudo().write({"price_unit": 456})
+        self.assertEqual(posted_line.price_unit, 456)

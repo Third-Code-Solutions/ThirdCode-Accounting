@@ -184,3 +184,42 @@ class AccountMove(models.Model):
                     )
                 )
         return self.env.ref("thirdcode_accounting.action_report_thirdcode_invoice").report_action(self)
+
+
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
+
+    def write(self, vals):
+        # The move-level guard does not cover direct writes on move lines
+        # (self._name is "account.move.line" there), which let API clients
+        # reclassify posted amounts between accounts while keeping the entry
+        # balanced. Block the accounting-relevant fields for non-superuser
+        # writes on posted lines; drafts are unaffected.
+        blocked_fields = {
+            "account_id",
+            "amount_currency",
+            "credit",
+            "date",
+            "debit",
+            "name",
+            "price_unit",
+            "product_id",
+            "quantity",
+            "ref",
+            "tax_ids",
+        }
+        if (
+            blocked_fields.intersection(vals)
+            and not self.env.su
+            and any(line.move_id.state == "posted" for line in self)
+            and self.env.context.get("thirdcode_bank_statement_sync_token")
+            is not BANK_STATEMENT_SYNC_TOKEN
+            and self.env.context.get("thirdcode_reconciliation_metadata_token")
+            is not _RECONCILIATION_METADATA_TOKEN
+        ):
+            raise UserError(
+                _(
+                    "Posted accounting entries are immutable. Use a supported reversal or correction document."
+                )
+            )
+        return super().write(vals)
