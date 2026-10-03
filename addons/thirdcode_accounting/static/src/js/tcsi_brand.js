@@ -8,6 +8,7 @@ const TCSI_WEB_PREFIX = "/workspace";
 const INTERNAL_WEB_PREFIX = "/odoo";
 const USER_MENU_ITEMS_TO_REMOVE = ["documentation", "support", "odoo_account"];
 const TCSI_APP_XMLID = "thirdcode_accounting.menu_thirdcode_accounting_root";
+const DASHBOARDS_APP_XMLID = "spreadsheet_dashboard.spreadsheet_dashboard_menu_root";
 const userMenuItems = registry.category("user_menuitems");
 
 const TCSI_LABELS = Object.freeze({
@@ -920,7 +921,12 @@ function getTCSIApp(menuService) {
 
 function renderSidebar(sidebar, menuService) {
     const tcsiApp = getTCSIApp(menuService);
-    const selectedApp = menuService.getCurrentApp() || tcsiApp;
+    const currentApp = menuService.getCurrentApp();
+    // The native dashboards app ("Insights") is a second entry point to the
+    // TCSI finance overview and owns only leftover native menus, so it must not
+    // take the workspace navigation over: the finance overview always keeps the
+    // TCSI Accounting navigation, whichever app the web client reports.
+    const selectedApp = currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
     const nav = sidebar.querySelector(".tcsi-sidebar-nav");
     const appSwitcher = sidebar.querySelector(".tcsi-app-switcher-list");
     const currentLabel = sidebar.querySelector(".tcsi-sidebar-app-name");
