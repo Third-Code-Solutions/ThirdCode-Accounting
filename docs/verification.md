@@ -224,3 +224,12 @@ route, viewport and theme.
 | Rendered UI, authenticated | **PASSED** | Passwordless session minting + debug browser as the demo administrator on 18.0.2.9.6: dark-theme dashboard (KPI cards: receivables ₱15,001, net result ₱107,101, demo company shown as active workspace) and the invoices list with the seeded rows. Screenshots: `~/tcsi-private/qa-evidence/ui-dashboard-fixed.png`, `ui-invoices-fixed.png` (pre-fix shots kept beside them). |
 | Tenant isolation (live re-check) | **PASSED** | Demo administrator: sees exactly 1 company, cannot see or read Trial Client 01's moves, console refused. Trial Client 01 administrator: demo users invisible, 1 company, console refused. |
 | Owner console cross-check | **PASSED** | Console shows 12 organisations / 11 trials; the demo company row live (trial status, 30-day window, user and document counts). |
+
+### Workspace update notices — 3 October 2026 (latest)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Outdated-page notice sources | **DIAGNOSED (live)** | The running build raises two notices: (1) the bus reconnect watcher ("The page is out of date" / "Save your work and refresh to get the latest updates and avoid potential issues.") fires whenever the bus reconnects and `/bus/has_missed_notifications` answers true — verified live to answer true for ANY `last_notification_id` (0, 1, 100, 99999999), so every engine restart surfaced the banner even on fully current pages; (2) the assets watchdog ("The page appears to be out of date.") fires only on a genuine `bundle_changed` version mismatch. |
+| Graceful-updates service (18.0.2.9.7) | **FIXED & live-verified** | The new backend service `tcsi_updates` intercepts both notices: the reconnect false alarm is suppressed; a genuine stale notice silently refreshes the tab when no work is at risk (no dirty form, dialog, blocking overlay or pending input) and keeps the native prompt when edits are pending; a 5-minute cooldown prevents reload loops. Live on 18.0.2.9.7: the service is present in the served client; the exact stale-notice call in a clean tab auto-refreshed the session silently (no banner); the same call on a dirty invoice form kept the prompt and did NOT reload. Evidence: `~/tcsi-private/qa-evidence/ui-outdated-dirty-prompt.png`. |
+
+**Demo company state after the QA pass:** 15 posted documents, 0 drafts, 0 cancelled (probe artifacts removed; three empty auto-saved drafts from form probing were unlinked).
