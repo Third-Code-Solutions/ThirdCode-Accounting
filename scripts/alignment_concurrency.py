@@ -140,3 +140,59 @@ with registry.cursor() as cr:
     assert local["ir.sequence"].browse(sequence.id).number_next_actual == next_before
 print("CONCURRENCY_RESULT " + json.dumps({"draft_close": close_result, "post_close": post_result,
     "receipt_retries": "same number; counter unchanged", "dataset": "isolated synthetic", "workers": 2, "test_dates": [draft_day, close_day]}))
+
+# Prospective continuous numbering: separate transactions race for one journal.
+from psycopg2.errors import DeadlockDetected
+
+def committed_call(callback):
+    for attempt in range(8):
+        with registry.cursor() as cr:
+            local = api.Environment(cr, uid, {"allowed_company_ids": [company_id]})
+            try:
+                result = callback(local)
+                cr.commit()
+                return result
+            except (SerializationFailure, DeadlockDetected):
+                cr.rollback()
+    raise AssertionError("Concurrent accounting retry did not converge")
+
+race_day = f"{year}-03-01"
+def post_numbered(local):
+    move = local["account.move"].create(move_values(race_day))
+    move.action_post()
+    return {"id": move.id, "name": move.name, "number": move.sequence_number}
+with ThreadPoolExecutor(max_workers=4) as pool:
+    posted = list(pool.map(lambda _: committed_call(post_numbered), range(4)))
+issued = sorted(item["number"] for item in posted)
+assert issued == list(range(issued[0], issued[0] + 4))
+assert len({item["name"] for item in posted}) == 4
+
+bank = env["account.journal"].search([("company_id", "=", company_id), ("type", "=", "bank")], limit=1)
+partner = env["res.partner"].create({"name": "Synthetic concurrent receipt " + suffix, "company_id": company_id})
+bank_id, partner_id = bank.id, partner.id
+env.cr.commit()
+def receipt_post(local):
+    receipt = local["account.payment"].create({"company_id": company_id, "journal_id": bank_id,
+        "partner_id": partner_id, "payment_type": "inbound", "partner_type": "customer", "amount": 10, "date": race_day})
+    receipt.action_post()
+    return receipt.thirdcode_receipt_number
+with ThreadPoolExecutor(max_workers=2) as pool:
+    receipt_numbers = list(pool.map(lambda _: committed_call(receipt_post), range(2)))
+assert len(set(receipt_numbers)) == 2
+numeric_receipts = sorted(int(value.rsplit("/", 1)[-1]) for value in receipt_numbers)
+assert numeric_receipts[1] == numeric_receipts[0] + 1
+
+recurring = env["thirdcode.recurring.journal"].create({"company_id": company_id, "journal_id": journal_id,
+    "name": "Concurrent recurring " + suffix, "reference": "CONCURRENT/" + suffix,
+    "date_start": race_day, "next_run": race_day, "line_ids": [
+        Command.create({"account_id": account_ids[0], "debit": 15, "name": "Recurring debit"}),
+        Command.create({"account_id": account_ids[1], "credit": 15, "name": "Recurring credit"})]})
+recurring_id = recurring.id
+env.cr.commit()
+from odoo import fields
+with ThreadPoolExecutor(max_workers=2) as pool:
+    runs = list(pool.map(lambda _: committed_call(lambda local: local["thirdcode.recurring.journal"].browse(recurring_id)._run_one(fields.Date.to_date(race_day)).id), range(2)))
+assert runs[0] == runs[1]
+print("NUMBERING_RECURRING_RESULT " + json.dumps({"journal_postings": posted, "receipt_numbers": receipt_numbers,
+    "recurring_move_id": runs[0], "recurring_concurrent_results_identical": True,
+    "scope": "Isolated synthetic; 4 concurrent postings and 2 receipt/recurring workers"}))

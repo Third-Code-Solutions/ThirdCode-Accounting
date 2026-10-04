@@ -26,6 +26,7 @@ class OdooHttp:
         result = payload.get("result") or {}
         if not result.get("uid"):
             raise RuntimeError(f"Odoo authentication failed: {payload}")
+        self.uid = int(result["uid"])
 
     def _request(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
@@ -73,6 +74,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://localhost:8069")
     parser.add_argument("--database", default="thirdcode_accounting")
+    parser.add_argument("--company-id", type=int, help="Explicit synthetic company; otherwise use the authenticated user's default company")
     parser.add_argument("--login", default="admin")
     parser.add_argument("--password", default="admin")
     parser.add_argument("--iterations", type=int, default=10)
@@ -82,12 +84,13 @@ def main() -> int:
     parser.add_argument("--target-post-ms", type=float, default=2000.0)
     parser.add_argument("--output", type=str)
     args = parser.parse_args()
+    if not args.database.startswith("tcsi_alignment_"):
+        parser.error("Synthetic transaction probes require an isolated tcsi_alignment_ database")
     if args.iterations <= 0 or args.workers <= 0:
         raise SystemExit("--iterations and --workers must be positive")
 
     odoo = OdooHttp(args.url, args.database, args.login, args.password)
-    company = odoo.call("res.company", "search_read", [[]], {"fields": ["id"], "limit": 1})[0]
-    company_id = int(company["id"])
+    company_id = args.company_id or int(odoo.call("res.users", "read", [[odoo.uid], ["company_id"]])[0]["company_id"][0])
     partner_rows = odoo.call(
         "res.partner",
         "search_read",
