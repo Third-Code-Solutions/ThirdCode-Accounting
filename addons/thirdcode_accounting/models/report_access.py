@@ -62,6 +62,10 @@ class ThirdCodeReportAccessMixin(models.AbstractModel):
         self._thirdcode_check_report_access()
         return super().button_export_pdf(*args, **kwargs)
 
+    def button_export_html(self, *args, **kwargs):
+        self._thirdcode_check_report_access()
+        return super().button_export_html(*args, **kwargs)
+
     def button_export_xlsx(self, *args, **kwargs):
         self._thirdcode_check_report_access()
         return super().button_export_xlsx(*args, **kwargs)

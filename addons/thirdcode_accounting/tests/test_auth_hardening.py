@@ -188,7 +188,7 @@ class TestHttpHardeningHelpers(TransactionCase):
         self.assertFalse(self.env["ir.http"]._tcsi_db_manager_allowed())
 
     def test_http_exceptions_keep_status_and_receive_security_headers(self):
-        from odoo.addons.base.models.ir_http import IrHttp as BaseIrHttp
+        from odoo.addons.http_routing.models.ir_http import IrHttp as BaseIrHttp
         from odoo.addons.thirdcode_accounting.models import ir_http
         from werkzeug.exceptions import InternalServerError, MethodNotAllowed
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="trial_balance_source_domains" inherit_id="account_financial_report.report_trial_balance_line">
+        <xpath expr="//span[@res-model='account.move.line'][@t-att-domain]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="//span[@res-model='account.move.line'][t[contains(@t-out, 'initial_balance') or contains(@t-out, 'initial_currency_balance')]]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'initial', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="//span[@res-model='account.move.line'][t[contains(@t-out, 'ending_balance') or contains(@t-out, 'ending_currency_balance')]]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'ending', aml_domain_extra)</attribute>
+        </xpath>
+    </template>
+</odoo>
