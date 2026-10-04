@@ -108,6 +108,12 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         posting = self.env.context.get("thirdcode_posting_token") is _POSTING_TOKEN
+        if {"sequence_number", "sequence_prefix"}.intersection(vals) and not posting:
+            raise UserError(_("Sequence counters are managed by native posting."))
+        if vals.get("name") and vals["name"] != "/" and not posting and any(
+            move.name != vals["name"] for move in self
+        ):
+            raise UserError(_("Document numbers are assigned by posting and cannot be supplied or changed."))
         if "posted_before" in vals and not (
             posting and vals["posted_before"] is True and vals.get("state") == "posted"
         ):
