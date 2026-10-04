@@ -11,6 +11,8 @@ import time
 
 import psycopg2
 
+from hosted_runtime import EVENTED_PORT, HTTP_PORT, proxy_config, serve
+
 
 def required(name):
     value = os.environ.get(name, "").strip()
@@ -28,6 +30,9 @@ def main():
     master_password = required("TCSI_MASTER_PASSWORD")
     if min(len(admin_password), len(master_password)) < 24:
         raise RuntimeError("Production passwords must be at least 24 characters")
+    workers = int(os.environ.get("TCSI_WORKERS", "2"))
+    if workers < 1:
+        raise RuntimeError("Hosted WebSockets require at least one prefork worker")
     data = pathlib.Path("/var/lib/odoo")
     data.mkdir(parents=True, exist_ok=True)
     if os.getuid() == 0:
@@ -51,11 +56,13 @@ def main():
         # Prefork mode: workers get recycled by limit_time_real, so one stuck
         # request cannot degrade the whole pilot the way single-process
         # threaded mode did. Values sized for the Railway pilot container.
-        "workers": os.environ.get("TCSI_WORKERS", "2"),
+        "workers": str(workers),
         "max_cron_threads": "1",
         "db_maxconn": os.environ.get("TCSI_DB_MAXCONN", "8"),
         "limit_time_real": os.environ.get("TCSI_LIMIT_TIME_REAL", "600"),
-        "http_port": os.environ.get("PORT", "8069"),
+        "http_interface": "127.0.0.1",
+        "http_port": str(HTTP_PORT),
+        "gevent_port": str(EVENTED_PORT),
         "without_demo": "all",
         "log_level": "info",
     }
@@ -112,7 +119,11 @@ if not params.get_param('tcsi.cloud_bootstrapped'):
     env.cr.commit()
 '''
     subprocess.run(["odoo", "shell", "-c", config_path, "-d", database, "--no-http"], input=bootstrap, text=True, check=True)
-    os.execvp("odoo", base)
+    with tempfile.TemporaryDirectory(prefix="tcsi-proxy-") as directory:
+        proxy_path = pathlib.Path(directory) / "nginx.conf"
+        proxy_path.write_text(proxy_config(directory, os.environ.get("PORT", "8069")))
+        subprocess.run(["nginx", "-t", "-c", str(proxy_path)], check=True)
+        raise SystemExit(serve([base, ["nginx", "-c", str(proxy_path)]]))
 
 
 if __name__ == "__main__":

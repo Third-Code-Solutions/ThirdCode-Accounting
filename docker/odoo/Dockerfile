@@ -10,7 +10,7 @@ ARG OCA_FINANCIAL_REPORTING_COMMIT=95c63a6930a174699148fc55fcdb334f54ad94df
 ARG OCA_ACCOUNT_RECONCILE_COMMIT=8a24fc4dd6cc341120045a4330536866a9972d84
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends --yes ca-certificates git \
+    && apt-get install --no-install-recommends --yes ca-certificates git nginx-light \
     && rm -rf /var/lib/apt/lists/* \
     && git init /opt/oca-server-tools \
     && git -C /opt/oca-server-tools remote add origin https://github.com/OCA/server-tools.git \
@@ -46,6 +46,7 @@ RUN apt-get update \
 
 COPY --chown=odoo:odoo addons /opt/extra-addons
 COPY docker/odoo/cloud_start.py /opt/tcsi/cloud_start.py
+COPY docker/odoo/hosted_runtime.py /opt/tcsi/hosted_runtime.py
 
 COPY docker/odoo/test-requirements.txt /tmp/tcsi-odoo-test-requirements.txt
 RUN if [ "$INSTALL_ODOO_TEST_HELPER" = "true" ]; then \

@@ -187,6 +187,23 @@ class TestHttpHardeningHelpers(TransactionCase):
     def test_database_manager_is_denied_by_default(self):
         self.assertFalse(self.env["ir.http"]._tcsi_db_manager_allowed())
 
+    def test_http_exceptions_keep_status_and_receive_security_headers(self):
+        from odoo.addons.base.models.ir_http import IrHttp as BaseIrHttp
+        from odoo.addons.thirdcode_accounting.models import ir_http
+        from werkzeug.exceptions import InternalServerError, MethodNotAllowed
+
+        for error in (InternalServerError(), MethodNotAllowed(valid_methods=["GET"])):
+            with mock.patch.object(BaseIrHttp, "_handle_error", return_value=error), \
+                    mock.patch.object(ir_http, "request", mock.Mock(httprequest=mock.Mock(environ={}), session=mock.Mock(uid=0))), \
+                    mock.patch.object(type(self.env["ir.http"]), "_tcsi_is_secure", return_value=True):
+                response = self.env["ir.http"]._handle_error(error)
+            self.assertEqual(response.status_code, error.code)
+            self.assertEqual(response.get_data(), error.get_response().get_data())
+            self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+            self.assertIn("Strict-Transport-Security", response.headers)
+            if isinstance(error, MethodNotAllowed):
+                self.assertEqual(response.headers["Allow"], "GET")
+
 
 @tagged("post_install", "-at_install")
 class TestSessionCookiePolicy(TransactionCase):
