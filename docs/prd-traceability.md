@@ -1,5 +1,8 @@
 # PRD traceability — full local implementation
 
+> Current scope amendment (5 October 2026): the approved target is Vercel portal/proxy, Railway Odoo Community/PostgreSQL and persistent filestore, preserving Supabase responsibilities. On-premise/client-owned-server/LAN-only mismatch findings are withdrawn. Historical local claims below are not refreshed production evidence. Use [the refreshed traceability and release record](prd-alignment-2026-10-05/REPORT.md) and [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md). Product readiness for white-label turnover is distinct from each future client's accounting configuration and acceptance.
+
+
 Source: [Accounting System PRD v0.1](../../Accounting_System_PRD_v0.1.pdf), dated
 19 September 2026, eight pages. The PRD is explicitly a review draft and says
 it is not a build specification until the open questions are closed and v1.0 is
@@ -87,7 +90,7 @@ Status vocabulary:
 | --- | --- | --- | --- | --- |
 | AP-01 p3 | Launch | Native supplier partner, terms, VAT/TIN/contact | Create supplier and verify payable identity | **VERIFIED LOCALLY** for synthetic path |
 | AP-02 p3 | Launch | Native supplier bill with attachment support | Post bill and verify source attachment | **PARTIAL** — bill path verified; attachment-specific acceptance not separately run |
-| AP-03 p3 | Launch | Native `hr_expense` employee-expense surface; payment batch/petty-cash journals | Create expense and post/reimburse through approved flow | **PARTIAL** — draft expense surface verified; full reimbursement policy pending |
+| AP-03 p3 | Launch | Native `hr_expense` employee-expense surface; payment batch/petty-cash journals | Create expense and post/reimburse through approved flow | **VERIFIED LOCALLY / BLOCKED — CLIENT DECISION** — assigned manager approval, Accountant posting, reimbursement, and unassigned Accountant denial passed on synthetic data; real reimbursement policy pending |
 | AP-04 p3 | Launch | `thirdcode.payment.batch`, native payment register, instrument fields | Submit/post multiple lines and verify one native payment per line | **VERIFIED LOCALLY** |
 | AP-05 p3 | Launch | Native/OCA aged payable and unpaid listings | Render supplier ageing and reconcile to ledger | **PARTIAL** — surface installed; client report sample pending |
 | AP-06 p3 | Launch | Native `in_refund` debit note/supplier credit | Post debit note and verify classification | **VERIFIED LOCALLY** |

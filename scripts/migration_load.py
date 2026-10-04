@@ -82,6 +82,9 @@ def persist_source_identifier(
 
 def load(args: argparse.Namespace, validation: dict[str, Any]) -> dict[str, Any]:
     root: Path = args.input
+    fresh = validate_package(root)
+    if fresh["status"] != "VALID" or fresh["source_hash"] != validation["source_hash"]:
+        raise RuntimeError("Migration inputs changed or failed validation; no load attempted")
     odoo = Odoo(args.url, args.database, args.login, args.password)
     if not args.company_id or not args.journal_id or not args.cutover_date:
         raise RuntimeError("--company-id, --journal-id, and --cutover-date are required with --apply")
@@ -184,19 +187,10 @@ def load(args: argparse.Namespace, validation: dict[str, Any]) -> dict[str, Any]
             created["taxes"] += 1
 
     def create_move(source_identifier: str, values: dict[str, Any]) -> bool:
-        found = existing_one(
-            odoo,
-            "account.move",
-            [("company_id", "=", company_id), ("thirdcode_source_identifier", "=", source_identifier)],
-            ["id", "state"],
-        )
-        if found:
-            existing["moves"] += 1
-            return False
-        move_id = int(odoo.call("account.move", "create", [values]))
-        odoo.call("account.move", "action_post", [[move_id]])
-        created["moves"] += 1
-        return True
+        result = odoo.call("account.move", "action_import_thirdcode_move", [values])
+        created["moves"] += int(result["created"])
+        existing["moves"] += int(not result["created"])
+        return result["created"]
 
     opening_lines = []
     for row in rows(root, "opening_tb.csv"):
@@ -273,6 +267,7 @@ def load(args: argparse.Namespace, validation: dict[str, Any]) -> dict[str, Any]
                 "ref": row["reference"],
                 "thirdcode_source_identifier": row["source_id"],
                 "invoice_line_ids": line_values,
+                "thirdcode_import_control_account_id": account_map[row["account_source_id"]],
             },
         )
 
@@ -281,7 +276,9 @@ def load(args: argparse.Namespace, validation: dict[str, Any]) -> dict[str, Any]
         "source_hash": validation["source_hash"],
         "created": created,
         "existing_skipped": existing,
-        "duplicate_safe": True,
+        "move_import_atomic": True,
+        "accounting_basis": validation["accounting_basis"],
+        "acceptance": "TECHNICAL LOAD ONLY - source reconciliation and client acceptance required",
     }
 
 

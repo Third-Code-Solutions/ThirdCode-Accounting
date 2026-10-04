@@ -1,0 +1,38 @@
+2026-10-04 20:30:49,229 287 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 20:30:49,230 287 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 20:30:49,230 287 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 20:30:49,230 287 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 20:30:49,357 287 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 20:30:49,362 287 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 20:30:49,496 287 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 20:30:49,496 287 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 20:30:49,511 287 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 1 modules...
+2026-10-04 20:30:49,515 287 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 20:30:49,531 287 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 63 modules...
+2026-10-04 20:30:50,028 287 INFO tcsi_alignment_candidate_v2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 20:30:50,033 287 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 63 modules loaded in 0.50s, 0 queries (+0 extra)
+2026-10-04 20:30:50,180 287 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: Modules loaded.
+2026-10-04 20:30:50,195 287 INFO tcsi_alignment_candidate_v2 odoo.modules.registry: Registry loaded in 0.699s
+Traceback (most recent call last):
+  File "/usr/bin/odoo", line 8, in <module>
+    odoo.cli.main()
+  File "/usr/lib/python3/dist-packages/odoo/cli/command.py", line 76, in main
+    o.run(args)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 130, in run
+    self.shell(config['db_name'])
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 123, in shell
+    self.console(local_vars)
+  File "/usr/lib/python3/dist-packages/odoo/cli/shell.py", line 68, in console
+    exec(sys.stdin.read(), local_vars)
+  File "<string>", line 65, in <module>
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 60, in close_while_writer_finishes
+AssertionError: Closed a period while a concurrent draft existed

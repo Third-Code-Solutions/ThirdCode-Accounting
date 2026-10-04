@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="view_account_cash_classification" model="ir.ui.view">
+    <field name="name">account.account.cash.classification</field>
+    <field name="model">account.account</field>
+    <field name="inherit_id" ref="account.view_account_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="Cash flow">
+          <group>
+            <field name="thirdcode_cash_equivalent"/>
+            <field name="thirdcode_cash_flow_category"/>
+          </group>
+          <p class="text-muted">Set the cash-equivalent scope and counterpart classification with the accountant. Mixed entries can be split in Cash flow allocations.</p>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="view_tax_summary_classification" model="ir.ui.view">
+    <field name="name">account.tax.summary.classification</field>
+    <field name="model">account.tax</field>
+    <field name="inherit_id" ref="account.view_tax_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="Ledger summaries">
+          <group>
+            <field name="thirdcode_summary_kind"/>
+          </group>
+        </page>
+      </xpath>
+    </field>
+  </record>
+  <record id="view_cash_allocation_list" model="ir.ui.view">
+    <field name="name">thirdcode.cash.flow.allocation.list</field>
+    <field name="model">thirdcode.cash.flow.allocation</field>
+    <field name="arch" type="xml">
+      <list editable="bottom">
+        <field name="company_id"/>
+        <field name="move_id" domain="[('state', '=', 'posted')]"/>
+        <field name="category"/>
+        <field name="amount"/>
+        <field name="currency_id" column_invisible="True"/>
+        <field name="explanation"/>
+      </list>
+    </field>
+  </record>
+  <record id="action_cash_allocations" model="ir.actions.act_window">
+    <field name="name">Cash flow allocations</field>
+    <field name="res_model">thirdcode.cash.flow.allocation</field>
+    <field name="view_mode">list</field>
+  </record>
+  <record id="view_tax_summary_form" model="ir.ui.view">
+    <field name="name">thirdcode.tax.summary.wizard.form</field>
+    <field name="model">thirdcode.tax.summary.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Ledger tax summary">
+        <group>
+          <field name="company_id"/>
+          <field name="summary_kind"/>
+          <field name="date_from"/>
+          <field name="date_to"/>
+        </group>
+        <p class="text-muted">Summarises posted tax lines using configured classifications. Review the client's tax setup before using it for statutory reporting.</p>
+        <footer>
+          <button name="action_export_pdf" type="object" string="Export PDF" class="oe_highlight"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="action_tax_summary" model="ir.actions.act_window">
+    <field name="name">VAT and withholding summary</field>
+    <field name="res_model">thirdcode.tax.summary.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+  <record id="view_bank_summary_button" model="ir.ui.view">
+    <field name="name">thirdcode.bank.summary.print</field>
+    <field name="model">thirdcode.bank.reconciliation</field>
+    <field name="inherit_id" ref="view_thirdcode_bank_reconciliation_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_print_summary" type="object" string="Print bank summary"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="view_cutover_batch" model="ir.ui.view">
+    <field name="name">thirdcode.migration.cutover</field>
+    <field name="model">thirdcode.migration.batch</field>
+    <field name="inherit_id" ref="view_thirdcode_migration_batch_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='row_ids']" position="attributes">
+        <attribute name="readonly">cutover_fingerprint</attribute>
+      </xpath>
+      <xpath expr="//field[@name='company_id']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//field[@name='cutover_date']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//field[@name='source_file_hash']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//field[@name='opening_balance_owner']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//header" position="inside">
+        <button name="action_review_cutover_file" type="object" string="Check mapping package" invisible="state != 'draft'"/>
+        <button name="action_apply_cutover" type="object" string="Apply cutover snapshot" invisible="state != 'draft' or not cutover_payload" groups="thirdcode_accounting.group_thirdcode_administrator"/>
+      </xpath>
+      <xpath expr="//field[@name='notes']" position="before">
+        <group string="Cutover source archive">
+          <field name="source_archive" filename="source_archive_filename" readonly="state != 'draft'"/>
+          <field name="source_archive_filename" invisible="1"/>
+          <field name="cutover_fingerprint" readonly="1"/>
+        </group>
+        <group string="Cutover mapping">
+          <field name="cutover_mapping_file" filename="cutover_mapping_filename" readonly="state != 'draft'"/>
+          <field name="cutover_mapping_filename" invisible="1"/>
+          <field name="cutover_payload" invisible="1"/>
+          <field name="cutover_review" readonly="1"/>
+        </group>
+        <field name="cutover_move_ids" readonly="1">
+          <list create="0" edit="0" delete="0"><field name="name"/><field name="date"/><field name="ref"/><field name="state" widget="badge"/></list>
+        </field>
+      </xpath>
+    </field>
+  </record>
+  <menuitem id="menu_cash_allocations" name="Cash flow allocations" parent="menu_thirdcode_controls" action="action_cash_allocations" sequence="32" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+  <menuitem id="menu_tax_summary" name="VAT and withholding summary" parent="menu_thirdcode_accounting_root" action="action_tax_summary" sequence="38" groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+  <record id="view_statement_match_wizard" model="ir.ui.view">
+    <field name="name">thirdcode.statement.match.wizard.form</field>
+    <field name="model">thirdcode.statement.match.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Match bank statement">
+        <group>
+          <field name="statement_line_id"/>
+          <field name="reverse_only" invisible="1"/>
+          <field name="company_id" invisible="1"/>
+          <field name="journal_id" readonly="reverse_only"/>
+          <field name="accounting_date"/>
+        </group>
+        <p class="text-muted">Allocate the signed bank amount to posted outstanding items. A separate adjustment clears suspense while preserving the original entries.</p>
+        <field name="line_ids" invisible="reverse_only">
+          <list editable="bottom">
+            <field name="company_id" column_invisible="True"/>
+            <field name="move_line_id"/>
+            <field name="amount"/>
+          </list>
+        </field>
+        <footer>
+          <button name="action_match" type="object" string="Post matching adjustment" class="oe_highlight" invisible="reverse_only"/>
+          <button name="action_match" type="object" string="Reverse matching adjustment" class="oe_highlight" invisible="not reverse_only"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+  <record id="view_bank_statement_match_button" model="ir.ui.view">
+    <field name="name">thirdcode.bank.statement.match.button</field>
+    <field name="model">thirdcode.bank.reconciliation</field>
+    <field name="inherit_id" ref="view_thirdcode_bank_reconciliation_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='bank_statement_line_ids']/list" position="inside">
+        <field name="thirdcode_match_move_id" optional="hide"/>
+        <button name="action_open_thirdcode_match_reversal" type="object" string="Reverse match" invisible="not thirdcode_match_move_id or thirdcode_reconciliation_status != 'reconciled'" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+        <button name="action_open_thirdcode_match" type="object" string="Match items" invisible="thirdcode_reconciliation_status == 'reconciled'" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+      </xpath>
+    </field>
+  </record>
+  <record id="view_source_archive_list" model="ir.ui.view">
+    <field name="name">thirdcode.migration.archive.entry.list</field>
+    <field name="model">thirdcode.migration.archive.entry</field>
+    <field name="arch" type="xml">
+      <list create="0" edit="0" delete="0">
+        <field name="company_id"/>
+        <field name="batch_id"/>
+        <field name="source_entry_id"/>
+        <field name="source_line_id"/>
+        <field name="date"/>
+        <field name="account_code"/>
+        <field name="partner_reference"/>
+        <field name="description"/>
+        <field name="debit" sum="Debits"/>
+        <field name="credit" sum="Credits"/>
+        <field name="currency_id" column_invisible="True"/>
+      </list>
+    </field>
+  </record>
+  <record id="action_source_archive" model="ir.actions.act_window">
+    <field name="name">Retained source history</field>
+    <field name="res_model">thirdcode.migration.archive.entry</field>
+    <field name="view_mode">list</field>
+  </record>
+  <menuitem id="menu_source_archive" name="Retained source history" parent="menu_thirdcode_accounting_root" action="action_source_archive" sequence="41" groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+</odoo>

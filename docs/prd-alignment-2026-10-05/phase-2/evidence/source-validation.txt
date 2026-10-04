@@ -1,0 +1,6 @@
+PASS: addon Python sources and changed verification scripts parse.
+PASS: addon XML parses.
+PASS: 60 manifest resources are present and deployable.
+PASS: git diff --check.
+Native combined suite:109 passed; stronger SOA ageing test:1 passed; CSV policy suite:5 passed.
+No production writes or deployment.

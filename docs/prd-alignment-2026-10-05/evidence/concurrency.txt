@@ -1,0 +1,20 @@
+2026-10-04 20:31:21,027 394 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 20:31:21,028 394 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 20:31:21,028 394 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 20:31:21,028 394 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 20:31:21,158 394 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 20:31:21,164 394 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 20:31:21,271 394 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 20:31:21,271 394 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 20:31:21,286 394 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 1 modules...
+2026-10-04 20:31:21,291 394 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 20:31:21,307 394 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 63 modules...
+2026-10-04 20:31:21,748 394 INFO tcsi_alignment_candidate_v2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 20:31:21,754 394 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 63 modules loaded in 0.45s, 0 queries (+0 extra)
+2026-10-04 20:31:21,876 394 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: Modules loaded.
+2026-10-04 20:31:21,890 394 INFO tcsi_alignment_candidate_v2 odoo.modules.registry: Registry loaded in 0.619s
+2026-10-04 20:31:23,596 394 ERROR ? odoo.sql_db: bad query: b'SELECT id FROM res_company WHERE id = 1 FOR SHARE'
+ERROR: could not serialize access due to concurrent update
+
+CONCURRENCY_RESULT {"draft_close": "blocked_concurrent_draft", "post_close": {"result": "blocked_closed_period", "serialization_retries": 1}, "receipt_retries": "same number; counter unchanged", "dataset": "isolated synthetic", "workers": 2}

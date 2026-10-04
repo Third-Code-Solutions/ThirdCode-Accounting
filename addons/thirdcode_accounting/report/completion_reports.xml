@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <template id="activity_statement_running_balance" inherit_id="partner_statement.activity_balance">
+    <xpath expr="//thead/tr" position="inside">
+      <th t-if="not is_detailed" class="amount">Running balance</th>
+    </xpath>
+    <xpath expr="//tbody/tr[@t-foreach]" position="inside">
+      <td t-if="not is_detailed" class="amount">
+        <span t-out="line['thirdcode_running_balance']" t-options="{'widget': 'monetary', 'display_currency': display_currency}"/>
+      </td>
+    </xpath>
+    <xpath expr="//tbody/tr[1]" position="inside">
+      <td t-if="not is_detailed" class="amount">
+        <span t-out="currency['balance_forward']" t-options="{'widget': 'monetary', 'display_currency': display_currency}"/>
+      </td>
+    </xpath>
+    <xpath expr="//tbody/tr[last()]" position="inside">
+      <td t-if="not is_detailed" class="amount">
+        <span t-out="currency['amount_due']" t-options="{'widget': 'monetary', 'display_currency': display_currency}"/>
+      </td>
+    </xpath>
+  </template>
+  <record id="action_report_thirdcode_tax_summary" model="ir.actions.report">
+    <field name="name">Ledger tax summary</field>
+    <field name="model">thirdcode.tax.summary.wizard</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">thirdcode_accounting.report_tax_summary</field>
+  </record>
+  <template id="report_tax_summary">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="o">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <h2>VAT / withholding ledger summary</h2>
+            <p><span t-field="o.company_id.name"/> — <span t-field="o.summary_kind"/> — <span t-field="o.date_from"/> to <span t-field="o.date_to"/></p>
+            <t t-set="data" t-value="o.get_report_data()"/>
+            <p t-esc="data['status']"/>
+            <p t-if="data['unclassified_count']" class="text-danger"><span t-esc="data['unclassified_count']"/> tax lines lack classification and are excluded.</p>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Document / partner</th>
+                  <th>Tax</th>
+                  <th>Base</th>
+                  <th>Signed tax amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-foreach="data['rows']" t-as="row">
+                  <td t-esc="row['date']"/>
+                  <td>
+                    <span t-esc="row['document']"/>
+                    <br/>
+                    <span t-esc="row['partner']"/>
+                  </td>
+                  <td t-esc="row['tax']"/>
+                  <td t-esc="row['base']"/>
+                  <td t-esc="row['amount']"/>
+                </tr>
+              </tbody>
+            </table>
+            <p>Tax total (<span t-field="o.company_id.currency_id.name"/>): <strong t-esc="data['tax_total']"/></p>
+            <p>Sale tax is shown as credit less debit; purchase tax as debit less credit. Refunds and withholding deductions retain their ledger sign. Tax bases are counted once per document/tax; zero-tax documents without tax lines are outside this ledger summary.</p>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+  <record id="action_report_thirdcode_bank_summary" model="ir.actions.report">
+    <field name="name">Bank reconciliation summary</field>
+    <field name="model">thirdcode.bank.reconciliation</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">thirdcode_accounting.report_bank_summary</field>
+  </record>
+  <template id="report_bank_summary">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="o">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <h2>Bank reconciliation summary</h2>
+            <p><span t-field="o.company_id.name"/> — <span t-field="o.journal_id.name"/></p>
+            <p><span t-field="o.date_start"/> to <span t-field="o.date_end"/> — Statement <span t-field="o.statement_reference"/></p>
+            <t t-set="data" t-value="o.get_summary_data()"/>
+            <p>Status: <span t-field="o.state"/>; reviewed by <span t-field="o.reconciled_by.name"/> at <span t-field="o.reconciled_at"/></p>
+            <p t-if="data['ledger_changed']" class="text-danger">The ledger has changed since the recorded reconciliation. Review this summary before relying on it.</p>
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th>Statement opening</th>
+                  <td>
+                    <span t-field="o.opening_balance"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Recorded closing book balance</th>
+                  <td>
+                    <span t-field="o.ledger_balance"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Less: deposits in transit</th>
+                  <td>
+                    <span t-field="o.outstanding_deposits"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Add: outstanding payments</th>
+                  <td>
+                    <span t-field="o.outstanding_payments"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Expected statement closing</th>
+                  <td>
+                    <span t-field="o.expected_bank_balance"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Statement closing</th>
+                  <td>
+                    <span t-field="o.closing_balance"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>Difference</th>
+                  <td>
+                    <span t-field="o.difference"/>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p>Statement evidence: <span t-field="o.evidence_filename"/></p>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Reference</th>
+                  <th>Amount</th>
+                  <th>Native status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-foreach="data['lines']" t-as="line">
+                  <td>
+                    <span t-field="line.date"/>
+                  </td>
+                  <td>
+                    <span t-field="line.payment_ref"/>
+                  </td>
+                  <td>
+                    <span t-field="line.amount"/>
+                  </td>
+                  <td>
+                    <span t-field="line.thirdcode_reconciliation_status"/>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p>This is the standard bank reconciliation summary. The separately specified client monthly reconciliation format requires its own approved definition.</p>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+</odoo>

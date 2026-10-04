@@ -111,5 +111,265 @@
             <field name="capture_record">True</field>
             <field name="state">subscribed</field>
         </record>
+        <record id="auditlog_rule_account_move_line" model="auditlog.rule">
+            <field name="name">Third Code: account move line</field>
+            <field name="model_id" ref="account.model_account_move_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_partial_reconcile" model="auditlog.rule">
+            <field name="name">Third Code: partial reconcile</field>
+            <field name="model_id" ref="account.model_account_partial_reconcile"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_full_reconcile" model="auditlog.rule">
+            <field name="name">Third Code: full reconcile</field>
+            <field name="model_id" ref="account.model_account_full_reconcile"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_account" model="auditlog.rule">
+            <field name="name">Third Code: account</field>
+            <field name="model_id" ref="account.model_account_account"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_journal" model="auditlog.rule">
+            <field name="name">Third Code: journal</field>
+            <field name="model_id" ref="account.model_account_journal"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_partner" model="auditlog.rule">
+            <field name="name">Third Code: partner</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_tax" model="auditlog.rule">
+            <field name="name">Third Code: tax</field>
+            <field name="model_id" ref="account.model_account_tax"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_payment_term" model="auditlog.rule">
+            <field name="name">Third Code: payment term</field>
+            <field name="model_id" ref="account.model_account_payment_term"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_payment_term_line" model="auditlog.rule">
+            <field name="name">Third Code: payment term line</field>
+            <field name="model_id" ref="account.model_account_payment_term_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_statement_line" model="auditlog.rule">
+            <field name="name">Third Code: statement line</field>
+            <field name="model_id" ref="account.model_account_bank_statement_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_recurring_journal_line" model="auditlog.rule">
+            <field name="name">Third Code: recurring journal line</field>
+            <field name="model_id" ref="model_thirdcode_recurring_journal_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_recurring_invoice_line" model="auditlog.rule">
+            <field name="name">Third Code: recurring invoice line</field>
+            <field name="model_id" ref="model_thirdcode_recurring_invoice_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_payment_batch_line" model="auditlog.rule">
+            <field name="name">Third Code: payment batch line</field>
+            <field name="model_id" ref="model_thirdcode_payment_batch_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_employee_expense" model="auditlog.rule">
+            <field name="name">Third Code: employee expense</field>
+            <field name="model_id" ref="hr_expense.model_hr_expense"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_employee_expense_sheet" model="auditlog.rule">
+            <field name="name">Third Code: employee expense sheet</field>
+            <field name="model_id" ref="hr_expense.model_hr_expense_sheet"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_tax_repartition" model="auditlog.rule">
+            <field name="name">Third Code: tax repartition</field>
+            <field name="model_id" ref="account.model_account_tax_repartition_line"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_partner_bank" model="auditlog.rule">
+            <field name="name">Third Code: partner bank</field>
+            <field name="model_id" ref="base.model_res_partner_bank"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_company" model="auditlog.rule">
+            <field name="name">Third Code: company</field>
+            <field name="model_id" ref="base.model_res_company"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_user" model="auditlog.rule">
+            <field name="name">Third Code: user</field>
+            <field name="model_id" ref="base.model_res_users"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_group" model="auditlog.rule">
+            <field name="name">Third Code: group</field>
+            <field name="model_id" ref="base.model_res_groups"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_attachment" model="auditlog.rule">
+            <field name="name">Third Code: attachment</field>
+            <field name="model_id" ref="base.model_ir_attachment"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_product" model="auditlog.rule">
+            <field name="name">Third Code: product</field>
+            <field name="model_id" ref="product.model_product_template"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_product_variant" model="auditlog.rule">
+            <field name="name">Third Code: product_variant</field>
+            <field name="model_id" ref="product.model_product_product"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_migration_row" model="auditlog.rule">
+            <field name="name">Third Code: migration_row</field>
+            <field name="model_id" ref="model_thirdcode_migration_row"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_sequence" model="auditlog.rule">
+            <field name="name">Third Code: sequence</field>
+            <field name="model_id" ref="base.model_ir_sequence"/>
+            <field name="log_type">full</field>
+            <field name="log_create">True</field>
+            <field name="log_write">True</field>
+            <field name="log_unlink">True</field>
+            <field name="capture_record">True</field>
+            <field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_cash_flow_allocation" model="auditlog.rule">
+            <field name="name">Third Code: cash flow allocation</field><field name="model_id" ref="model_thirdcode_cash_flow_allocation"/>
+            <field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field>
+        </record>
+        <record id="auditlog_rule_migration_archive" model="auditlog.rule"><field name="name">Third Code: source history archive</field><field name="model_id" ref="model_thirdcode_migration_archive_entry"/><field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field></record>
+        <record id="auditlog_rule_statement_header" model="auditlog.rule"><field name="name">Third Code: statement_header</field><field name="model_id" ref="account.model_account_bank_statement"/><field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field></record>
+        <record id="auditlog_rule_fiscal_position" model="auditlog.rule"><field name="name">Third Code: fiscal_position</field><field name="model_id" ref="account.model_account_fiscal_position"/><field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field></record>
+        <record id="auditlog_rule_fiscal_account" model="auditlog.rule"><field name="name">Third Code: fiscal_account</field><field name="model_id" ref="account.model_account_fiscal_position_account"/><field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field></record>
+        <record id="auditlog_rule_fiscal_tax" model="auditlog.rule"><field name="name">Third Code: fiscal_tax</field><field name="model_id" ref="account.model_account_fiscal_position_tax"/><field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field></record>
+        <record id="auditlog_rule_payment_method_line" model="auditlog.rule"><field name="name">Third Code: payment_method_line</field><field name="model_id" ref="account.model_account_payment_method_line"/><field name="log_type">full</field><field name="log_create">True</field><field name="log_write">True</field><field name="log_unlink">True</field><field name="capture_record">True</field><field name="state">subscribed</field></record>
     </data>
 </odoo>

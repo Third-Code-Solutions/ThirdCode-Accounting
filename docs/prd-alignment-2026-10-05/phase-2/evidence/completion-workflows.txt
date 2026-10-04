@@ -1,0 +1,98 @@
+time="2026-10-04T21:20:29Z" level=warning msg="Found orphan containers ([tcsi-alignment-runtime tcsi-source-inspect]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+Running as user 'root' is a security risk.
+2026-10-04 21:20:59,962 1 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:20:59,963 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:20:59,963 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:20:59,963 1 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:21:00,110 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:21:00,116 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:21:00,223 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on 9345fbcda9cf:8069
+2026-10-04 21:21:00,238 1 INFO tcsi_alignment_upgrade odoo.tests.common: Importing test framework
+2026-10-04 21:21:00,268 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 1 modules...
+2026-10-04 21:21:00,272 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:21:00,294 1 INFO tcsi_alignment_upgrade odoo.modules.loading: updating modules list
+2026-10-04 21:21:00,297 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a
+2026-10-04 21:21:00,995 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:21:00,996 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:21:01,615 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a
+2026-10-04 21:21:01,654 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 63 modules...
+2026-10-04 21:21:02,224 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Loading module thirdcode_accounting (63/63)
+2026-10-04 21:21:02,352 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:21:02,546 1 INFO tcsi_alignment_upgrade odoo.modules.registry: module thirdcode_accounting: creating or updating database tables
+2026-10-04 21:21:03,206 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/ir_sequence_data.xml
+2026-10-04 21:21:03,210 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/ir_cron_data.xml
+2026-10-04 21:21:03,212 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/branding_data.xml
+2026-10-04 21:21:03,363 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/auditlog_rule_data.xml
+2026-10-04 21:21:03,384 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/tcsi_security_data.xml
+2026-10-04 21:21:03,389 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/branding_templates.xml
+2026-10-04 21:21:03,428 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/branding_communications.xml
+2026-10-04 21:21:03,608 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/dashboard_views.xml
+2026-10-04 21:21:03,618 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/thirdcode_groups.xml
+2026-10-04 21:21:05,187 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/company_rules.xml
+2026-10-04 21:21:05,258 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/ir.model.access.csv
+2026-10-04 21:21:05,339 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/res_company_views.xml
+2026-10-04 21:21:05,354 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_journal_views.xml
+2026-10-04 21:21:05,368 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_move_views.xml
+2026-10-04 21:21:05,396 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_payment_views.xml
+2026-10-04 21:21:05,408 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/payment_batch_views.xml
+2026-10-04 21:21:05,422 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/recurring_journal_views.xml
+2026-10-04 21:21:05,437 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/accounting_period_views.xml
+2026-10-04 21:21:05,447 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/migration_views.xml
+2026-10-04 21:21:05,460 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/recurring_invoice_views.xml
+2026-10-04 21:21:05,473 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/report_sample_views.xml
+2026-10-04 21:21:05,484 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/tax_profile_views.xml
+2026-10-04 21:21:05,493 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/bank_reconciliation_views.xml
+2026-10-04 21:21:05,508 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/year_end_close_views.xml
+2026-10-04 21:21:05,517 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/financial_report_views.xml
+2026-10-04 21:21:05,524 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/menu_views.xml
+2026-10-04 21:21:05,560 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/completion_views.xml
+2026-10-04 21:21:05,635 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/org_user_views.xml
+2026-10-04 21:21:05,662 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/platform_console_views.xml
+2026-10-04 21:21:05,670 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/apps_views.xml
+2026-10-04 21:21:05,817 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_reports.xml
+2026-10-04 21:21:05,821 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_templates.xml
+2026-10-04 21:21:05,833 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/completion_reports.xml
+2026-10-04 21:21:05,864 1 WARNING tcsi_alignment_upgrade odoo.modules.loading: The models ['thirdcode.orvexa.proposal', 'thirdcode.orvexa.event'] have no access rules in module thirdcode_accounting, consider adding some, like:
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+thirdcode_accounting.access_thirdcode_orvexa_proposal,access_thirdcode_orvexa_proposal,thirdcode_accounting.model_thirdcode_orvexa_proposal,base.group_user,1,0,0,0
+thirdcode_accounting.access_thirdcode_orvexa_event,access_thirdcode_orvexa_event,thirdcode_accounting.model_thirdcode_orvexa_event,base.group_user,1,0,0,0
+2026-10-04 21:21:05,996 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Module thirdcode_accounting loaded in 3.77s, 2512 queries (+2512 other)
+2026-10-04 21:21:05,996 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 63 modules loaded in 4.34s, 2512 queries (+2512 extra)
+2026-10-04 21:21:06,916 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Modules loaded.
+2026-10-04 21:21:06,931 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry changed, signaling through the database
+2026-10-04 21:21:06,931 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry loaded in 6.708s
+2026-10-04 21:21:06,931 1 INFO tcsi_alignment_upgrade odoo.service.server: Starting post tests
+2026-10-04 21:21:13,256 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_audit_credentials_excluded_and_attachment_digest_retained ...
+2026-10-04 21:21:14,443 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #245 deleted ir.attachment records with IDs: [2002]
+2026-10-04 21:21:14,447 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_cash_cheque_transfer_and_petty_cash_use_native_accounts ...
+2026-10-04 21:21:16,010 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_completion_role_and_company_boundaries ...
+2026-10-04 21:21:17,060 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_model: Access Denied by ACLs for operation: create, uid: 247, model: thirdcode.cash.flow.allocation
+2026-10-04 21:21:17,540 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_rule: Access Denied by record rules for operation: create on record ids: [5], uid: 247, model: thirdcode.tax.summary.wizard
+2026-10-04 21:21:18,334 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_model: Access Denied by ACLs for operation: write, uid: 247, model: account.bank.statement.line
+2026-10-04 21:21:18,339 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_continuous_numbering_year_boundary_failure_and_reversal ...
+2026-10-04 21:21:19,751 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_cutover_interruption_rolls_back_all_components_then_retry_succeeds ...
+2026-10-04 21:21:22,342 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_cutover_rejects_control_mismatch_history_and_existing_books ...
+2026-10-04 21:21:23,036 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_cutover_residuals_receipts_retry_and_retained_archive ...
+2026-10-04 21:21:25,467 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_mixed_cash_allocation_must_reconcile_and_is_audited ...
+2026-10-04 21:21:25,966 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_source_history_archive_is_queryable_immutable_and_never_posts ...
+2026-10-04 21:21:28,007 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_standard_bank_summary_has_evidence_and_detects_stale_ledger ...
+2026-10-04 21:21:28,660 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_statement_matching_preserves_posted_economics ...
+2026-10-04 21:21:30,098 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #245 deleted account.partial.reconcile records with IDs: [87, 86]
+2026-10-04 21:21:30,125 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #245 deleted account.full.reconcile records with IDs: [50]
+2026-10-04 21:21:31,219 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_supplier_credit_refund_and_additional_debit_reconcile ...
+2026-10-04 21:21:34,461 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_vat_withholding_summary_uses_posted_ledger_and_refunds ...
+2026-10-04 21:21:35,638 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #243 deleted account.move.line records with IDs: [1172, 1173]
+2026-10-04 21:21:36,407 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_attachment: filestore gc 21 checked, 7 removed
+2026-10-04 21:21:36,407 1 INFO tcsi_alignment_upgrade odoo.service.server: 13 post-tests in 29.48s, 49423 queries
+2026-10-04 21:21:36,407 1 INFO tcsi_alignment_upgrade odoo.tests.stats: thirdcode_accounting: 15 tests 29.47s 49423 queries
+2026-10-04 21:21:36,407 1 INFO tcsi_alignment_upgrade odoo.tests.result: 0 failed, 0 error(s) of 13 tests when loading database 'tcsi_alignment_upgrade'
+2026-10-04 21:21:36,407 1 INFO tcsi_alignment_upgrade odoo.service.server: Initiating shutdown
+2026-10-04 21:21:36,407 1 INFO tcsi_alignment_upgrade odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:21:36,409 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_http: Generating routing map for key None
+2026-10-04 21:21:36,456 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:21:36] "GET /web/health HTTP/1.1" 200 - 4 0.017 23.631
+2026-10-04 21:21:36,456 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:21:36] "GET /web/health HTTP/1.1" 200 - 1 0.001 31.782
+2026-10-04 21:21:36,456 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:21:36] "GET /web/health HTTP/1.1" 200 - 1 0.002 15.543
+2026-10-04 21:21:36,457 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:21:36] "GET /web/health HTTP/1.1" 200 - 1 0.001 7.434
+2026-10-04 21:21:36,539 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 4 connections
+2026-10-04 21:21:36,539 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read-only;used=0/count=0/max=64): Closed 4 connections

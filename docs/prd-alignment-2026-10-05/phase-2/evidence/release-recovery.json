@@ -1,0 +1,8 @@
+{
+  "source": "tcsi_alignment_phase2",
+  "target": "tcsi_alignment_phase2_release_restore",
+  "restore_seconds": 8.051,
+  "backup_bytes": 7792111,
+  "backup_sha256": "1af799a93bda099a27847761d22e0ac41bdfc83d99eb71bbcd24dab881c060be",
+  "scope": "Quiescent isolated synthetic database and filestore; no hosted recovery claim"
+}

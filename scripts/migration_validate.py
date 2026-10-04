@@ -197,6 +197,34 @@ def validate_package(root: Path) -> dict[str, Any]:
                 parse_decimal(row.get("debit", ""), "debit", errors, location)
                 parse_decimal(row.get("credit", ""), "credit", errors, location)
 
+    # These datasets can represent the same economic balances even when their
+    # source IDs differ. Until a residual-opening policy is approved and
+    # implemented, accept exactly one accounting basis per package.
+    populated = [name for name in ("opening_tb.csv", "open_items.csv", "transactions.csv") if rows[name]]
+    if len(populated) > 1:
+        errors.append("Overlapping accounting bases are prohibited: " + ", ".join(populated)
+                      + ". Use a finance-approved residual-opening/history policy; do not post all datasets additively.")
+    if (root / "undeposited_receipts.csv").exists():
+        errors.append("Undeposited receipts require an approved cash-clearing and prior-allocation mapping; this loader does not yet support that accounting treatment.")
+    seen_lines = set()
+    entry_dates = {}
+    for row in rows["transactions.csv"]:
+        key = (row.get("entry_id"), row.get("line_id"))
+        if key in seen_lines:
+            errors.append(f"transactions.csv: duplicate entry/line identifier {key!r}")
+        seen_lines.add(key)
+        prior_date = entry_dates.setdefault(row.get("entry_id"), row.get("date"))
+        if prior_date != row.get("date"):
+            errors.append(f"transactions.csv: inconsistent dates within entry {row.get('entry_id')!r}")
+    seen_accounts = set()
+    for row in rows["opening_tb.csv"]:
+        account = row.get("account_source_id")
+        if account in seen_accounts:
+            errors.append(f"opening_tb.csv: duplicate account {account!r}; provide one source TB line per account")
+        seen_accounts.add(account)
+        if parse_decimal(row.get("debit", ""), "debit", [], "opening") and parse_decimal(row.get("credit", ""), "credit", [], "opening"):
+            errors.append(f"opening_tb.csv: {account!r} has both debit and credit")
+
     transaction_totals: dict[str, list[Decimal]] = defaultdict(lambda: [Decimal("0"), Decimal("0")])
     for row in rows["transactions.csv"]:
         debit = parse_decimal(row.get("debit", ""), "debit", [], "transaction") or Decimal("0")
@@ -251,6 +279,7 @@ def validate_package(root: Path) -> dict[str, Any]:
             for entry_id, (debit, credit) in sorted(transaction_totals.items())
         },
         "opening_totals": {"debit": str(opening_debit), "credit": str(opening_credit)},
+        "accounting_basis": populated[0] if len(populated) == 1 else "masters_only" if not populated else "invalid_overlap",
         "warnings": warnings,
         "errors": errors,
     }

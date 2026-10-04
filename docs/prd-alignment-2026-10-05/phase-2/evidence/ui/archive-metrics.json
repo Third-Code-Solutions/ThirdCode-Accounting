@@ -1,0 +1,19 @@
+{
+  "firstCell": {
+    "bottom": 346.5,
+    "height": 44,
+    "left": 273,
+    "right": 309,
+    "top": 302.5,
+    "width": 36,
+    "x": 273,
+    "y": 302.5
+  },
+  "page": "retained history",
+  "rows": [
+    "\tSynthetic residual cutover company\tNew\tOLD2015\t1\t01/01/2015\t100\t\tArchived synthetic transaction\t$ 12.00\t$ 0.00",
+    "\tSynthetic residual cutover company\tNew\tOLD2015\t2\t01/01/2015\t300\t\tArchived synthetic transaction\t$ 0.00\t$ 12.00"
+  ],
+  "scroll": 1280,
+  "width": 1280
+}

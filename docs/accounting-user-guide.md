@@ -19,6 +19,10 @@ After a workstation restart, run `./scripts/start_client_demo.ps1` from the
 demo checkout. It starts the existing isolated containers, checks the local
 login endpoint, and reruns the read-only demo acceptance check. Allow several
 minutes for the five named-account and report checks before the client call.
+The saved fictional transactions retain their original demo date after a
+restart. The acceptance check reports that date and validates the related
+invoices, recurring entries, and reports against it; it does not imply that
+new transactions were posted today.
 
 For a sales walkthrough:
 
@@ -134,14 +138,16 @@ values merely to make a check pass.
    for draft entry, or **Read-only** for review. Test the login with the user's
    own account. Do not share the Administrator login.
 9. Run the read-only preflight from an operator workstation as an Administrator
-   who should see all five companies:
+   who should see every legal company. For the current one-company pilot, use:
 
    ```powershell
-   python scripts/check_company_readiness.py --url https://tcsi-accounting-production.up.railway.app --database tcsi_pilot --login <administrator-login> --expected-companies 5
+   python scripts/check_company_readiness.py --url https://tcsi-accounting-production.up.railway.app --database tcsi_pilot --login <administrator-login> --expected-companies 1 --expected-country-code <approved-country-code> --expected-currency-code <approved-currency-code>
    ```
 
    The command prompts for the password without displaying it. Every company
-   check must pass. This proves configuration presence, not correctness of
+   check must pass. Use only accountant-approved country and currency codes;
+   the preflight checks their presence and the expected values, without
+   asserting that the approved values are legally correct. It does not prove
    source balances or tax/legal approval.
 
 ## 2. Daily accounting work
@@ -166,10 +172,18 @@ values merely to make a check pass.
    company's approval threshold applies, an Administrator must **Approve**.
    An Accountant then uses **Post batch**. Compare the created payments with
    the source bills and bank evidence.
-6. **Manual journal entries:** enter balanced debits and credits in the right
+6. **Employee expenses:** assign each employee a named expense manager in the
+   employee record before using **Expenses**. The employee submits an expense
+   report with the receipt attached. That employee's assigned expense manager
+   reviews and approves it; an Accountant posts the approved report and
+   registers reimbursement through the correct bank/cash journal. An
+   Accountant who is not the assigned manager cannot approve that employee's
+   report merely because of the Accountant role. Agree the real expense and
+   reimbursement policy before staff use this for company money.
+7. **Manual journal entries:** enter balanced debits and credits in the right
    general journal and period. An Accountant posts only after review. The
    system blocks out-of-balance entries and posting into closed periods.
-7. **Bank/cash reconciliation:** in **TCSI Accounting → Bank reconciliations**,
+8. **Bank/cash reconciliation:** in **TCSI Accounting → Bank reconciliations**,
    choose the correct journal and dates, attach the paper/PDF statement,
    record opening/closing balances and outstanding items, then **Compute ledger
    balance**. Investigate any difference. **Sign off reconciliation** only
@@ -203,6 +217,7 @@ values merely to make a check pass.
 | Cannot post | Check role, selected company, open period, balanced entry, journal, account, and required tax configuration. Do not disable the guard. |
 | Invoice/receipt print is blocked or marked draft | The company's BIR control or approved sample is absent. Obtain the real approval and value, then configure them. |
 | Payment batch waits for approval | Its amount crossed the configured threshold. The named approver must approve before the Accountant posts. |
+| Employee expense cannot be approved | Check the employee's assigned expense manager and the selected company. An unrelated Accountant cannot approve that employee's report. |
 | Reconciliation cannot sign off | The difference is nonzero, statement evidence is missing, or journal/period is wrong. Resolve the underlying mismatch. |
 | Portal says “ready” but books are empty | Portal health means the services answer. Run the company preflight and financial acceptance checks. |
 | System or report unavailable | Record the company, user, time, page, and error; check the Railway origin and backup status. Do not retry a posting blindly until its result is known. |

@@ -143,7 +143,10 @@ class RecurringJournal(models.Model):
             move.action_post()
         if move.state != "posted":
             raise UserError(_("Recurring journal entry was not posted."))
-        self.write({"last_run": run_date, "next_run": self._next_date(run_date)})
+        self.write({
+            "last_run": max(self.last_run or run_date, run_date),
+            "next_run": max(self.next_run or run_date, self._next_date(run_date)),
+        })
         return move
 
     def _lock_for_run(self):

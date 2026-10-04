@@ -1,0 +1,17 @@
+> Latest implementation and acceptance status: [phase 2 report](phase-2/REPORT.md), module18.0.2.13.0. The material below records phase 1 migration safety design; superseded open engineering items are resolved only where the phase 2 evidence says so.
+
+# Migration accounting policy and remaining gates
+
+The former loader added opening TB, open items and transaction history independently. Distinct source identifiers do not prevent those inputs from containing the same receivable, income, cash or payable balance. The candidate rejects packages containing more than one populated accounting basis. It also rejects an `undeposited_receipts.csv` file rather than silently ignoring it. This is an intentional fail-closed restriction, not completion of DM-02 through DM-05.
+
+A complete real load requires one reviewed accounting policy:
+
+- A cutover snapshot uses MYOB's authoritative TB; invoices/bills/advances become subledger components of those same balances. The residual opening entry must subtract every imported component, line by line, including approved clearing-account effects. AR/AP control remainders must reconcile to the open-item detail. Importing invoice income again on top of the TB is prohibited.
+- A full-history reconstruction imports source transactions and settlement relationships from an agreed opening date; it must not add another cutover TB or separately repost those same invoices/payments. Opening entries apply only before the retained live history window.
+- Undeposited receipts require actual source fields describing which invoices were already settled, the amount in cash/clearing, the later deposit and any unallocated liability. Classifying every such receipt as a new customer invoice or new income is prohibited. The current loader does not implement this treatment and refuses the input.
+
+No choice is approved merely by selecting a flag. The user is the developer/product owner. Each future client must name the individual accountable for the accounting mapping, retention window, cutover date, opening balances and final reconciliation.
+
+The native import method now creates and posts a move in one RPC transaction. A response-loss retry returns the existing posted record only if its payload fingerprint matches. A changed payload or legacy identifier lacking a verified fingerprint is rejected. Failures roll back that move; retrying a corrected payload can recover without leaving a skipped draft. Open-item control accounts are explicitly mapped and validated against company and receivable/payable type. This does not make arbitrary separate packages economically non-overlapping, approve the input mappings, or make master matching a completed source reconciliation.
+
+Retain the original MYOB data file read-only, with checksum, extraction tooling/version, authorized source owner, export hashes, mapping version and an independently retrievable archive. Before production load: inspect a real authorized extraction, implement and test the selected non-overlap policy, reconcile every TB line and AR/AP control balance, trial-load in isolation, obtain client sign-off and take the coordinated cutover backup. Run a full real accounting month in parallel and compare TB and required reports. Synthetic tests and a short run do not satisfy these activities.

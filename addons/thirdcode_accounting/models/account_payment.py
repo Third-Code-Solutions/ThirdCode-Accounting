@@ -3,9 +3,16 @@ from num2words import num2words
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+from .write_tokens import RECEIPT_NUMBER_TOKEN
+
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
+
+    _sql_constraints = [
+        ("thirdcode_receipt_number_unique", "unique(company_id, thirdcode_receipt_number)",
+         "Receipt numbers must be unique within a company."),
+    ]
 
     thirdcode_receipt_number = fields.Char(
         string="Official receipt number",
@@ -177,23 +184,47 @@ class AccountPayment(models.Model):
         for payment in self:
             payment.thirdcode_report_status = (
                 "approved"
-                if payment.company_id.thirdcode_report_samples_approved
+                if payment.company_id._thirdcode_approved_sample("receipt")
                 else "draft"
             )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(values.get("thirdcode_receipt_number", self.env.context.get("default_thirdcode_receipt_number")) or values.get("thirdcode_receipt_issued_at", self.env.context.get("default_thirdcode_receipt_issued_at")) for values in vals_list):
+            raise UserError(_("Receipt numbers are assigned only by native posting."))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if {"thirdcode_receipt_number", "thirdcode_receipt_issued_at"}.intersection(vals):
+            if self.env.context.get("thirdcode_receipt_number_token") is not RECEIPT_NUMBER_TOKEN:
+                raise UserError(_("Receipt numbers and issue timestamps cannot be edited."))
+            if any(payment.thirdcode_receipt_number for payment in self):
+                raise UserError(_("An issued receipt cannot be renumbered."))
+        if {"state", "amount", "date", "partner_id", "payment_type", "partner_type", "journal_id", "company_id", "currency_id", "move_id"}.intersection(vals):
+            for payment in self.filtered(lambda item: item.move_id._thirdcode_ever_posted()):
+                economic = set(vals) - {"state"}
+                if vals.get("state", payment.state) in {"draft", "canceled", "cancel"} or any(
+                    self.env["account.move"]._field_will_change(payment, vals, field) for field in economic
+                ):
+                    raise UserError(_("Posted payments require reversal; their accounting details cannot be changed."))
+        return super().write(vals)
+
     def _assign_thirdcode_receipt_number(self):
-        for payment in self.filtered(
-            lambda item: item.state in ("in_process", "paid", "reconciled")
-            and item.payment_type == "inbound"
-            and item.partner_type == "customer"
-        ):
-            if not payment.thirdcode_receipt_number:
-                payment.sudo().write(
-                    {
-                        "thirdcode_receipt_number": payment.company_id._thirdcode_receipt_sequence().next_by_id(),
-                        "thirdcode_receipt_issued_at": fields.Datetime.now(),
-                    }
-                )
+        self.check_access("write")
+        for payment in self.sorted("id"):
+            if payment.company_id not in self.env.companies:
+                raise UserError(_("Receipts may only be numbered in an active company."))
+            payment.flush_recordset()
+            self.env.cr.execute("SELECT id FROM account_payment WHERE id = %s FOR UPDATE", [payment.id])
+            payment.invalidate_recordset()
+            if (payment.move_id.state == "posted" and payment.payment_type == "inbound"
+                    and payment.partner_type == "customer" and not payment.thirdcode_receipt_number):
+                sequence = payment.company_id._thirdcode_receipt_sequence()
+                number = sequence.with_context(thirdcode_receipt_number_token=RECEIPT_NUMBER_TOKEN).next_by_id()
+                payment.with_context(thirdcode_receipt_number_token=RECEIPT_NUMBER_TOKEN).write({
+                    "thirdcode_receipt_number": number,
+                    "thirdcode_receipt_issued_at": fields.Datetime.now(),
+                })
         return True
 
     def action_post(self):

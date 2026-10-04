@@ -1,0 +1,98 @@
+{
+  "checks": {
+    "audit_log_immutable": {
+      "unlink_blocked": true,
+      "write_blocked": true
+    },
+    "bank_reconciliation": {
+      "difference": "0.00",
+      "id": 9,
+      "state": "reconciled"
+    },
+    "bank_statement_line_status": {
+      "status": "unreconciled",
+      "synthetic_line_retained": true
+    },
+    "closed_period_draft_create_blocked": true,
+    "credit_and_debit_notes": {
+      "credit_note_id": 261,
+      "debit_note_id": 262
+    },
+    "customer_advance": {
+      "batch_id": 22,
+      "payment_id": 23,
+      "receipt_number": "OR/00000004"
+    },
+    "employee_reimbursement_surface": {
+      "draft_created": true,
+      "draft_removed": true,
+      "model": "hr.expense"
+    },
+    "migration_batch": {
+      "error_count": 0,
+      "id": 53,
+      "matched_count": 1,
+      "row_count": 1,
+      "state": "reconciled"
+    },
+    "numbering_control": {
+      "has_sequence_holes": false,
+      "id": 3,
+      "thirdcode_numbering_policy": "no_gap_validated"
+    },
+    "official_receipt_guarded": true,
+    "optional_payment_approval": {
+      "administrator_approval_recorded": true,
+      "approval_required": true,
+      "batch_id": 23,
+      "blocked_before_approval": true,
+      "state": "posted"
+    },
+    "payment_batch": {
+      "id": 21,
+      "invoice_residual_after": "62.50",
+      "invoice_residual_before": "125.00",
+      "partial_amount": "62.50",
+      "payment_id": 22,
+      "receipt_number": "OR/00000003"
+    },
+    "period_id": 10,
+    "period_reopen": {
+      "administrator_reclosed": true,
+      "administrator_reopened": true,
+      "readonly_reopen_blocked": true
+    },
+    "recurring_invoice": {
+      "amount_total": "125.00",
+      "generated_count": 1,
+      "id": 1,
+      "move_id": 257
+    },
+    "recurring_journal": {
+      "generated_count": 1,
+      "id": 1,
+      "move_id": 256
+    },
+    "report_sample_approval": {
+      "id": 1,
+      "revision": "synthetic-1",
+      "state": "approved"
+    },
+    "tax_profile": {
+      "id": 1,
+      "status": "configured"
+    },
+    "year_end_retained_earnings": {
+      "id": 1,
+      "move_id": 264,
+      "reversal_id": 265,
+      "reversal_state": "posted",
+      "state": "posted"
+    }
+  },
+  "stack": {
+    "company": "Third Code Solutions Inc.",
+    "database": "tcsi_alignment_candidate_v2"
+  },
+  "status": "VERIFIED LOCALLY"
+}

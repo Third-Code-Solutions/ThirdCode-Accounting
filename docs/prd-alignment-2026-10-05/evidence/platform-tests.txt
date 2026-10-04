@@ -1,0 +1,50 @@
+
+> @tcsi/accounting-platform@0.1.0 test
+> npm run build:contracts && npm --workspace @tcsi/contracts run test && npm --workspace @tcsi/worker run test && npm --workspace @tcsi/web run test
+
+
+> @tcsi/accounting-platform@0.1.0 build:contracts
+> npm --workspace @tcsi/contracts run build
+
+
+> @tcsi/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @tcsi/contracts@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.1 /workspace/ThirdCode-Accounting/packages/contracts
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  20:20:54
+   Duration  251ms (import 64%, transform 28%, tests 6%, worker 2%)
+
+
+> @tcsi/worker@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.1 /workspace/ThirdCode-Accounting/apps/worker
+
+
+ Test Files  2 passed (2)
+      Tests  2 passed (2)
+   Start at  20:20:55
+   Duration  234ms (import 63%, transform 32%, worker 3%, tests 2%)
+
+
+> @tcsi/web@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.1 /workspace/ThirdCode-Accounting/apps/web
+
+
+ Test Files  4 passed (4)
+      Tests  55 passed (55)
+   Start at  20:20:56
+   Duration  619ms (import 66%, transform 23%, tests 9%, worker 2%)

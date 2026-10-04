@@ -101,5 +101,20 @@
             <field name="groups" eval="[(4, ref('group_thirdcode_readonly')), (4, ref('group_thirdcode_encoder')), (4, ref('group_thirdcode_accountant')), (4, ref('group_thirdcode_administrator'))]"/>
             <field name="domain_force">['|', ('id', '=', user.id), '&amp;', ('company_ids', 'in', company_ids), ('thirdcode_platform_owner', '=', False)]</field>
         </record>
+        <record id="rule_audit_log_company" model="ir.rule">
+            <field name="name">Audit evidence: recorded company scope</field>
+            <field name="model_id" ref="auditlog.model_auditlog_log"/>
+            <field name="domain_force">[] if user.has_group('base.group_system') else [('thirdcode_company_ids', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_audit_log_line_company" model="ir.rule">
+            <field name="name">Audit field evidence: recorded company scope</field>
+            <field name="model_id" ref="auditlog.model_auditlog_log_line"/>
+            <field name="domain_force">[] if user.has_group('base.group_system') else [('log_id.thirdcode_company_ids', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_cash_allocation_company" model="ir.rule"><field name="name">Cash flow allocation company scope</field><field name="model_id" ref="model_thirdcode_cash_flow_allocation"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
+        <record id="rule_tax_summary_company" model="ir.rule"><field name="name">Tax summary company scope</field><field name="model_id" ref="model_thirdcode_tax_summary_wizard"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
+        <record id="rule_migration_archive_company" model="ir.rule"><field name="name">Source history company scope</field><field name="model_id" ref="model_thirdcode_migration_archive_entry"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
     </data>
 </odoo>

@@ -1,0 +1,17 @@
+2026-10-04 20:26:44,130 409 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 20:26:44,130 409 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 20:26:44,130 409 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 20:26:44,131 409 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 20:26:44,268 409 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 20:26:44,272 409 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 20:26:44,403 409 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 20:26:44,403 409 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 20:26:44,422 409 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 1 modules...
+2026-10-04 20:26:44,430 409 INFO tcsi_alignment_upgrade odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra)
+2026-10-04 20:26:44,448 409 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 63 modules...
+2026-10-04 20:26:44,984 409 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 20:26:44,988 409 INFO tcsi_alignment_upgrade odoo.modules.loading: 63 modules loaded in 0.54s, 0 queries (+0 extra)
+2026-10-04 20:26:45,127 409 INFO tcsi_alignment_upgrade odoo.modules.loading: Modules loaded.
+2026-10-04 20:26:45,141 409 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry loaded in 0.737s
+ALIGNMENT_SNAPSHOT {"attachments": [{"bytes": 27, "name": "upgrade-proof.txt", "sha256": "9e264fe621b0bd32ae4fbf1662681d140d8f69965b866d2b3433af9a3579eb83"}], "audit_count": 5, "audit_line_count": 108, "audit_sha256": "5fe85bc616f3e78012f15b9d9f35fc371051a5f7c44bff9fb7372b1367fd60a4", "balances": {"QA100": 50.0, "QA300": -50.0}, "dataset": "Synthetic twelve-month fixture; not a production backup", "posted_moves": 1}

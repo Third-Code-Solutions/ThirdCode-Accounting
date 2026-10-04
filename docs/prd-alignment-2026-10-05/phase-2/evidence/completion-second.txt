@@ -1,0 +1,400 @@
+time="2026-10-04T21:08:01Z" level=warning msg="Found orphan containers ([tcsi-alignment-runtime tcsi-source-inspect]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+Running as user 'root' is a security risk.
+2026-10-04 21:08:25,928 1 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:08:25,928 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:08:25,928 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:08:25,928 1 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:08:26,073 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:08:26,079 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:08:26,179 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on 9f21eb43c52a:8069
+2026-10-04 21:08:26,196 1 INFO tcsi_alignment_upgrade odoo.tests.common: Importing test framework
+2026-10-04 21:08:26,219 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 1 modules...
+2026-10-04 21:08:26,223 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:08:26,241 1 INFO tcsi_alignment_upgrade odoo.modules.loading: updating modules list
+2026-10-04 21:08:26,243 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a
+2026-10-04 21:08:26,939 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:08:26,940 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:08:27,458 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a
+2026-10-04 21:08:27,491 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 63 modules...
+2026-10-04 21:08:28,007 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Loading module thirdcode_accounting (63/63)
+2026-10-04 21:08:28,141 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:08:28,328 1 INFO tcsi_alignment_upgrade odoo.modules.registry: module thirdcode_accounting: creating or updating database tables
+2026-10-04 21:08:28,880 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/ir_sequence_data.xml
+2026-10-04 21:08:28,884 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/ir_cron_data.xml
+2026-10-04 21:08:28,886 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/branding_data.xml
+2026-10-04 21:08:28,978 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/auditlog_rule_data.xml
+2026-10-04 21:08:28,998 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/tcsi_security_data.xml
+2026-10-04 21:08:29,005 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/branding_templates.xml
+2026-10-04 21:08:29,043 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/branding_communications.xml
+2026-10-04 21:08:29,240 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/dashboard_views.xml
+2026-10-04 21:08:29,249 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/thirdcode_groups.xml
+2026-10-04 21:08:30,705 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/company_rules.xml
+2026-10-04 21:08:30,775 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/ir.model.access.csv
+2026-10-04 21:08:30,863 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/res_company_views.xml
+2026-10-04 21:08:30,879 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_journal_views.xml
+2026-10-04 21:08:30,895 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_move_views.xml
+2026-10-04 21:08:30,923 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_payment_views.xml
+2026-10-04 21:08:30,935 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/payment_batch_views.xml
+2026-10-04 21:08:30,950 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/recurring_journal_views.xml
+2026-10-04 21:08:30,963 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/accounting_period_views.xml
+2026-10-04 21:08:30,972 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/migration_views.xml
+2026-10-04 21:08:30,984 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/recurring_invoice_views.xml
+2026-10-04 21:08:30,996 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/report_sample_views.xml
+2026-10-04 21:08:31,005 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/tax_profile_views.xml
+2026-10-04 21:08:31,014 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/bank_reconciliation_views.xml
+2026-10-04 21:08:31,026 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/year_end_close_views.xml
+2026-10-04 21:08:31,036 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/financial_report_views.xml
+2026-10-04 21:08:31,043 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/menu_views.xml
+2026-10-04 21:08:31,079 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/completion_views.xml
+2026-10-04 21:08:31,147 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/org_user_views.xml
+2026-10-04 21:08:31,178 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/platform_console_views.xml
+2026-10-04 21:08:31,187 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/apps_views.xml
+2026-10-04 21:08:31,352 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_reports.xml
+2026-10-04 21:08:31,357 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_templates.xml
+2026-10-04 21:08:31,374 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/completion_reports.xml
+2026-10-04 21:08:31,407 1 WARNING tcsi_alignment_upgrade odoo.modules.loading: The models ['thirdcode.orvexa.proposal', 'thirdcode.orvexa.event'] have no access rules in module thirdcode_accounting, consider adding some, like:
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+thirdcode_accounting.access_thirdcode_orvexa_proposal,access_thirdcode_orvexa_proposal,thirdcode_accounting.model_thirdcode_orvexa_proposal,base.group_user,1,0,0,0
+thirdcode_accounting.access_thirdcode_orvexa_event,access_thirdcode_orvexa_event,thirdcode_accounting.model_thirdcode_orvexa_event,base.group_user,1,0,0,0
+2026-10-04 21:08:31,517 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Module thirdcode_accounting loaded in 3.51s, 2483 queries (+2483 other)
+2026-10-04 21:08:31,518 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 63 modules loaded in 4.03s, 2483 queries (+2483 extra)
+2026-10-04 21:08:32,492 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Modules loaded.
+2026-10-04 21:08:32,507 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry changed, signaling through the database
+2026-10-04 21:08:32,507 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry loaded in 6.328s
+2026-10-04 21:08:32,507 1 INFO tcsi_alignment_upgrade odoo.service.server: Starting post tests
+2026-10-04 21:08:38,571 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_audit_credentials_excluded_and_attachment_digest_retained ...
+2026-10-04 21:08:39,810 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: ======================================================================
+2026-10-04 21:08:39,810 1 ERROR tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: FAIL: TestAccountingCompletion.test_audit_credentials_excluded_and_attachment_digest_retained
+Traceback (most recent call last):
+  File "/opt/extra-addons/thirdcode_accounting/tests/test_completion.py", line 61, in test_audit_credentials_excluded_and_attachment_digest_retained
+    self.assertTrue(changes, "The actual replacement must retain both content digests")
+AssertionError: auditlog.log.line() is not true : The actual replacement must retain both content digests
+
+2026-10-04 21:08:39,814 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_continuous_numbering_year_boundary_failure_and_reversal ...
+2026-10-04 21:08:41,161 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_cutover_rejects_control_mismatch_history_and_existing_books ...
+2026-10-04 21:08:41,960 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_cutover_residuals_receipts_retry_and_retained_archive ...
+2026-10-04 21:08:44,551 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_mixed_cash_allocation_must_reconcile_and_is_audited ...
+2026-10-04 21:08:45,132 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_standard_bank_summary_has_evidence_and_detects_stale_ledger ...
+2026-10-04 21:08:45,314 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: ======================================================================
+2026-10-04 21:08:45,314 1 ERROR tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: ERROR: TestAccountingCompletion.test_standard_bank_summary_has_evidence_and_detects_stale_ledger
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/tools/cache.py", line 103, in lookup
+    r = d[key]
+        ~^^^^^
+  File "/usr/lib/python3/dist-packages/decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/lru.py", line 33, in __getitem__
+    a = self.d[obj]
+        ~~~~~~^^^^^
+KeyError: ('ir.qweb', <function IrQWeb._get_cached_values at 0x7f1bd7ff93a0>, ('1219', 'None', 'False', 'None', 'None', 'None', 'None', 'None'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 771, in _generate_code
+    + self._compile_node(element, compile_context, 2)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1366, in _compile_node
+    return body + self._compile_directives(el, compile_context, level)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1452, in _compile_directives
+    code.extend(self._compile_directive(el, compile_context, directive, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1366, in _compile_node
+    return body + self._compile_directives(el, compile_context, level)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1452, in _compile_directives
+    code.extend(self._compile_directive(el, compile_context, directive, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 2193, in _compile_directive_call
+    code_content.extend(self._compile_directive(el, compile_context, 'inner-content', 1))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1366, in _compile_node
+    return body + self._compile_directives(el, compile_context, level)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1452, in _compile_directives
+    code.extend(self._compile_directive(el, compile_context, directive, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1917, in _compile_directive_foreach
+    self._compile_directives(el, compile_context, level + 1) +
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1452, in _compile_directives
+    code.extend(self._compile_directive(el, compile_context, directive, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1366, in _compile_node
+    return body + self._compile_directives(el, compile_context, level)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1452, in _compile_directives
+    code.extend(self._compile_directive(el, compile_context, directive, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 2193, in _compile_directive_call
+    code_content.extend(self._compile_directive(el, compile_context, 'inner-content', 1))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1334, in _compile_node
+    return self._compile_static_node(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1426, in _compile_static_node
+    body = self._compile_directive(el, compile_context, 'inner-content', level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1334, in _compile_node
+    return self._compile_static_node(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1426, in _compile_static_node
+    body = self._compile_directive(el, compile_context, 'inner-content', level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1334, in _compile_node
+    return self._compile_static_node(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1426, in _compile_static_node
+    body = self._compile_directive(el, compile_context, 'inner-content', level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1334, in _compile_node
+    return self._compile_static_node(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1426, in _compile_static_node
+    body = self._compile_directive(el, compile_context, 'inner-content', level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1769, in _compile_directive_inner_content
+    body.extend(self._compile_node(item, compile_context, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/web_editor/models/ir_qweb_fields.py", line 49, in _compile_node
+    return super()._compile_node(el, compile_context, indent)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1366, in _compile_node
+    return body + self._compile_directives(el, compile_context, level)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1452, in _compile_directives
+    code.extend(self._compile_directive(el, compile_context, directive, level))
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/ir_qweb.py", line 32, in _compile_directive
+    return super()._compile_directive(el, compile_context, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 358, in _tracked_compile_directive
+    return method_compile_directive(self, el, options, directive, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 1479, in _compile_directive
+    return compile_handler(el, compile_context, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 2141, in _compile_directive_field
+    assert tagName not in ("table", "tbody", "thead", "tfoot", "tr", "td",
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: QWeb widgets do not work correctly on 'td' elements
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/extra-addons/thirdcode_accounting/tests/test_completion.py", line 217, in test_standard_bank_summary_has_evidence_and_detects_stale_ledger
+    html, _ = self.env["ir.actions.report"].with_user(self.admin)._render_qweb_html("thirdcode_accounting.action_report_thirdcode_bank_summary", record.ids)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/extra-addons/account_financial_report/models/ir_actions_report.py", line 19, in _render_qweb_html
+    return super(IrActionsReport, obj)._render_qweb_html(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_actions_report.py", line 1103, in _render_qweb_html
+    return self._render_template(report.report_name, data), 'html'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_actions_report.py", line 773, in _render_template
+    return view_obj._render_template(template, values).encode()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_ui_view.py", line 2227, in _render_template
+    return self.env['ir.qweb']._render(template, values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 325, in _tracked_method_render
+    return method_render(self, template, values, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 616, in _render
+    template_functions, def_name = irQweb._compile(template)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/profiler.py", line 333, in _tracked_compile
+    return method_compile(self, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 686, in _compile
+    return self._load_values(base_key_cache, generate_functions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 2554, in _load_values
+    value = self._get_cached_values(cache_key, get_value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/cache.py", line 110, in lookup
+    value = d[key] = self.method(*args, **kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 2567, in _get_cached_values
+    return get_value()
+           ^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 655, in generate_functions
+    code, options, def_name = self._generate_code(template)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/base/models/ir_qweb.py", line 798, in _generate_code
+    raise QWebException("Error when compiling xml template",
+odoo.addons.base.models.ir_qweb.QWebException: Error when compiling xml template
+AssertionError: QWeb widgets do not work correctly on 'td' elements
+Template: thirdcode_accounting.report_bank_summary
+Path: /t/t/t/t/div/table[1]/tbody/tr[1]/td
+Node: <td t-field="o.opening_balance"/>
+
+2026-10-04 21:08:45,318 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_statement_matching_preserves_posted_economics ...
+2026-10-04 21:08:46,862 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_completion: Starting TestAccountingCompletion.test_vat_withholding_summary_uses_posted_ledger_and_refunds ...
+2026-10-04 21:08:48,313 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #195 deleted account.move.line records with IDs: [725, 726]
+2026-10-04 21:08:49,109 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_attachment: filestore gc 21 checked, 7 removed
+2026-10-04 21:08:49,110 1 INFO tcsi_alignment_upgrade odoo.service.server: 8 post-tests in 16.60s, 27308 queries
+2026-10-04 21:08:49,110 1 INFO tcsi_alignment_upgrade odoo.tests.stats: thirdcode_accounting: 10 tests 16.60s 27308 queries
+2026-10-04 21:08:49,110 1 ERROR tcsi_alignment_upgrade odoo.tests.result: 1 failed, 1 error(s) of 8 tests when loading database 'tcsi_alignment_upgrade'
+2026-10-04 21:08:49,110 1 INFO tcsi_alignment_upgrade odoo.service.server: Initiating shutdown
+2026-10-04 21:08:49,110 1 INFO tcsi_alignment_upgrade odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:08:49,111 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_http: Generating routing map for key None
+2026-10-04 21:08:49,117 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_http: Generating routing map for key None
+2026-10-04 21:08:49,158 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:08:49] "GET /web/health HTTP/1.1" 200 - 1 0.001 2.338
+2026-10-04 21:08:49,158 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:08:49] "GET /web/health HTTP/1.1" 200 - 1 0.005 10.412
+2026-10-04 21:08:49,158 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:08:49] "GET /web/health HTTP/1.1" 200 - 4 0.006 18.557
+2026-10-04 21:08:49,322 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 3 connections
+2026-10-04 21:08:49,323 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read-only;used=0/count=0/max=64): Closed 3 connections

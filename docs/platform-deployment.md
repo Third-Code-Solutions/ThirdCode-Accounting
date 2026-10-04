@@ -1,5 +1,8 @@
 # TCSI platform deployment
 
+> Current scope amendment (5 October 2026): the approved target is Vercel portal/proxy, Railway Odoo Community/PostgreSQL and persistent filestore, preserving Supabase responsibilities. On-premise/client-owned-server/LAN-only mismatch findings are withdrawn. Historical local claims below are not refreshed production evidence. Use [the refreshed traceability and release record](prd-alignment-2026-10-05/REPORT.md) and [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md). Product readiness for white-label turnover is distinct from each future client's accounting configuration and acceptance.
+
+
 ## Customer app launcher
 
 `/workspace/apps` lists the complete application-module catalog using one
@@ -127,10 +130,13 @@ five-company installation:
 python scripts/check_company_readiness.py --url https://tcsi-accounting-production.up.railway.app --database tcsi_pilot --login <administrator-login> --expected-companies 5
 ```
 
-The preflight exits nonzero if the account cannot see all five companies or a
-company lacks its chart, journals, current open period, approved tax profile,
-document controls/samples, or named backup and restore owners. It makes no
-accounting writes. Its `structurally_ready` result is only a configuration
+The preflight exits nonzero if the account cannot see the expected companies or
+a company lacks its legal identity, chart, journals, current open period,
+approved tax profile, document controls/samples, or named backup and restore
+owners. Pass `--expected-companies 1` for the current single-company pilot, and
+pass `--expected-country-code` and `--expected-currency-code` with approved
+values to detect a default or wrong book currency. It makes no accounting
+writes. Its `structurally_ready` result is only a configuration
 gate; approved source balances, user isolation, a parallel month, actual
 backup recovery, and client/legal sign-off still require independent evidence.
 

@@ -6,7 +6,7 @@
                 <t t-call="web.external_layout">
                     <div class="page">
                         <div class="row mb-3">
-                            <div class="col-7"><h2>Invoice</h2><p t-if="o.company_id.thirdcode_trial_mode" class="text-danger">TRIAL COPY - NOT AN OFFICIAL INVOICE (no BIR registration)</p><p t-elif="o.company_id.thirdcode_report_samples_approved" class="text-muted">Approved layout revision: <span t-esc="o.company_id.thirdcode_invoice_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
+                            <div class="col-7"><h2>Invoice</h2><p t-if="o.company_id.thirdcode_trial_mode" class="text-danger">TRIAL COPY - NOT AN OFFICIAL INVOICE (no BIR registration)</p><p t-elif="o.company_id._thirdcode_approved_sample('invoice')" class="text-muted">Approved layout revision: <span t-esc="o.company_id.thirdcode_invoice_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
                             <div class="col-5 text-end"><strong>Document:</strong> <span t-esc="o.name"/><br/><strong>Date:</strong> <span t-esc="o.invoice_date or o.date"/><br/><strong>Control number:</strong> <span t-esc="o.company_id.thirdcode_bir_ack_control_number if o.company_id.thirdcode_bir_ack_approved else ('TRIAL COPY - NOT REGISTERED' if o.company_id.thirdcode_trial_mode else 'PENDING ACCOUNTANT CONFIGURATION')"/></div>
                         </div>
                         <div class="row mb-3">
@@ -30,7 +30,7 @@
             <t t-foreach="docs" t-as="p">
                 <t t-call="web.external_layout">
                     <div class="page">
-                        <div class="text-center"><h2>OFFICIAL RECEIPT</h2><p t-if="p.company_id.thirdcode_trial_mode" class="text-danger">TRIAL COPY - NOT AN OFFICIAL RECEIPT (no BIR registration)</p><p t-elif="p.company_id.thirdcode_report_samples_approved" class="text-muted">Approved layout revision: <span t-esc="p.company_id.thirdcode_receipt_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
+                        <div class="text-center"><h2>OFFICIAL RECEIPT</h2><p t-if="p.company_id.thirdcode_trial_mode" class="text-danger">TRIAL COPY - NOT AN OFFICIAL RECEIPT (no BIR registration)</p><p t-elif="p.company_id._thirdcode_approved_sample('receipt')" class="text-muted">Approved layout revision: <span t-esc="p.company_id.thirdcode_receipt_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
                         <table class="table table-sm mt-4"><tr><th>Receipt number</th><td><span t-esc="p.thirdcode_receipt_number"/></td><th>Date</th><td><span t-esc="p.date"/></td></tr><tr><th>Payer / TIN</th><td colspan="3"><span t-esc="p.partner_id.name"/> - <span t-esc="p.thirdcode_receipt_customer_tin or 'not configured'"/></td></tr><tr><th>Amount in figures</th><td colspan="3"><span t-field="p.amount"/></td></tr><tr><th>Amount in words</th><td colspan="3"><span t-esc="p.thirdcode_amount_in_words"/></td></tr><tr><th>VAT amount</th><td colspan="3"><span t-field="p.thirdcode_receipt_vat_amount"/></td></tr><tr><th>VAT breakdown</th><td colspan="3"><span t-esc="p.thirdcode_receipt_vat_breakdown"/></td></tr><tr><th>BIR acknowledgement control number</th><td colspan="3"><span t-esc="p.thirdcode_receipt_control_number if p.company_id.thirdcode_bir_ack_approved else ('TRIAL COPY - NOT REGISTERED' if p.company_id.thirdcode_trial_mode else 'PENDING ACCOUNTANT CONFIGURATION')"/></td></tr></table>
                         <div class="row mt-5"><div class="col-6">VAT is derived only from configured invoice tax lines; accountant review remains required.</div><div class="col-6 text-end">____________________________<br/><span t-esc="p.company_id.thirdcode_receipt_signatory_name or 'Signatory not configured'"/><br/><span t-esc="p.company_id.thirdcode_receipt_signatory_title or ''"/></div></div>
                         <p class="mt-5" t-if="p.company_id.thirdcode_trial_mode">Trial copy for evaluation only - not a BIR acknowledgement and not valid as an official receipt.</p><p class="mt-5" t-else="">This output is held behind the accountant-owned control-number configuration and is not a fabricated BIR acknowledgement.</p>
@@ -52,7 +52,9 @@
                             <p t-if="data['layout_status'] != 'Approved layout'" class="text-danger"><span t-esc="data['layout_status']"/></p>
                             <p t-else="" class="text-muted">Approved layout sample status recorded</p>
                         </div>
-                        <t t-foreach="data['sections']" t-as="section">
+                        <t t-foreach="[data] + ([data['comparison']] if data['comparison'] else [])" t-as="period_data">
+                        <h3><span t-esc="period_data['date_from']"/> to <span t-esc="period_data['date_to']"/></h3>
+                        <t t-foreach="period_data['sections']" t-as="section">
                             <h4 class="mt-4"><span t-esc="section['name']"/></h4>
                             <table class="table table-sm">
                                 <thead><tr><th>Account</th><th>Description</th><th class="text-end">Amount</th></tr></thead>
@@ -62,9 +64,12 @@
                                 </tbody>
                             </table>
                         </t>
+                        <p t-if="period_data.get('opening_cash')"><strong>Cash reconciliation:</strong> Opening <span t-esc="period_data['opening_cash']"/> + movement <span t-esc="period_data['cash_movement']"/> = closing <span t-esc="period_data['closing_cash']"/>. Difference: <span t-esc="period_data['cash_reconciliation_difference']"/>.</p>
+                        <p t-if="period_data.get('unclassified_count')" class="text-danger">Provisional: <span t-esc="period_data['unclassified_count']"/> transactions require classification or allocation.</p>
+                        </t>
                         <p t-if="data['balance_check']" class="mt-4"><strong>Balance check:</strong> <span t-esc="data['balance_check']"/> — <span t-esc="'balanced' if data['balanced'] else 'review required'"/></p>
                         <p t-if="data['net_result']" class="mt-4"><strong>Net result:</strong> <span t-esc="data['net_result']"/></p>
-                        <p class="mt-4">This generic financial-statement output is derived from posted ledger entries. Client layout, comparative periods, tax treatment, and sign-off remain pending.</p>
+                        <p class="mt-4">This generic financial-statement output is derived from posted ledger entries. Comparative periods use the same ledger calculation. Client presentation, cash classifications, tax treatment, and sign-off require accountant review.</p>
                     </div>
                 </t>
             </t>

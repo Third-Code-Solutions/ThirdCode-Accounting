@@ -1,0 +1,18 @@
+2026-10-04 21:24:12,530 334 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:24:12,530 334 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:24:12,530 334 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:24:12,530 334 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:24:12,671 334 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:24:12,676 334 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:24:12,784 334 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 21:24:12,784 334 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:24:12,800 334 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 1 modules...
+2026-10-04 21:24:12,804 334 INFO tcsi_alignment_phase2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:24:12,822 334 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 63 modules...
+2026-10-04 21:24:13,275 334 INFO tcsi_alignment_phase2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:24:13,290 334 INFO tcsi_alignment_phase2 odoo.modules.loading: 63 modules loaded in 0.47s, 0 queries (+0 extra)
+2026-10-04 21:24:13,414 334 INFO tcsi_alignment_phase2 odoo.modules.loading: Modules loaded.
+2026-10-04 21:24:13,432 334 INFO tcsi_alignment_phase2 odoo.modules.registry: Registry loaded in 0.647s
+2026-10-04 21:24:14,063 334 INFO tcsi_alignment_phase2 odoo.addons.partner_autocomplete.models.res_company: Starting enrich of company Synthetic residual cutover company (64)
+CUTOVER_RESULT {"acceptance": "Technical reconciliation only; client sign-off and parallel month remain required", "archive": {"created_lines": 2, "existing_lines": 0, "posted_moves_created": 0}, "balances": {"602": "100.0", "603": "50.0", "604": "50.0", "605": "-30.0", "606": "-170.0", "607": "0.0"}, "batch_id": 54, "company_id": 64, "line_by_line_equal": true, "move_ids": [329, 328, 327, 326, 325], "policy": "residual_cutover_v1", "scope": "Synthetic; no real MYOB acceptance", "source_archive_sha256": "e737dd37b08d2613f2253999b841e9aea557ec2f457ad49ed664bccb5db57e8f", "source_retrieved": true}

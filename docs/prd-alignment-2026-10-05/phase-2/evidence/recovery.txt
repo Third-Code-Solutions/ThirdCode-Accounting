@@ -1,0 +1,28 @@
+time="2026-10-04T21:26:46Z" level=warning msg="Found orphan containers ([tcsi-phase2-runtime tcsi-alignment-runtime tcsi-source-inspect]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+2026-10-04 21:27:10,983 1 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:27:10,983 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:27:10,983 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:27:10,983 1 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:27:11,185 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:27:11,206 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:27:11,365 1 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 21:27:11,365 1 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:27:11,391 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 1 modules...
+2026-10-04 21:27:11,398 1 INFO tcsi_alignment_phase2 odoo.modules.loading: 1 modules loaded in 0.01s, 0 queries (+0 extra)
+2026-10-04 21:27:11,419 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 63 modules...
+2026-10-04 21:27:12,180 1 INFO tcsi_alignment_phase2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:27:12,202 1 INFO tcsi_alignment_phase2 odoo.modules.loading: 63 modules loaded in 0.78s, 0 queries (+0 extra)
+2026-10-04 21:27:12,362 1 INFO tcsi_alignment_phase2 odoo.modules.loading: Modules loaded.
+2026-10-04 21:27:12,387 1 INFO tcsi_alignment_phase2 odoo.modules.registry: Registry loaded in 1.022s
+2026-10-04 21:27:12,404 1 INFO tcsi_alignment_phase2 odoo.service.db: DUMP DB: tcsi_alignment_phase2 format zip
+2026-10-04 21:27:16,457 1 INFO tcsi_alignment_phase2 odoo.service.db: RESTORING DB: tcsi_alignment_phase2_restored
+2026-10-04 21:27:25,154 1 INFO tcsi_alignment_phase2 odoo.modules.neutralize: Neutralization finished
+2026-10-04 21:27:25,161 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 1 modules...
+2026-10-04 21:27:25,165 1 INFO tcsi_alignment_phase2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:27:25,170 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 63 modules...
+2026-10-04 21:27:25,201 1 INFO tcsi_alignment_phase2 odoo.modules.loading: 63 modules loaded in 0.03s, 0 queries (+0 extra)
+2026-10-04 21:27:25,311 1 INFO tcsi_alignment_phase2 odoo.modules.loading: Modules loaded.
+2026-10-04 21:27:25,327 1 INFO tcsi_alignment_phase2 odoo.modules.registry: Registry loaded in 0.172s
+2026-10-04 21:27:25,517 1 INFO tcsi_alignment_phase2 odoo.service.db: RESTORE DB: tcsi_alignment_phase2_restored
+RECOVERY_RESULT {"source": "tcsi_alignment_phase2", "target": "tcsi_alignment_phase2_restored", "restore_seconds": 9.071, "backup_bytes": 7789457, "backup_sha256": "01a9cb367de75e3833bc4e35d8485841664c4db65202e1663cdd52f26d435616", "scope": "Quiescent isolated synthetic database and filestore; no hosted recovery claim"}

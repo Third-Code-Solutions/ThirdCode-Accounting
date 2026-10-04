@@ -1,0 +1,129 @@
+{
+  "checks": {
+    "audit_log_rows_for_customer_invoice": 8,
+    "audit_rule_id": 1,
+    "audit_traceability": {
+      "prior_value_capture": true,
+      "user_and_timestamp": true
+    },
+    "customer_aggregate_open_item_residual": "600.00",
+    "customer_control_balance": "600.00",
+    "customer_control_equals_residual": true,
+    "customer_invoice_balanced": true,
+    "draft_does_not_affect_posted_totals": true,
+    "fiscalyear_lock_adjusts_backdated_posting": true,
+    "posted_trial_balance_balanced": {
+      "credit": "4070.00",
+      "debit": "4070.00"
+    },
+    "rendered_reports": {
+      "customer_activity_statement": {
+        "pdf_bytes": 27188,
+        "report_name": "partner_statement.activity_statement"
+      },
+      "financial_balance_sheet": {
+        "balance_check": "0.00",
+        "balanced": true,
+        "pdf_bytes": 20310,
+        "report_name": "thirdcode_accounting.report_thirdcode_financial_statement",
+        "section_totals": [
+          {
+            "name": "Assets",
+            "total": "1,699.00"
+          },
+          {
+            "name": "Liabilities",
+            "total": "300.00"
+          },
+          {
+            "name": "Equity",
+            "total": "0.00"
+          },
+          {
+            "name": "Current period earnings",
+            "total": "1,399.00"
+          }
+        ]
+      },
+      "financial_cash_flow": {
+        "pdf_bytes": 20334,
+        "report_name": "thirdcode_accounting.report_thirdcode_financial_statement"
+      },
+      "financial_profit_loss": {
+        "net_result": "199.00",
+        "pdf_bytes": 18973,
+        "report_name": "thirdcode_accounting.report_thirdcode_financial_statement",
+        "section_totals": [
+          {
+            "name": "Income",
+            "total": "999.00"
+          },
+          {
+            "name": "Expenses",
+            "total": "800.00"
+          }
+        ]
+      },
+      "general_ledger": {
+        "pdf_bytes": 39085,
+        "report_name": "account_financial_report.general_ledger"
+      },
+      "trial_balance": {
+        "pdf_bytes": 27306,
+        "report_name": "account_financial_report.trial_balance"
+      }
+    },
+    "report_surfaces": {
+      "aged_partner_balance": true,
+      "general_ledger": true,
+      "partner_statement": true,
+      "trial_balance": true
+    },
+    "role_matrix": {
+      "accountant_can_post": true,
+      "administrator_can_post": true,
+      "administrator_reversal_posted": true,
+      "encoder_can_create_draft": true,
+      "encoder_configuration_validation_blocked": true,
+      "encoder_post_blocked": true,
+      "encoder_report_blocked": true,
+      "legacy_probe_cleanup": {
+        "deleted_draft_probes": 0,
+        "reversed_posted_probes": 0
+      },
+      "readonly_create_blocked": true,
+      "readonly_post_blocked": true,
+      "readonly_unlink_blocked": true,
+      "readonly_write_blocked": true,
+      "synthetic_users": {
+        "accountant": 103,
+        "administrator": 102,
+        "encoder": 104,
+        "readonly": 105
+      }
+    },
+    "supplier_aggregate_open_item_residual": "-300.00",
+    "supplier_bill_balanced": true,
+    "supplier_control_balance": "-300.00",
+    "supplier_control_equals_residual": true
+  },
+  "stack": {
+    "company": "Third Code Solutions Inc.",
+    "currency": "USD",
+    "database": "tcsi_alignment_candidate_v2",
+    "odoo": "18.0 Community"
+  },
+  "status": "VERIFIED LOCALLY",
+  "synthetic_records": {
+    "customer": 193,
+    "customer_invoice": "INV/2026/00011",
+    "customer_invoice_total": "1000.00",
+    "customer_payment": "PBNK1/2026/00001",
+    "customer_remaining": "600.00",
+    "supplier": 194,
+    "supplier_bill": "BILL/2026/09/0001",
+    "supplier_bill_total": "800.00",
+    "supplier_payment": "PBNK1/2026/00002",
+    "supplier_remaining": "300.00"
+  }
+}

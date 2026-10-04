@@ -1,5 +1,8 @@
 # CAS control pack — implementation template
 
+> Current scope amendment (5 October 2026): the approved target is Vercel portal/proxy, Railway Odoo Community/PostgreSQL and persistent filestore, preserving Supabase responsibilities. On-premise/client-owned-server/LAN-only mismatch findings are withdrawn. Historical local claims below are not refreshed production evidence. Use [the refreshed traceability and release record](prd-alignment-2026-10-05/REPORT.md) and [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md). Product readiness for white-label turnover is distinct from each future client's accounting configuration and acceptance.
+
+
 This document is a technical control-pack template for the proposed Odoo
 Community installation. It is not a BIR certificate, legal opinion, or client
 acceptance record. Fields marked `BLOCKED — CLIENT DECISION` require the named
@@ -31,15 +34,14 @@ owner and evidence before production use.
 
 | Control | Current implementation | Acceptance item |
 | --- | --- | --- |
-| Native document sequences | Odoo sequences remain the source of posted document names | Accountant verifies gap/void policy under failures and concurrency |
+| Native document sequences | Candidate18.0.2.13.0 uses transactional continuous counters per company/journal, per product-owner decision; original posted names preserved | Native failure, fiscal-boundary, reversal and concurrent tests pass; production inventory and statutory document requirements remain open |
 | Official receipts | No-gap local sequence, receipt metadata, amount words, TIN/VAT fields | BIR classification, control value, layout, signatory, and sample pending |
 | Invoice report | Custom guarded template with visible draft marker and control field | Signed sample and accountant/legal review pending |
 | Credit/debit corrections | Native credit/debit notes and reversals preserve source records | Client correction policy pending |
 
 ## 4. Audit and retention
 
-- OCA `auditlog` is installed and an `account.move` rule is enabled in the
-  local database.
+- OCA `auditlog` subscriptions cover accounting documents/lines, reconciliation, master data, users/permissions, attachments, sequences and custom workflows. Candidate18.0.2.13.0 protects required subscriptions and records attachment SHA-256 changes while excluding credentials and binary contents. See [current evidence](prd-alignment-2026-10-05/phase-2/REPORT.md).
 - The custom model override blocks application writes and unlink operations on
   `auditlog.log`.
 - The database backup includes audit records because they are normal database

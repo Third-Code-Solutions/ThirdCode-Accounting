@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
@@ -274,3 +277,51 @@ class MigrationRow(models.Model):
         ):
             raise UserError(_("Rows cannot be removed from a validated migration batch."))
         return super().unlink()
+
+
+class AccountMoveImport(models.Model):
+    _inherit = "account.move"
+
+    thirdcode_import_fingerprint = fields.Char(readonly=True, copy=False, index=True)
+
+    @api.model
+    def action_import_thirdcode_move(self, values):
+        """One RPC transaction: compare payload, create, map, and post or roll back.
+
+        A retry after loss of the response finds the same posted fingerprint.
+        Historical identifiers with no fingerprint require manual reconciliation.
+        """
+        if not self.env.user.has_group("thirdcode_accounting.group_thirdcode_administrator"):
+            raise AccessError(_("Only an Administrator may run accounting imports."))
+        allowed = {"company_id", "journal_id", "date", "move_type", "ref",
+                   "thirdcode_source_identifier", "thirdcode_is_opening_balance", "line_ids",
+                   "partner_id", "invoice_date", "invoice_date_due", "invoice_line_ids",
+                   "thirdcode_import_control_account_id"}
+        if not isinstance(values, dict) or set(values) - allowed:
+            raise UserError(_("Unsupported accounting import fields."))
+        company = self.env["res.company"].browse(values.get("company_id"))
+        source = values.get("thirdcode_source_identifier")
+        if company not in self.env.companies or not source:
+            raise AccessError(_("An active company and source identifier are required."))
+        for field in ("line_ids", "invoice_line_ids"):
+            for command in values.get(field, []):
+                if len(command) != 3 or command[0] != 0:
+                    raise UserError(_("Imports may create new lines only."))
+        fingerprint = hashlib.sha256(json.dumps(values, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        existing = self.search([("company_id", "=", company.id), ("thirdcode_source_identifier", "=", source)], limit=1)
+        if existing:
+            if existing.thirdcode_import_fingerprint != fingerprint or existing.state != "posted":
+                raise UserError(_("The source identifier exists with different or unverified accounting content. Reconcile it before retrying."))
+            return {"id": existing.id, "created": False}
+        payload = dict(values)
+        control_id = payload.pop("thirdcode_import_control_account_id", False)
+        payload["thirdcode_import_fingerprint"] = fingerprint
+        move = self.with_company(company).create(payload)
+        if control_id:
+            account = self.env["account.account"].browse(control_id)
+            expected = "asset_receivable" if move.move_type == "out_invoice" else "liability_payable"
+            if account.account_type != expected or company not in account.company_ids:
+                raise UserError(_("The approved open-item control account must match the company and document type."))
+            move.line_ids.filtered(lambda line: line.display_type == "payment_term").write({"account_id": account.id})
+        move.action_post()
+        return {"id": move.id, "created": True}

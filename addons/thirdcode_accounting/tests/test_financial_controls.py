@@ -5,6 +5,7 @@ from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tools import date_utils
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.addons.hr_expense.tests.common import TestExpenseCommon
 
 
 @tagged("post_install", "-at_install")
@@ -322,7 +323,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             reconciliation.action_reconcile()
         self.assertEqual(reconciliation.state, "draft")
 
-    def test_statement_line_sync_updates_posted_move_without_opening_direct_write(self):
+    def test_posted_statement_amount_requires_reversal(self):
         statement_line = self.env["account.bank.statement.line"].with_user(
             self.accountant
         ).create(
@@ -340,12 +341,13 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         with self.assertRaises(UserError):
             move.with_user(self.accountant).write({"ref": "DIRECT-EDIT-BLOCKED"})
 
-        statement_line.with_user(self.accountant).write({"amount": 11})
+        with self.assertRaises(UserError), self.cr.savepoint():
+            statement_line.with_user(self.accountant).write({"amount": 11})
 
-        self.assertEqual(statement_line.amount, 11)
+        self.assertEqual(statement_line.amount, 10)
         self.assertEqual(move.state, "posted")
         liquidity_lines, _, _ = statement_line._seek_for_lines()
-        self.assertEqual(abs(sum(liquidity_lines.mapped("balance"))), 11)
+        self.assertEqual(abs(sum(liquidity_lines.mapped("balance"))), 10)
         with self.assertRaises(UserError):
             statement_line.with_user(self.accountant).unlink()
         self.assertTrue(statement_line.exists())
@@ -924,7 +926,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         self.assertEqual(line.price_unit, 100)
         self.assertEqual(line.quantity, 1)
 
-    def test_draft_lines_and_superuser_writes_stay_open(self):
+    def test_draft_edits_allowed_but_sudo_cannot_edit_posted_lines(self):
         draft = self.env["account.move"].create(
             {
                 "move_type": "out_invoice",
@@ -952,28 +954,399 @@ class TestFinancialControls(AccountTestInvoicingCommon):
 
         posted = self._posted_invoice()
         posted_line = posted.invoice_line_ids[0]
-        posted_line.sudo().write({"price_unit": 456})
-        self.assertEqual(posted_line.price_unit, 456)
+        with self.assertRaises(UserError):
+            posted_line.sudo().write({"price_unit": 456})
+        self.assertEqual(posted_line.price_unit, 100)
 
-    def test_posted_entries_accept_reset_and_cancel_but_not_direct_edits(self):
-        """Reset-to-draft and cancel are sanctioned transitions, not edits.
-
-        The posted-immutability guard must not block the standard
-        accounting workflow (button_draft / button_cancel) while it keeps
-        refusing arbitrary field writes on posted entries.
-        """
+    def test_posted_entries_reject_reset_cancel_and_history_erasure(self):
         invoice = self._posted_invoice()
-        with self.assertRaises(UserError):
-            invoice.with_user(self.accountant).write({"ref": "DIRECT-EDIT-BLOCKED"})
-
-        invoice.with_user(self.accountant).button_draft()
-        self.assertEqual(invoice.state, "draft")
-
-        invoice.with_user(self.accountant).action_post()
+        for record in (invoice.with_user(self.accountant), invoice.sudo()):
+            for action in (record.button_draft, record.button_cancel, record.unlink):
+                with self.assertRaises(UserError), self.cr.savepoint():
+                    action()
+            for values in ({"state": "draft"}, {"posted_before": False}, {"ref": "changed"}):
+                with self.assertRaises(UserError), self.cr.savepoint():
+                    record.write(values)
         self.assertEqual(invoice.state, "posted")
+        self.assertTrue(invoice.posted_before)
 
+    def test_posted_line_insert_delete_reparent_and_economic_fields_rejected(self):
+        invoice = self._posted_invoice()
+        line = invoice.invoice_line_ids[0].with_user(self.accountant)
+        for values in ({"balance": 999}, {"partner_id": self.partner_b.id},
+                       {"date_maturity": str(date_utils.add(line.date, days=10))}):
+            with self.assertRaises(UserError), self.cr.savepoint():
+                line.write(values)
+        with self.assertRaises(UserError), self.cr.savepoint():
+            line.unlink()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            self.env["account.move.line"].create({
+                "move_id": invoice.id, "name": "Injected", "account_id": line.account_id.id,
+            })
+
+    def test_native_reversal_preserves_original_posted_entry(self):
+        invoice = self._posted_invoice().with_user(self.accountant)
+        before = [(line.id, line.account_id.id, line.balance) for line in invoice.line_ids]
+        reversal = invoice._reverse_moves([{"date": fields.Date.today()}], cancel=True)
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(reversal.state, "posted")
+        self.assertEqual(reversal.reversed_entry_id, invoice)
+        self.assertEqual(before, [(line.id, line.account_id.id, line.balance) for line in invoice.line_ids])
+        self.assertEqual(invoice.amount_residual, 0)
+
+    def test_closed_period_blocks_native_post_and_period_deletion(self):
+        invoice = self._posted_invoice()
+        period = self.env["thirdcode.accounting.period"].sudo().create({
+            "name": "Locked test day", "company_id": self.company.id,
+            "date_start": invoice.date, "date_end": invoice.date,
+        })
+        period.with_user(self.accountant).action_close()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            invoice._reverse_moves([{"date": invoice.date}], cancel=True)
         with self.assertRaises(UserError):
-            invoice.with_user(self.accountant).write({"ref": "DIRECT-EDIT-BLOCKED-AGAIN"})
+            period.sudo().unlink()
+        with self.assertRaises(UserError):
+            period.sudo().write({"date_end": date_utils.add(invoice.date, days=1)})
+        with self.assertRaises(AccessError):
+            period.with_user(self.accountant).action_reopen()
 
-        invoice.with_user(self.accountant).button_cancel()
-        self.assertEqual(invoice.state, "cancel")
+
+    def _alignment_administrator(self):
+        return self.env["res.users"].create({
+            "name": "Alignment administrator", "login": "alignment-admin",
+            "company_id": self.company.id, "company_ids": [Command.set(self.company.ids)],
+            "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_administrator").ids)],
+        })
+
+    def test_direct_post_and_forged_tokens_cannot_bypass_policy(self):
+        draft = self._posted_invoice().copy()
+        for context in ({}, {"thirdcode_posting_token": True}, {"thirdcode_state_transition_token": True}):
+            with self.assertRaises(UserError), self.cr.savepoint():
+                draft.with_context(**context).write({"state": "posted", "posted_before": True})
+        draft.action_post()
+        self.assertEqual(draft.state, "posted")
+
+    def test_open_period_reversal_can_correct_closed_period_original(self):
+        invoice = self._posted_invoice().with_user(self.accountant)
+        period = self.env["thirdcode.accounting.period"].sudo().create({
+            "name": "Closed original", "company_id": self.company.id,
+            "date_start": invoice.date, "date_end": invoice.date,
+        })
+        period.with_user(self.accountant).action_close()
+        reversal = invoice._reverse_moves([{"date": date_utils.add(invoice.date, days=1)}], cancel=True)
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(reversal.state, "posted")
+        self.assertEqual(invoice.amount_residual, 0)
+        partials = invoice.line_ids.matched_debit_ids | invoice.line_ids.matched_credit_ids
+        self.assertTrue(partials)
+        self.assertTrue(all(partial.max_date > period.date_end for partial in partials))
+
+    def test_closed_period_reconciliation_cannot_be_removed_or_forged(self):
+        invoice = self._posted_invoice().with_user(self.accountant)
+        invoice._reverse_moves([{"date": invoice.date}], cancel=True)
+        period = self.env["thirdcode.accounting.period"].sudo().create({
+            "name": "Closed reconciled day", "company_id": self.company.id,
+            "date_start": invoice.date, "date_end": invoice.date,
+        })
+        period.with_user(self.accountant).action_close()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            invoice.line_ids.remove_move_reconcile()
+        partials = invoice.line_ids.matched_debit_ids | invoice.line_ids.matched_credit_ids
+        with self.assertRaises(UserError):
+            partials.write({"amount": 1})
+
+    def test_line_audit_captures_actor_old_new_and_cannot_be_changed(self):
+        draft = self._posted_invoice().copy().with_user(self.accountant)
+        line = draft.invoice_line_ids[0]
+        line.write({"name": "Audited changed narration"})
+        logs = self.env["auditlog.log"].sudo().search([
+            ("model_model", "=", "account.move.line"), ("res_id", "=", line.id), ("method", "=", "write"),
+        ])
+        details = logs.line_ids.filtered(lambda detail: detail.field_name == "name" and "Audited changed narration" in (detail.new_value or ""))
+        self.assertTrue(details)
+        self.assertEqual(details[-1].log_id.user_id, self.accountant)
+        self.assertTrue(details[-1].old_value)
+        self.assertTrue(details[-1].log_id.create_date)
+        with self.assertRaises(AccessError):
+            details.sudo().write({"old_value": "forged"})
+        with self.assertRaises(AccessError):
+            details.sudo().unlink()
+        scoped = details[-1].log_id.with_user(self.accountant)
+        self.assertTrue(scoped.read(["method"]))
+        other_user = self.env["res.users"].create({
+            "name": "Other audit reader", "login": "other-audit-reader",
+            "company_id": self.other_company.id, "company_ids": [Command.set(self.other_company.ids)],
+            "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_readonly").ids)],
+        })
+        with self.assertRaises(AccessError):
+            scoped.with_user(other_user).read(["method"])
+
+    def test_receipt_series_cannot_be_reset_consumed_or_deleted_directly(self):
+        sequence = self.company._thirdcode_receipt_sequence()
+        for values in ({"number_next": 1}, {"number_next_actual": 1}, {"use_date_range": True}):
+            with self.assertRaises(UserError):
+                sequence.write(values)
+        with self.assertRaises(UserError):
+            sequence.next_by_id()
+        with self.assertRaises(UserError):
+            sequence.unlink()
+
+    def test_atomic_import_retry_and_changed_payload(self):
+        administrator = self._alignment_administrator()
+        model = self.env["account.move"].with_user(administrator)
+        payload = {
+            "company_id": self.company.id, "journal_id": self.company_data["default_journal_misc"].id,
+            "date": str(fields.Date.today()), "move_type": "entry", "ref": "Synthetic migration",
+            "thirdcode_source_identifier": "ATOMIC/1", "line_ids": [
+                [0, 0, {"name": "Capital", "account_id": self.company_data["default_account_assets"].id, "debit": 100, "credit": 0}],
+                [0, 0, {"name": "Capital", "account_id": self.company_data["default_account_revenue"].id, "debit": 0, "credit": 100}],
+            ],
+        }
+        first = model.action_import_thirdcode_move(payload)
+        retry = model.action_import_thirdcode_move(payload)
+        self.assertTrue(first["created"])
+        self.assertFalse(retry["created"])
+        self.assertEqual(first["id"], retry["id"])
+        with self.assertRaises(UserError):
+            model.action_import_thirdcode_move(dict(payload, ref="Changed source"))
+        failed = dict(payload, thirdcode_source_identifier="ATOMIC/FAIL", line_ids=payload["line_ids"][:1])
+        with self.assertRaises(UserError), self.cr.savepoint():
+            model.action_import_thirdcode_move(failed)
+        self.assertFalse(model.search([("thirdcode_source_identifier", "=", "ATOMIC/FAIL")]))
+        recovered = model.action_import_thirdcode_move(dict(payload, thirdcode_source_identifier="ATOMIC/FAIL"))
+        self.assertEqual(model.browse(recovered["id"]).state, "posted")
+
+    def test_comparative_financial_report_and_cash_flow_reconcile(self):
+        self._posted_invoice()
+        wizard = self.env["thirdcode.financial.report.wizard"].with_user(self.accountant).create({
+            "company_id": self.company.id, "report_type": "balance_sheet",
+            "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+            "comparison_date_from": fields.Date.today(), "comparison_date_to": fields.Date.today(),
+        })
+        data = wizard.get_report_data()
+        self.assertTrue(data["balanced"])
+        self.assertEqual(data["sections"], data["comparison"]["sections"])
+        self.company.sudo().thirdcode_report_samples_approved = True
+        self.assertIn("DRAFT", wizard.get_report_data()["layout_status"])
+        cash = self.company_data["default_journal_bank"].default_account_id
+        revenue = self.company_data["default_account_revenue"]
+        self.env["account.move"].create({
+            "company_id": self.company.id, "journal_id": self.company_data["default_journal_misc"].id,
+            "date": fields.Date.today(), "line_ids": [
+                Command.create({"name": "Cash sale", "account_id": cash.id, "debit": 75}),
+                Command.create({"name": "Cash sale", "account_id": revenue.id, "credit": 75}),
+            ],
+        }).action_post()
+        wizard.write({"report_type": "cash_flow"})
+        data = wizard.get_report_data()
+        self.assertEqual(data["cash_movement"], "75.00")
+        self.assertEqual(data["cash_reconciliation_difference"], "0.00")
+        self.assertFalse(data["classification_complete"])
+        revenue.sudo().thirdcode_cash_flow_category = "operating"
+        self.assertTrue(wizard.get_report_data()["classification_complete"])
+        html, _ = self.env["ir.actions.report"].with_user(self.accountant)._render_qweb_html(
+            "thirdcode_accounting.action_report_thirdcode_financial_statement", wizard.ids
+        )
+        self.assertIn(b"Cash reconciliation", html)
+        self.assertIn(b"Operating activities", html)
+
+
+    def test_year_end_transfer_does_not_erase_income_statement(self):
+        invoice = self._posted_invoice()
+        equity = self.env["account.account"].create({
+            "name": "QA Retained earnings", "code": "YE9001", "account_type": "equity",
+            "company_ids": [Command.set(self.company.ids)],
+        })
+        wizard = self.env["thirdcode.financial.report.wizard"].with_user(self.accountant).create({
+            "company_id": self.company.id, "report_type": "profit_loss",
+            "date_from": invoice.date, "date_to": invoice.date,
+        })
+        before = wizard.get_report_data()["net_result"]
+        close = self.env["thirdcode.year.end.close"].with_user(self.accountant).create({
+            "company_id": self.company.id, "date_end": invoice.date,
+            "journal_id": self.company_data["default_journal_misc"].id,
+            "retained_earnings_account_id": equity.id,
+        })
+        close.action_post()
+        self.assertEqual(before, "100.00")
+        self.assertEqual(wizard.get_report_data()["net_result"], before)
+        wizard.report_type = "balance_sheet"
+        self.assertTrue(wizard.get_report_data()["balanced"])
+        close.move_id._reverse_moves([{"date": invoice.date}], cancel=True)
+        wizard.report_type = "profit_loss"
+        self.assertEqual(wizard.get_report_data()["net_result"], before)
+
+    def test_context_defaults_cannot_forge_posting_or_closure_history(self):
+        for context in ({"default_state": "posted"}, {"default_posted_before": True}):
+            with self.assertRaises(UserError), self.cr.savepoint():
+                self.env["account.move"].with_context(**context).create({
+                    "company_id": self.company.id,
+                    "journal_id": self.company_data["default_journal_misc"].id,
+                })
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.env["thirdcode.accounting.period"].sudo().with_context(
+                default_closed_by=self.accountant.id
+            ).create({"name": "Forged closure", "company_id": self.company.id,
+                      "date_start": fields.Date.today(), "date_end": fields.Date.today()})
+        with self.assertRaises(UserError), self.cr.savepoint():
+            self.env["account.payment"].with_context(default_thirdcode_receipt_number="FORGED").create({
+                "company_id": self.company.id, "partner_id": self.partner_a.id,
+                "journal_id": self.company_data["default_journal_bank"].id, "amount": 10,
+            })
+
+    def test_receipt_rollback_retry_and_year_boundary_preserve_series(self):
+        sequence = self.company._thirdcode_receipt_sequence()
+        def posted_receipt(day):
+            payment = self.env["account.payment"].create({
+                "company_id": self.company.id, "journal_id": self.company_data["default_journal_bank"].id,
+                "partner_id": self.partner_a.id, "amount": 10, "payment_type": "inbound",
+                "partner_type": "customer", "date": day,
+            })
+            payment.action_post()
+            self.assertTrue(payment.thirdcode_receipt_number)
+            return payment
+        next_before = sequence.number_next_actual
+        with self.assertRaisesRegex(UserError, "Simulated downstream failure"), self.cr.savepoint():
+            posted_receipt("2030-12-31")
+            raise UserError("Simulated downstream failure")
+        sequence.invalidate_recordset()
+        self.assertEqual(sequence.number_next_actual, next_before)
+        december = posted_receipt("2030-12-31")
+        january = posted_receipt("2031-01-01")
+        sequence.invalidate_recordset()
+        self.assertEqual(sequence.number_next_actual, next_before + 2)
+        self.assertNotEqual(december.thirdcode_receipt_number, january.thirdcode_receipt_number)
+        january.action_assign_thirdcode_receipt_number()
+        self.assertEqual(sequence.number_next_actual, next_before + 2)
+        with self.assertRaises(UserError):
+            january.action_cancel()
+
+    def test_advance_later_allocation_and_customer_refund_reconcile(self):
+        payment = self.env["account.payment"].create({
+            "company_id": self.company.id, "journal_id": self.company_data["default_journal_bank"].id,
+            "partner_id": self.partner_a.id, "amount": 100, "payment_type": "inbound", "partner_type": "customer",
+        })
+        payment.action_post()
+        invoice = self._posted_invoice()
+        (payment.move_id.line_ids | invoice.line_ids).filtered(
+            lambda line: line.account_id.account_type == "asset_receivable"
+        ).reconcile()
+        self.assertEqual(invoice.amount_residual, 0)
+        credit = invoice._reverse_moves([{"date": invoice.date}], cancel=False)
+        credit.action_post()
+        register = self.env["account.payment.register"].with_context(
+            active_model="account.move", active_ids=credit.ids
+        ).create({"journal_id": self.company_data["default_journal_bank"].id, "amount": 100})
+        refunds = register._create_payments()
+        self.assertEqual(credit.amount_residual, 0)
+        self.assertEqual(refunds.payment_type, "outbound")
+        all_moves = payment.move_id | invoice | credit | refunds.move_id
+        self.assertTrue(all(move.state == "posted" for move in all_moves))
+        self.assertAlmostEqual(sum(all_moves.line_ids.filtered(
+            lambda line: line.account_id.account_type == "asset_receivable").mapped("balance")), 0)
+
+    def test_employee_reimbursement_and_company_paid_expense_post_to_ledger(self):
+        administrator = self._alignment_administrator()
+        employee = self.env["hr.employee"].sudo().create({
+            "name": "Synthetic reimbursement employee", "company_id": self.company.id,
+            "work_contact_id": self.partner_b.id,
+        })
+        product = self.env["product.product"].sudo().create({
+            "name": "Synthetic expense", "can_be_expensed": True,
+            "property_account_expense_id": self.company_data["default_account_expense"].id,
+            "supplier_taxes_id": [Command.clear()],
+        })
+        bank = self.company_data["default_journal_bank"]
+        for mode in ("own_account", "company_account"):
+            sheet = self.env["hr.expense.sheet"].with_user(administrator).create({
+                "name": "Synthetic " + mode, "company_id": self.company.id, "employee_id": employee.id,
+                "journal_id": self.company_data["default_journal_purchase"].id,
+                "payment_method_line_id": bank.outbound_payment_method_line_ids[:1].id,
+                "expense_line_ids": [Command.create({
+                    "name": "Synthetic reimbursement", "employee_id": employee.id, "company_id": self.company.id,
+                    "product_id": product.id, "account_id": self.company_data["default_account_expense"].id,
+                    "total_amount_currency": 25, "payment_mode": mode, "tax_ids": [Command.clear()],
+                    "date": fields.Date.today(),
+                })],
+            })
+            sheet.action_submit_sheet()
+            sheet.action_approve_expense_sheets()
+            sheet.action_sheet_move_post()
+            moves = sheet.account_move_ids
+            self.assertTrue(moves)
+            self.assertTrue(all(move.state == "posted" for move in moves))
+            self.assertAlmostEqual(sum(moves.line_ids.filtered(
+                lambda line: line.account_id == self.company_data["default_account_expense"]
+            ).mapped("balance")), 25)
+            if mode == "own_account":
+                self.env["account.payment.register"].with_user(administrator).with_context(
+                    active_model="account.move", active_ids=moves.ids
+                ).create({"journal_id": bank.id, "amount": 25})._create_payments()
+                self.assertEqual(moves.amount_residual, 0)
+            self.assertEqual(sheet.state, "done")
+
+
+@tagged("post_install", "-at_install")
+class TestExpenseRole(TestExpenseCommon):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        company = cls.company_data["company"]
+        cls.accountant = cls.env["res.users"].create({
+            "name": "Expense workflow accountant",
+            "login": "expense-workflow-accountant",
+            "company_id": company.id,
+            "company_ids": [Command.set([company.id])],
+            "groups_id": [Command.set([
+                cls.env.ref("thirdcode_accounting.group_thirdcode_accountant").id
+            ])],
+        })
+        cls.unassigned_accountant = cls.env["res.users"].create({
+            "name": "Unassigned expense accountant",
+            "login": "unassigned-expense-accountant",
+            "company_id": company.id,
+            "company_ids": [Command.set([company.id])],
+            "groups_id": [Command.set([
+                cls.env.ref("thirdcode_accounting.group_thirdcode_accountant").id
+            ])],
+        })
+        cls.expense_employee.expense_manager_id = cls.accountant
+
+    def test_accountant_can_approve_post_and_reimburse_employee_expense(self):
+        company = self.company_data["company"]
+        sheet = self.create_expense_report({
+            "name": "Synthetic employee reimbursement",
+            "expense_line_ids": [Command.create({
+                "name": "Synthetic employee purchase",
+                "employee_id": self.expense_employee.id,
+                "product_id": self.product_c.id,
+                "total_amount_currency": 100.0,
+                "tax_ids": [Command.clear()],
+                "payment_mode": "own_account",
+                "date": fields.Date.today(),
+                "company_id": company.id,
+                "currency_id": company.currency_id.id,
+            })],
+        })
+
+        sheet.action_submit_sheet()
+        with self.assertRaises(UserError):
+            sheet.with_user(self.unassigned_accountant).action_approve_expense_sheets()
+        sheet.with_user(self.accountant).action_approve_expense_sheets()
+        sheet.with_user(self.accountant).action_sheet_move_post()
+
+        self.assertEqual(sheet.state, "post")
+        self.assertEqual(sheet.account_move_ids.state, "posted")
+        self.assertEqual(sheet.payment_state, "not_paid")
+
+        payment_register = self.env["account.payment.register"].with_user(
+            self.accountant
+        ).with_context(
+            active_model="account.move", active_ids=sheet.account_move_ids.ids
+        ).create({
+            "journal_id": self.company_data["default_journal_bank"].id,
+            "amount": sheet.total_amount,
+        })
+        payment_register.action_create_payments()
+
+        self.assertEqual(sheet.payment_state, "paid")
