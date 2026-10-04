@@ -93,6 +93,7 @@
         "views/apps_views.xml",
         "report/thirdcode_reports.xml",
         "report/thirdcode_templates.xml",
+        "report/completion_reports.xml",
     ],
     "installable": True,
     "application": True,

@@ -109,8 +109,8 @@ class FinancialReportWizard(models.TransientModel):
 
     def _account_totals(self, domain):
         totals = defaultdict(lambda: Decimal("0"))
-        for line in self.env["account.move.line"].search(domain):
-            totals[line.account_id] += Decimal(str(line.debit - line.credit))
+        for account, balance in self.env["account.move.line"]._read_group(domain, ["account_id"], ["balance:sum"]):
+            totals[account] += Decimal(str(balance))
         return totals
 
     @staticmethod
@@ -159,9 +159,20 @@ class FinancialReportWizard(models.TransientModel):
         groups = {key: [] for key in ("operating", "investing", "financing", "unclassified")}
         for move in cash_lines.move_id:
             amount = sum((Decimal(str(line.balance)) for line in move.line_ids if line.account_id in cash_accounts), Decimal("0"))
-            if not amount:
-                continue  # Transfers between included cash equivalents.
+            allocations = self.env["thirdcode.cash.flow.allocation"].search([("move_id", "=", move.id)])
+            if allocations:
+                allocated = sum((Decimal(str(row.amount)) for row in allocations), Decimal(0))
+                if self.company_id.currency_id.compare_amounts(float(allocated), float(amount)):
+                    groups["unclassified"].append({"code": move.name, "name": "Allocation total does not match cash movement", "amount": self._amount(amount)})
+                else:
+                    for allocation in allocations:
+                        groups[allocation.category].append({"code": move.name, "name": allocation.explanation, "amount": self._amount(Decimal(str(allocation.amount)))})
+                continue
             counterparts = move.line_ids.filtered(lambda line: line.account_id not in cash_accounts and line.balance)
+            if not amount:
+                if counterparts:
+                    groups["unclassified"].append({"code": move.name, "name": "Review offsetting cash flows and allocate gross inflows/outflows", "amount": "0.00"})
+                continue  # Pure transfers between included cash accounts.
             categories = set(counterparts.mapped("account_id.thirdcode_cash_flow_category"))
             category = next(iter(categories)) if len(categories) == 1 and False not in categories else "unclassified"
             groups[category].append({"code": move.name, "name": move.ref or move.name, "amount": self._amount(amount)})
