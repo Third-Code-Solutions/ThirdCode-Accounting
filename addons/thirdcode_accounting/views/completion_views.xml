@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="view_cutover_batch" model="ir.ui.view">
+    <field name="name">thirdcode.migration.cutover</field>
+    <field name="model">thirdcode.migration.batch</field>
+    <field name="inherit_id" ref="view_thirdcode_migration_batch_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='row_ids']" position="attributes">
+        <attribute name="readonly">cutover_fingerprint</attribute>
+      </xpath>
+      <xpath expr="//field[@name='company_id']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//field[@name='cutover_date']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//field[@name='source_file_hash']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//field[@name='opening_balance_owner']" position="attributes"><attribute name="readonly">cutover_fingerprint</attribute></xpath>
+      <xpath expr="//header" position="inside">
+        <button name="action_review_cutover_file" type="object" string="Check mapping package" invisible="state != 'draft'"/>
+        <button name="action_apply_cutover" type="object" string="Apply cutover snapshot" invisible="state != 'draft' or not cutover_payload" groups="thirdcode_accounting.group_thirdcode_administrator"/>
+      </xpath>
+      <xpath expr="//field[@name='notes']" position="before">
+        <group string="Cutover source archive">
+          <field name="source_archive" filename="source_archive_filename" readonly="state != 'draft'"/>
+          <field name="source_archive_filename" invisible="1"/>
+          <field name="cutover_fingerprint" readonly="1"/>
+        </group>
+        <group string="Cutover mapping">
+          <field name="cutover_mapping_file" filename="cutover_mapping_filename" readonly="state != 'draft'"/>
+          <field name="cutover_mapping_filename" invisible="1"/>
+          <field name="cutover_payload" invisible="1"/>
+          <field name="cutover_review" readonly="1"/>
+        </group>
+        <field name="cutover_move_ids" readonly="1">
+          <list create="0" edit="0" delete="0"><field name="name"/><field name="date"/><field name="ref"/><field name="state" widget="badge"/></list>
+        </field>
+      </xpath>
+    </field>
+  </record>
+  <record id="view_source_archive_list" model="ir.ui.view">
+    <field name="name">thirdcode.migration.archive.entry.list</field>
+    <field name="model">thirdcode.migration.archive.entry</field>
+    <field name="arch" type="xml">
+      <list create="0" edit="0" delete="0">
+        <field name="company_id"/>
+        <field name="batch_id"/>
+        <field name="source_entry_id"/>
+        <field name="source_line_id"/>
+        <field name="date"/>
+        <field name="account_code"/>
+        <field name="partner_reference"/>
+        <field name="description"/>
+        <field name="debit" sum="Debits"/>
+        <field name="credit" sum="Credits"/>
+        <field name="currency_id" column_invisible="True"/>
+      </list>
+    </field>
+  </record>
+  <record id="action_source_archive" model="ir.actions.act_window">
+    <field name="name">Retained source history</field>
+    <field name="res_model">thirdcode.migration.archive.entry</field>
+    <field name="view_mode">list</field>
+  </record>
+  <menuitem id="menu_source_archive" name="Retained source history" parent="menu_thirdcode_accounting_root" action="action_source_archive" sequence="41" groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+</odoo>

@@ -113,5 +113,6 @@
             <field name="domain_force">[] if user.has_group('base.group_system') else [('log_id.thirdcode_company_ids', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
         </record>
+        <record id="rule_migration_archive_company" model="ir.rule"><field name="name">Source history company scope</field><field name="model_id" ref="model_thirdcode_migration_archive_entry"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
     </data>
 </odoo>

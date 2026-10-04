@@ -87,6 +87,7 @@
         "views/year_end_close_views.xml",
         "views/financial_report_views.xml",
         "views/menu_views.xml",
+        "views/completion_views.xml",
         "views/org_user_views.xml",
         "views/platform_console_views.xml",
         "views/apps_views.xml",
