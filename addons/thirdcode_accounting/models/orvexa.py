@@ -241,7 +241,7 @@ class OrvexaService(models.AbstractModel):
             if not move:
                 raise UserError("This task already completed, but its invoice was removed. It will not be created again.")
             move.check_access("read")
-            return service._completed(move)
+            return service._completed(move, already=True)
         if cancel:
             proposal.write({"state": "cancelled"})
             return {"status": "cancelled", "message": "Cancelled. No invoice was created."}
@@ -271,8 +271,13 @@ class OrvexaService(models.AbstractModel):
         proposal.write({"state": "done", "result_id": move.id})
         return service._completed(move)
 
-    def _completed(self, move):
-        message = "Draft invoice created. ORVEXA has not posted or sent it." if move.state == "draft" else f"This task already completed. The invoice is now {move.state}."
+    def _completed(self, move, already=False):
+        if move.state == "draft":
+            message = ("This task already completed; the draft invoice exists and was not created again."
+                       if already else
+                       "Draft invoice created. ORVEXA has not posted or sent it.")
+        else:
+            message = f"This task already completed. The invoice is now {move.state}."
         return {"status": "complete", "message": message,
                 "record_id": move.id, "url": f"/workspace/account.move/{move.id}"}
 

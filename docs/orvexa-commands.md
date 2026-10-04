@@ -26,7 +26,8 @@ Open it from the ORVEXA button in the top bar of the workspace.
 - Customer, product and sales journal must resolve to exactly one existing record;
   ambiguous names are refused with the reason.
 - Proposal confirmations re-check permissions, record versions and expiry, and are
-  idempotent: retrying the same confirmation never creates a second invoice.
+  idempotent: retrying the same confirmation never creates a second invoice and
+  reports the task as already completed.
 - Every response carries its status (`help`, `complete`, `confirmation_required`,
   `cancelled`, `invalid`, `error`), and data reads disclose their source, result
   limit and UTC snapshot time.

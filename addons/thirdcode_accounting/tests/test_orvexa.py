@@ -41,6 +41,7 @@ class TestOrvexa(AccountTestInvoicingCommon):
         result = self.agent.confirm_task(proposal, self.company.id)
         again = self.agent.confirm_task(proposal, self.company.id)
         self.assertEqual(result["record_id"], again["record_id"])
+        self.assertIn("already completed", again["message"])
         move = self.env["account.move"].browse(result["record_id"])
         self.assertEqual(move.state, "draft")
         self.assertEqual(move.invoice_line_ids.quantity, 2)
