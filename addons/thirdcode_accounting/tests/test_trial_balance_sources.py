@@ -55,7 +55,7 @@ class TestTrialBalanceSources(AccountTestInvoicingCommon):
                 domain = ast.literal_eval(link.attrib["domain"])
                 lines = self.env["account.move.line"].search(domain)
                 sources |= lines.move_id
-                self.assertFalse(lines.move_id & excluded)
+                self.assertFalse(lines.move_id & excluded, str(domain))
                 displayed = float(re.sub(r"[^0-9.\-]", "", "".join(link.itertext())))
                 metric = "debit" if any(term[0] == "debit" for term in domain if isinstance(term, tuple)) else "credit" if any(term[0] == "credit" for term in domain if isinstance(term, tuple)) else "balance"
                 self.assertAlmostEqual(sum(lines.mapped(metric)), displayed, places=2)
@@ -70,5 +70,6 @@ class TestTrialBalanceSources(AccountTestInvoicingCommon):
         wizard = self.env["trial.balance.report.wizard"].create({"company_id": self.env.company.id})
         other = self.env["res.company"].create({"name": "Inactive report company"})
         wizard.company_id = other
+        self.assertNotIn(other.id, wizard.with_context(allowed_company_ids=[self.env.company.id]).env.companies.ids)
         with self.assertRaises(AccessError):
             wizard.with_context(allowed_company_ids=[self.env.company.id]).button_export_html()

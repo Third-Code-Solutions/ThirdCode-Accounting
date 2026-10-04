@@ -58,6 +58,12 @@ class ThirdCodeReportAccessMixin(models.AbstractModel):
         wizards._thirdcode_check_report_access()
         return wizards
 
+class FinancialReportExportAccess(models.AbstractModel):
+    # Override the shared native export base directly. Adding methods to a
+    # sibling mixin does not override methods inherited from that native base.
+    _name = "account_financial_report_abstract_wizard"
+    _inherit = ["account_financial_report_abstract_wizard", "thirdcode.report.access.mixin"]
+
     def button_export_pdf(self, *args, **kwargs):
         self._thirdcode_check_report_access()
         return super().button_export_pdf(*args, **kwargs)
