@@ -225,23 +225,15 @@ def main() -> int:
 
     checks: dict[str, Any] = {}
     period_id, _ = ensure_period(odoo, company_id, admin)
-    probe = first_or_none(odoo, "account.move", [("ref", "=", "TC-FULL-CLOSED-PROBE")], ["id", "state"])
-    if not probe:
-        probe_id = int(admin.call("account.move", "create", [{
-            "company_id": company_id,
-            "move_type": "entry",
-            "journal_id": int(general["id"]),
-            "date": "2026-01-15",
-            "ref": "TC-FULL-CLOSED-PROBE",
+    checks["closed_period_draft_create_blocked"] = bool(expect_error(
+        lambda: admin.call("account.move", "create", [{
+            "company_id": company_id, "move_type": "entry", "journal_id": int(general["id"]),
+            "date": "2026-01-15", "ref": "TC-FULL-CLOSED-PROBE",
             "line_ids": [
                 [0, 0, {"name": "Closed period debit", "account_id": int(receivable["id"]), "debit": 10.0}],
                 [0, 0, {"name": "Closed period credit", "account_id": int(income["id"]), "credit": 10.0}],
             ],
-        }]))
-        probe = required_row(admin.first("account.move", [("id", "=", probe_id)], ["id", "state"]), "closed-period probe")
-    checks["closed_period_post_blocked"] = bool(expect_error(lambda: admin.call("account.move", "action_post", [[int(probe["id"])] ]), "posting in closed period"))
-    if probe["state"] == "draft":
-        admin.call("account.move", "unlink", [[int(probe["id"])]])
+        }]), "creating an entry in a closed period"))
     readonly = Odoo(
         args.url,
         args.database,
