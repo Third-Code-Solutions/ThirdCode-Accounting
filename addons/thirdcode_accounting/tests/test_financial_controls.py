@@ -954,3 +954,26 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         posted_line = posted.invoice_line_ids[0]
         posted_line.sudo().write({"price_unit": 456})
         self.assertEqual(posted_line.price_unit, 456)
+
+    def test_posted_entries_accept_reset_and_cancel_but_not_direct_edits(self):
+        """Reset-to-draft and cancel are sanctioned transitions, not edits.
+
+        The posted-immutability guard must not block the standard
+        accounting workflow (button_draft / button_cancel) while it keeps
+        refusing arbitrary field writes on posted entries.
+        """
+        invoice = self._posted_invoice()
+        with self.assertRaises(UserError):
+            invoice.with_user(self.accountant).write({"ref": "DIRECT-EDIT-BLOCKED"})
+
+        invoice.with_user(self.accountant).button_draft()
+        self.assertEqual(invoice.state, "draft")
+
+        invoice.with_user(self.accountant).action_post()
+        self.assertEqual(invoice.state, "posted")
+
+        with self.assertRaises(UserError):
+            invoice.with_user(self.accountant).write({"ref": "DIRECT-EDIT-BLOCKED-AGAIN"})
+
+        invoice.with_user(self.accountant).button_cancel()
+        self.assertEqual(invoice.state, "cancel")

@@ -58,6 +58,18 @@ class BrandingTests(unittest.TestCase):
         for selector in root.iter("xpath"):
             self.assertNotIn("@string", selector.get("expr"))
 
+    def test_error_dialogs_lift_real_messages_without_the_brand(self):
+        js = (ADDON / "static/src/js/tcsi_error_branding.js").read_text()
+        self.assertIn("GENERIC_FALLBACKS", js)
+        self.assertIn("Odoo Server Error", js)
+        self.assertIn("data.message", js)
+        self.assertIn(r'replace(/\bOdoo\b/g, "TCSI")', js)
+        xml = (ADDON / "static/src/xml/tcsi_error_dialogs.xml").read_text()
+        self.assertNotIn("Odoo", xml)
+        self.assertIn("TCSI Session Expired", xml)
+        manifest = (ADDON / "__manifest__.py").read_text()
+        self.assertIn("tcsi_error_dialogs.xml", manifest)
+
 
 if __name__ == "__main__":
     unittest.main()

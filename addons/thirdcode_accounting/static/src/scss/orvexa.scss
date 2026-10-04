@@ -23,6 +23,11 @@
     .tcsi-orvexa-review { display: grid; grid-template-columns: minmax(96px, 1fr) 2fr; gap: 8px 16px; }
     dt { text-transform: capitalize; }
     dd { margin: 0; overflow-wrap: anywhere; }
+    .tcsi-orvexa-read { margin: 8px 0; }
+    .tcsi-orvexa-read section { margin-bottom: 12px; }
+    .tcsi-orvexa-read section > strong { display: block; margin-bottom: 4px; }
+    .tcsi-orvexa-read ul { margin-bottom: 0; }
+    .tcsi-orvexa-read-links { list-style: none; padding-left: 0; }
     .tcsi-orvexa-composer label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 500; }
     .tcsi-orvexa-composer small { margin-top: 8px; }
     .btn { min-height: 32px; padding: 6px 12px; border-radius: 6px; font-size: 12px; }

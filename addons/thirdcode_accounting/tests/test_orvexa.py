@@ -100,3 +100,33 @@ class TestOrvexa(AccountTestInvoicingCommon):
         self.partner_a.copy({"name": self.partner_a.name})
         with self.assertRaises(UserError):
             self.proposal()
+
+    def test_everything_phrases_route_to_the_read_tool(self):
+        for text in (
+            "read everything",
+            "read everything in my dashboard",
+            "show me everything inside my dashboard",
+            "what's inside my dashboard?",
+            "give me the dashboard overview",
+        ):
+            self.assertEqual(parse_command(text)["tool"], "read_everything")
+
+    def test_read_everything_reads_the_dashboard_with_memory(self):
+        result = self.agent.request_task("read everything inside my dashboard", self.company.id)
+        self.assertEqual(result["status"], "complete")
+        titles = [section["title"] for section in result["sections"]]
+        self.assertIn("Memory", titles)
+        for section in result["sections"]:
+            self.assertTrue(section["lines"])
+            for line in section["lines"]:
+                self.assertIsInstance(line, str)
+        for link in result["links"]:
+            self.assertIn("url", link)
+        self.assertTrue(result["as_of"])
+
+    def test_read_everything_respects_company_and_role_scope(self):
+        with self.assertRaises(AccessError):
+            self.agent.request_task("read everything", self.other_company.id)
+        reader = self.env["thirdcode.orvexa"].with_user(self.reader)
+        result = reader.request_task("read everything", self.company.id)
+        self.assertEqual(result["status"], "complete")

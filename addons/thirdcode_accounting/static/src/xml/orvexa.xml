@@ -21,7 +21,7 @@
                 <div class="tcsi-orvexa-transcript" t-ref="transcript" role="log" aria-label="Conversation with ORVEXA" aria-live="polite" aria-relevant="additions">
                     <article class="tcsi-orvexa-message tcsi-orvexa-message-assistant">
                         <strong>ORVEXA</strong>
-                        <p>Hello! I can look up invoices, show overdue balances and recent activity, or prepare a draft invoice for your review. What would you like to do?</p>
+                        <p>Hello! I can read everything in your dashboard, look up invoices, show overdue balances and recent activity, or prepare a draft invoice for your review. What would you like to do?</p>
                         <small>I use supported commands, not a general AI model. Each request should include the details it needs.</small>
                     </article>
                     <article t-foreach="state.messages" t-as="message" t-key="message.id" t-att-class="'tcsi-orvexa-message tcsi-orvexa-message-' + message.role">
@@ -45,6 +45,19 @@
                         </ul>
                         <p t-if="result.records &amp;&amp; !result.records.length">No matching invoices.</p>
                         <p t-if="result.has_more">More matches exist. Narrow your search.</p>
+                        <div t-if="result.sections" class="tcsi-orvexa-read">
+                            <section t-foreach="result.sections" t-as="section" t-key="section_index">
+                                <strong t-esc="section.title"/>
+                                <ul>
+                                    <li t-foreach="section.lines" t-as="line" t-key="line_index" t-esc="line"/>
+                                </ul>
+                            </section>
+                            <ul t-if="result.links" class="tcsi-orvexa-read-links">
+                                <li t-foreach="result.links" t-as="link" t-key="link_index">
+                                    <a t-att-href="link.url" t-esc="link.name"/>
+                                </li>
+                            </ul>
+                        </div>
                         <t t-if="result.events">
                             <p t-esc="result.scope"/>
                             <ul><li t-foreach="result.events" t-as="event" t-key="event.id"><a t-att-href="event.url" t-esc="event.name"/> · <t t-esc="event.event"/> by <t t-esc="event.by"/> · <t t-esc="event.at"/> UTC</li></ul>
@@ -55,12 +68,13 @@
                     <p t-if="state.busy" role="status" class="tcsi-orvexa-working">ORVEXA is working…</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap mb-3">
+                    <button class="btn btn-outline-secondary" t-on-click="() => this.example('read everything in my dashboard')">Read everything</button>
                     <button class="btn btn-outline-secondary" t-on-click="() => this.example('show overdue invoices')">Overdue invoices</button>
                     <button class="btn btn-outline-secondary" t-on-click="() => this.example('show recent activity')">Recent activity</button>
                 </div>
                 <form t-on-submit.prevent="submit" class="tcsi-orvexa-composer mb-3">
                     <label for="orvexa-request">Message ORVEXA</label>
-                    <textarea id="orvexa-request" t-ref="input" t-model="state.message" t-on-keydown="onKeydown" class="form-control" rows="2" maxlength="2000" required="required" t-att-disabled="state.busy || state.result?.status === 'confirmation_required'" placeholder="e.g. show overdue invoices" aria-describedby="orvexa-help"/>
+                    <textarea id="orvexa-request" t-ref="input" t-model="state.message" t-on-keydown="onKeydown" class="form-control" rows="2" maxlength="2000" required="required" t-att-disabled="state.busy || state.result?.status === 'confirmation_required'" placeholder="e.g. read everything in my dashboard" aria-describedby="orvexa-help"/>
                     <small id="orvexa-help">Enter to send · Shift+Enter for a new line. Review or cancel a pending proposal before sending another request.</small>
                     <button type="submit" class="btn btn-primary d-block mt-2" t-att-disabled="state.busy || !state.message.trim() || state.result?.status === 'confirmation_required'">
                         <t t-if="state.busy">Working…</t><t t-else="">Send message</t>

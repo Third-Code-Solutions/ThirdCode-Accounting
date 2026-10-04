@@ -6,6 +6,7 @@ from .write_tokens import BANK_STATEMENT_SYNC_TOKEN
 
 _RECONCILIATION_METADATA_TOKEN = object()
 _REVERSAL_METADATA_TOKEN = object()
+_STATE_TRANSITION_TOKEN = object()
 
 
 class AccountMove(models.Model):
@@ -128,6 +129,11 @@ class AccountMove(models.Model):
             and protected_fields <= {"currency_id", "journal_id", "line_ids", "partner_id"}
             and all(move.sudo().statement_line_ids for move in self)
         )
+        state_transition_write = (
+            self.env.context.get("thirdcode_state_transition_token")
+            is _STATE_TRANSITION_TOKEN
+            and protected_fields <= {"state", "auto_post", "sending_data"}
+        )
         if (
             protected_fields
             and any(move.state == "posted" for move in self)
@@ -135,6 +141,7 @@ class AccountMove(models.Model):
             and not reconciliation_metadata_write
             and not reversal_metadata_write
             and not bank_statement_sync_write
+            and not state_transition_write
         ):
             raise UserError(
                 _(
@@ -152,9 +159,28 @@ class AccountMove(models.Model):
     def unlink(self):
         if any(move.state == "posted" for move in self):
             raise UserError(
-                _("Posted accounting entries cannot be deleted. Use a supported reversal instead.")
+                _(
+                    "Posted accounting entries cannot be deleted. Cancel the entry "
+                    "or use a supported reversal instead."
+                )
             )
         return super().unlink()
+
+    def button_draft(self):
+        # Reset-to-draft and cancellation are the sanctioned ways out of
+        # posted (cancel runs through reset-to-draft first internally). The
+        # token lets exactly those state transitions through the
+        # posted-immutability guard without opening direct field edits.
+        return super(
+            AccountMove,
+            self.with_context(thirdcode_state_transition_token=_STATE_TRANSITION_TOKEN),
+        ).button_draft()
+
+    def button_cancel(self):
+        return super(
+            AccountMove,
+            self.with_context(thirdcode_state_transition_token=_STATE_TRANSITION_TOKEN),
+        ).button_cancel()
 
     def action_post(self):
         if self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder"):

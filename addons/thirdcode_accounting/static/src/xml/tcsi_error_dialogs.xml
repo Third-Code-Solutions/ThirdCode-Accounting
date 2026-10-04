@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="thirdcode_accounting.SessionExpiredBranding" t-inherit="web.SessionExpiredDialog">
+        <xpath expr="//Dialog" position="attributes">
+            <attribute name="title.translate">TCSI Session Expired</attribute>
+        </xpath>
+        <xpath expr="//div[@role='alert']/p" position="replace">
+            <p class="text-prewrap">
+                Your TCSI session expired. The current page is about to be refreshed.
+            </p>
+        </xpath>
+    </t>
+</templates>
