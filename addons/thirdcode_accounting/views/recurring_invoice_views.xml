@@ -28,7 +28,7 @@
                     <field name="active" widget="boolean_toggle"/>
                 </header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Document details" class="tcsi-form-section">
                             <field name="name"/>
                             <field name="reference"/>
@@ -46,7 +46,7 @@
                             <field name="last_run" readonly="1"/>
                             <field name="narration"/>
                         </group>
-                    </group>
+                    </div>
                     <notebook>
                         <page string="Invoice lines">
                             <field name="line_ids">

@@ -14,6 +14,30 @@ class ResCompany(models.Model):
         string="BIR control number approved",
         copy=False,
     )
+    thirdcode_trial_mode = fields.Boolean(
+        string="Trial mode (no legal approvals required)",
+        copy=False,
+        help="Free-trial / personal use only. While enabled, invoice, receipt and "
+             "report output is allowed without BIR control numbers or approved client "
+             "samples, and prints carry a TRIAL COPY marking instead of being blocked. "
+             "Do not use this mode for official statutory documents.",
+    )
+    thirdcode_platform_status = fields.Selection(
+        [
+            ("trial", "Trial"),
+            ("active", "Active"),
+            ("suspended", "Suspended"),
+        ],
+        string="Platform status",
+        default="trial",
+        copy=False,
+        help="Lifecycle state in the platform console: trial window, converted "
+             "(active, watermarks off), or suspended (users disabled).",
+    )
+    thirdcode_trial_start = fields.Date(string="Trial start", copy=False)
+    thirdcode_trial_end = fields.Date(string="Trial end", copy=False)
+    thirdcode_suspended_from_status = fields.Char(string="Status before suspension", copy=False)
+    thirdcode_suspended_user_ids = fields.Text(string="Users deactivated by suspension", copy=False)
     thirdcode_eis_status = fields.Selection(
         [
             ("assessment_required", "Coverage assessment required"),
@@ -98,6 +122,27 @@ class ResCompany(models.Model):
                         "A BIR acknowledgement control number is required before marking the certificate approved."
                     )
                 )
+
+    def _thirdcode_receipt_sequence(self):
+        """Return the receipt numbering sequence for this company (created if missing)."""
+        self.ensure_one()
+        sequence_model = self.env["ir.sequence"].sudo()
+        sequence = sequence_model.search(
+            [("code", "=", "thirdcode.official.receipt"), ("company_id", "=", self.id)],
+            limit=1,
+        )
+        if not sequence:
+            template = self.env.ref(
+                "thirdcode_accounting.seq_thirdcode_official_receipt"
+            ).sudo()
+            sequence = template.copy(
+                {
+                    "name": "%s - %s" % (template.name, self.display_name),
+                    "company_id": self.id,
+                    "number_next": 1,
+                }
+            )
+        return sequence
 
     def action_validate_thirdcode_configuration(self):
         if not (

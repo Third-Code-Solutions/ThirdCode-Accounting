@@ -65,3 +65,159 @@ test("rendered internal links are branded without changing external links or rep
     assert.equal(anchors[2].href, "https://outside.example/odoo");
     assert.equal(anchors[3].pathname, "/odoo-other");
 });
+
+function createRouteHeaderHarness() {
+    let textWrites = 0;
+    function createElement(tagName) {
+        let text = "";
+        return {
+            tagName,
+            className: "",
+            dataset: {},
+            children: [],
+            parentNode: null,
+            get textContent() { return text; },
+            set textContent(value) { text = value; textWrites++; },
+            get firstChild() { return this.children[0] || null; },
+            get firstElementChild() { return this.firstChild; },
+            matches(selector) {
+                return selector.split(",").some((part) => this.className.split(/\s+/).includes(part.trim().slice(1)));
+            },
+            querySelector(selector) {
+                const direct = selector.startsWith(":scope > ");
+                const match = direct ? selector.slice(9) : selector;
+                for (const child of this.children) {
+                    if (child.matches(match)) return child;
+                    if (!direct) {
+                        const nested = child.querySelector(match);
+                        if (nested) return nested;
+                    }
+                }
+                return null;
+            },
+            append(child) { child.parentNode = this; this.children.push(child); },
+            insertBefore(child, next) {
+                child.parentNode = this;
+                const index = next ? this.children.indexOf(next) : this.children.length;
+                assert.notEqual(index, -1, "insertion target must belong to action");
+                this.children.splice(index, 0, child);
+            },
+            remove() {
+                if (!this.parentNode) return;
+                const siblings = this.parentNode.children;
+                siblings.splice(siblings.indexOf(this), 1);
+                this.parentNode = null;
+            },
+        };
+    }
+    const manager = createElement("main");
+    const action = createElement("section");
+    action.className = "o_action";
+    const panel = createElement("div");
+    panel.className = "o_control_panel";
+    action.append(panel);
+    manager.append(action);
+    const context = { document: { createElement } };
+    const start = source.indexOf("function ensureNativeRouteHeader(");
+    const end = source.indexOf("function brandNativeChrome(", start);
+    runInNewContext(source.slice(start, end), context);
+    return {
+        manager, action, panel,
+        update: (details) => context.ensureNativeRouteHeader(manager, details),
+        get header() { return action.querySelector(":scope > .tcsi-native-route-header"); },
+        get textWrites() { return textWrites; },
+    };
+}
+
+const invoiceRoute = {
+    key: "invoices", view: "list", eyebrow: "REVENUE OPERATIONS",
+    title: "Invoices", description: "Track invoices and payment status.",
+};
+
+test("reused native controller updates route copy without duplicating its header", () => {
+    const ui = createRouteHeaderHarness();
+    ui.update(invoiceRoute);
+    const header = ui.header;
+    assert.ok(header);
+    assert.equal(ui.action.children[0], header);
+    assert.equal(ui.action.children[1], ui.panel);
+
+    ui.update({
+        key: "vendor bills", view: "list", eyebrow: "SPEND OPERATIONS",
+        title: "Vendor bills", description: "Review supplier costs and due dates.",
+    });
+    assert.equal(ui.header, header, "navigation should reuse the existing header");
+    assert.equal(ui.action.children.length, 2);
+    assert.equal(header.dataset.tcsiRouteKey, "vendor bills");
+    assert.equal(header.querySelector(".tcsi-native-route-eyebrow").textContent, "SPEND OPERATIONS");
+    assert.equal(header.querySelector(".tcsi-native-route-title").textContent, "Vendor bills");
+    assert.equal(header.querySelector(".tcsi-native-route-description").textContent, "Review supplier costs and due dates.");
+});
+
+test("unchanged route copy avoids repeated text mutations and missing copy hides stale content", () => {
+    const ui = createRouteHeaderHarness();
+    ui.update(invoiceRoute);
+    const initialWrites = ui.textWrites;
+    assert.equal(initialWrites, 3);
+    ui.update({ ...invoiceRoute });
+    ui.update({ ...invoiceRoute });
+    assert.equal(ui.textWrites, initialWrites);
+
+    ui.update({ key: "records", view: "list", title: "Records" });
+    const eyebrow = ui.header.querySelector(".tcsi-native-route-eyebrow");
+    const description = ui.header.querySelector(".tcsi-native-route-description");
+    assert.equal(eyebrow.textContent, "");
+    assert.equal(description.textContent, "");
+    assert.equal(eyebrow.hidden, true);
+    assert.equal(description.hidden, true);
+    ui.update(invoiceRoute);
+    assert.equal(eyebrow.hidden, false);
+    assert.equal(description.hidden, false);
+});
+
+for (const [name, view, className] of [
+    ["record forms", "form", ""],
+    ["custom dashboards", "list", "tcsi-dashboard"],
+    ["application catalogs", "kanban", "tcsi-app-catalog"],
+    ["Discuss", "list", "o-mail-Discuss"],
+    ["settings", "list", "o_base_settings_view"],
+]) {
+    test(`navigation to ${name} removes a reused native route header`, () => {
+        const ui = createRouteHeaderHarness();
+        ui.update(invoiceRoute);
+        const previousHeader = ui.header;
+        ui.action.className = `o_action ${className}`;
+        ui.update({ ...invoiceRoute, view });
+        assert.equal(ui.header, null);
+        assert.equal(previousHeader.parentNode, null);
+        assert.deepEqual(ui.action.children, [ui.panel]);
+        ui.update({ ...invoiceRoute, view });
+        assert.equal(ui.header, null, "excluded views must not recreate the header");
+    });
+}
+
+test("native form titles prefer the actual record heading over the field label", () => {
+    const context = {
+        window: { location: { pathname: "/workspace/action-411/res.company/1" } },
+        brandedLabel: (label) => label,
+    };
+    const start = source.indexOf("const ROUTE_PATH_TITLES");
+    const end = source.indexOf("function getNativeView(", start);
+    runInNewContext(source.slice(start, end), context);
+    let heading = "  Third Code\nSolutions Inc.  ";
+    let breadcrumb = "FY 2026";
+    const manager = {
+        querySelector(selector) {
+            if (selector === ".o_form_view") return {};
+            if (selector === ".o_form_view .oe_title .o_form_label") return { textContent: "Company Name" };
+            if (selector.startsWith(".o_form_view .o_form_sheet h1")) return heading ? { textContent: heading } : null;
+            if (selector.startsWith(".o_control_panel")) return { textContent: breadcrumb };
+            return null;
+        },
+    };
+    assert.equal(context.getNativeRouteTitle(manager), "Third Code Solutions Inc.");
+    heading = "";
+    assert.equal(context.getNativeRouteTitle(manager), "FY 2026", "breadcrumb precedes a generic field label");
+    breadcrumb = "";
+    assert.equal(context.getNativeRouteTitle(manager), "Company Name", "field label remains a final fallback");
+});

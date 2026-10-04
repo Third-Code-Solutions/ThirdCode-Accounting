@@ -7,30 +7,36 @@ import { accountingOrigin } from "../../../lib/accounting-routes";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** Probes must not hold the endpoint open; both dependencies are checked together. */
+const probeTimeoutMs = 2500;
+
+async function reachable(url: string, init: RequestInit): Promise<boolean> {
+  try {
+    const response = await fetch(url, {
+      ...init,
+      cache: "no-store",
+      signal: AbortSignal.timeout(probeTimeoutMs),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET() {
   const env = getPublicEnv();
   const pilotPortal = isPilotPortal();
-  const supabaseAuth = env.supabaseConfigured ? await (async () => {
-    try {
-      const response = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, {
-        headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-        cache: "no-store", signal: AbortSignal.timeout(5000),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  })() : false;
-  const accountingEngine = pilotPortal ? await (async () => {
-    try {
-      const response = await fetch(`${accountingOrigin}/web/login`, {
-        cache: "no-store", redirect: "manual", signal: AbortSignal.timeout(5000),
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  })() : null;
+  const [supabaseAuth, accountingEngine] = await Promise.all([
+    env.supabaseConfigured
+      ? reachable(`${env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, {
+          headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+        })
+      : Promise.resolve(false),
+    pilotPortal
+      ? reachable(`${accountingOrigin}/web/login`, { redirect: "manual" })
+      : Promise.resolve(null),
+  ]);
+
   const ready = supabaseAuth && (!pilotPortal || accountingEngine === true);
   const body = {
     status: ready ? "ready" : "dependency_unavailable",

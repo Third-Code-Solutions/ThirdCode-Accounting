@@ -706,242 +706,7 @@
     }
 }
 
-// TCSI dashboard finish -----------------------------------------------------
-// Keep the dashboard data-dense and calm: the strongest contrast is reserved
-// for the current cash position and actionable work, not for decorative cards.
-body.tcsi-shell-active .tcsi-dashboard {
-    --tcsi-dashboard-ink: #16212b;
-    --tcsi-dashboard-muted: #64717c;
-    --tcsi-dashboard-line: #dce3e8;
-    --tcsi-dashboard-surface: #fff;
-    max-width: 1560px;
-    padding-top: clamp(30px, 4vw, 52px);
-    background: #f0f3f5;
-
-    .tcsi-dashboard-heading h1 {
-        font-size: clamp(32px, 4vw, 50px);
-        letter-spacing: -.065em;
-    }
-
-    .tcsi-dashboard-heading p {
-        color: #64717c;
-    }
-
-    .tcsi-dashboard-kicker,
-    .tcsi-kpi-label,
-    .tcsi-panel-eyebrow {
-        color: #5d31c7;
-    }
-
-    .tcsi-dashboard-context {
-        min-height: 50px;
-        margin-bottom: 20px;
-        padding: 0 2px 13px;
-        border-bottom: 1px solid #dce3e8;
-    }
-
-    .tcsi-dashboard-context strong,
-    .tcsi-kpi-card strong,
-    .tcsi-panel-header h2,
-    .tcsi-attention-copy strong,
-    .tcsi-recent-copy strong,
-    .tcsi-quick-action > span:nth-child(2) strong {
-        color: #16212b;
-    }
-
-    .tcsi-kpi-grid {
-        gap: 14px;
-        margin-bottom: 22px;
-    }
-
-    .tcsi-kpi-card {
-        min-height: 132px;
-        padding: 20px 19px;
-        background: #fff;
-        border-color: #dce3e8;
-        border-radius: 12px;
-        box-shadow: 0 7px 18px rgba(28, 43, 56, .035);
-    }
-
-    .tcsi-kpi-card:hover {
-        border-color: #b9a8d9;
-        box-shadow: 0 13px 28px rgba(28, 43, 56, .08);
-    }
-
-    .tcsi-kpi-card-primary {
-        background: #182532;
-        border-color: #182532;
-        box-shadow: 0 12px 26px rgba(24, 37, 50, .15);
-    }
-
-    .tcsi-kpi-card-primary strong {
-        color: #fff;
-    }
-
-    .tcsi-dashboard-panel {
-        padding: 24px;
-        background: #fff;
-        border-color: #dce3e8;
-        border-radius: 13px;
-        box-shadow: 0 7px 18px rgba(28, 43, 56, .035);
-    }
-
-    .tcsi-dashboard-content-grid {
-        gap: 20px;
-        margin-bottom: 20px;
-    }
-
-    .tcsi-chart-gridline {
-        background: #e8edf0;
-    }
-
-    .tcsi-legend-sales,
-    .tcsi-bar-sales {
-        background: #5d31c7;
-    }
-
-    .tcsi-legend-costs,
-    .tcsi-bar-costs {
-        background: #aebbc4;
-    }
-
-    .tcsi-attention-item,
-    .tcsi-recent-row,
-    .tcsi-quick-action {
-        border-bottom-color: #edf1f3;
-    }
-
-    .tcsi-attention-item:hover,
-    .tcsi-attention-item:focus-visible,
-    .tcsi-recent-row:hover,
-    .tcsi-recent-row:focus-visible,
-    .tcsi-quick-action:hover,
-    .tcsi-quick-action:focus-visible {
-        background: #f7f8fa;
-    }
-
-    .tcsi-text-button {
-        color: #5d31c7;
-    }
-
-    .tcsi-dashboard-error {
-        border-color: #dce3e8;
-        border-radius: 13px;
-        box-shadow: 0 7px 18px rgba(28, 43, 56, .035);
-    }
-}
-
-@media (max-width: 720px) {
-    body.tcsi-shell-active .tcsi-dashboard {
-        padding-top: 24px;
-
-        .tcsi-dashboard-context {
-            padding-bottom: 12px;
-        }
-    }
-}
-
-// Enterprise dashboard surface ---------------------------------------------
-// A restrained, data-dense layout inspired by mature infrastructure consoles:
-// neutral surfaces, compact hierarchy, and one deliberate action accent.
-body.tcsi-shell-active.tcsi-route-dashboard {
-    --tcsi-dashboard-accent: #6b48d8;
-    --tcsi-dashboard-accent-deep: #5130b3;
-    --tcsi-dashboard-accent-soft: #f1edff;
-    --tcsi-dashboard-ink: #1d2a34;
-    --tcsi-dashboard-muted: #64727d;
-    --tcsi-dashboard-subtle: #8c98a1;
-    --tcsi-dashboard-line: #d9e1e6;
-    --tcsi-dashboard-surface: #ffffff;
-
-    .tcsi-workspace-sidebar {
-        color: #dfe7ec;
-        background: #1b2731;
-        border-right-color: #2b3a46;
-        box-shadow: 8px 0 24px rgba(18, 29, 39, .10);
-    }
-
-    .tcsi-sidebar-brand small,
-    .tcsi-sidebar-section-label {
-        color: #91a0aa;
-    }
-
-    .tcsi-sidebar-collapse,
-    .tcsi-sidebar-mobile-toggle {
-        color: #aebbc4;
-        border-color: rgba(255, 255, 255, .15);
-    }
-
-    .tcsi-sidebar-app-switcher {
-        background: #24333e;
-        border-color: #344652;
-
-        &:hover,
-        &:focus-visible,
-        &[aria-expanded="true"] {
-            background: #2a3b47;
-            border-color: #5b707e;
-        }
-    }
-
-    .tcsi-sidebar-app-switcher-icon,
-    .tcsi-app-switcher-icon {
-        color: #b4a4eb;
-        background: rgba(107, 72, 216, .14);
-    }
-
-    .tcsi-sidebar-app-copy small,
-    .tcsi-sidebar-chevron {
-        color: #9aaab4;
-    }
-
-    .tcsi-sidebar-link,
-    .tcsi-sidebar-group-title {
-        color: #b7c4cc;
-
-        &:hover,
-        &:focus-visible,
-        &.is-active {
-            color: #fff;
-            background: #2a3a46;
-        }
-
-        &.is-active::before {
-            background: var(--tcsi-dashboard-accent);
-        }
-    }
-
-    .tcsi-sidebar-icon,
-    .tcsi-sidebar-link:hover .tcsi-sidebar-icon,
-    .tcsi-sidebar-link:focus-visible .tcsi-sidebar-icon,
-    .tcsi-sidebar-link.is-active .tcsi-sidebar-icon,
-    .tcsi-sidebar-group-title:hover .tcsi-sidebar-icon,
-    .tcsi-sidebar-group[open] > .tcsi-sidebar-group-title .tcsi-sidebar-icon {
-        color: #d6e0e6;
-    }
-
-    .tcsi-sidebar-footer {
-        color: #8fa0aa;
-        border-top-color: #30404c;
-    }
-
-    .tcsi-app-switcher-list {
-        background: #24333e;
-        border-color: #40515d;
-    }
-
-    .tcsi-app-switcher-item {
-        color: #b7c4cc;
-
-        &:hover,
-        &:focus-visible,
-        &.is-current {
-            color: #fff;
-            background: #2e414d;
-        }
-    }
-}
-
+// Dashboard layout and data components. Shared shell owns navigation.
 body.tcsi-shell-active .tcsi-dashboard {
     max-width: 1440px;
     min-height: calc(100dvh - 64px);
@@ -1531,561 +1296,6 @@ body.tcsi-shell-active .tcsi-dashboard {
     }
 }
 
-// Keep the dashboard rail on the same light navigation system as every other
-// TCSI workspace route. This follows the dashboard-specific accent rules above
-// without reintroducing a separate dark navigation theme.
-body.tcsi-shell-active.tcsi-route-dashboard {
-    .tcsi-workspace-sidebar {
-        color: #1d2730;
-        background: #fff;
-        border-right-color: #e2e6e9;
-        box-shadow: none;
-    }
-
-    .tcsi-sidebar-brand small,
-    .tcsi-sidebar-section-label,
-    .tcsi-sidebar-app-copy small,
-    .tcsi-sidebar-chevron {
-        color: #68757e;
-    }
-
-    .tcsi-sidebar-collapse,
-    .tcsi-sidebar-mobile-toggle {
-        color: #68757e;
-        border-color: transparent;
-
-        &:hover,
-        &:focus-visible {
-            color: #1d2730;
-            background: #f3f5f6;
-            border-color: transparent;
-        }
-    }
-
-    .tcsi-sidebar-app-switcher {
-        color: #1d2730;
-        background: #fff;
-        border-color: #e2e6e9;
-
-        &:hover,
-        &:focus-visible,
-        &[aria-expanded="true"] {
-            background: #f3f5f6;
-            border-color: #cbd4d9;
-        }
-    }
-
-    .tcsi-sidebar-app-switcher-icon {
-        color: #5f42b6;
-        background: #f1edff;
-    }
-
-    .tcsi-sidebar-app-copy strong {
-        color: #1d2730;
-    }
-
-    .tcsi-sidebar-link,
-    .tcsi-sidebar-group-title {
-        color: #2c3942;
-
-        &:hover,
-        &:focus-visible,
-        &.is-active {
-            color: #18232b;
-            background: #f3f5f6;
-        }
-
-        &.is-active::before {
-            background: #6b48d8;
-        }
-    }
-
-    .tcsi-sidebar-icon,
-    .tcsi-sidebar-link:hover .tcsi-sidebar-icon,
-    .tcsi-sidebar-link:focus-visible .tcsi-sidebar-icon,
-    .tcsi-sidebar-link.is-active .tcsi-sidebar-icon,
-    .tcsi-sidebar-group-title:hover .tcsi-sidebar-icon,
-    .tcsi-sidebar-group[open] > .tcsi-sidebar-group-title .tcsi-sidebar-icon {
-        color: #75828b;
-    }
-
-    .tcsi-sidebar-link.is-active .tcsi-sidebar-icon {
-        color: #6b48d8;
-    }
-
-    .tcsi-sidebar-footer {
-        color: #78858e;
-        border-top-color: #e2e6e9;
-    }
-
-    .tcsi-app-switcher-list {
-        background: #fff;
-        border-color: #e2e6e9;
-        box-shadow: 0 12px 24px rgba(31, 45, 55, .12);
-    }
-
-    .tcsi-app-switcher-item {
-        color: #46535c;
-
-        &:hover,
-        &:focus-visible,
-        &.is-current {
-            color: #1d2730;
-            background: #f3f5f6;
-        }
-    }
-}
-
-// TCSI Cloudrail dashboard -------------------------------------------------
-// The dashboard shares the same neutral console surfaces as lists, forms,
-// contacts, and discussions. Purple is reserved for primary action, focus,
-// selected data, and small navigation signals.
-body.tcsi-shell-active.tcsi-route-dashboard {
-    --tcsi-dashboard-accent: #6b48d8;
-    --tcsi-dashboard-accent-deep: #5130b3;
-    --tcsi-dashboard-accent-soft: #f1edff;
-    --tcsi-dashboard-ink: #17232c;
-    --tcsi-dashboard-muted: #64727c;
-    --tcsi-dashboard-subtle: #8b98a1;
-    --tcsi-dashboard-line: #dfe6ea;
-    --tcsi-dashboard-surface: #ffffff;
-    --tcsi-dashboard-page: #fbfbfd;
-
-    .tcsi-workspace-sidebar {
-        color: var(--tcsi-dashboard-ink);
-        background: var(--tcsi-dashboard-surface);
-        border-right-color: var(--tcsi-dashboard-line);
-        box-shadow: none;
-    }
-
-    .tcsi-sidebar-brand small,
-    .tcsi-sidebar-section-label,
-    .tcsi-sidebar-app-copy small,
-    .tcsi-sidebar-chevron {
-        color: var(--tcsi-dashboard-subtle);
-    }
-
-    .tcsi-sidebar-app-switcher {
-        color: var(--tcsi-dashboard-ink);
-        background: var(--tcsi-dashboard-surface);
-        border-color: var(--tcsi-dashboard-line);
-
-        &:hover,
-        &:focus-visible,
-        &[aria-expanded="true"] {
-            background: #f8fafb;
-            border-color: #cbd5db;
-        }
-    }
-
-    .tcsi-sidebar-app-switcher-icon,
-    .tcsi-app-switcher-icon {
-        color: var(--tcsi-dashboard-accent);
-        background: var(--tcsi-dashboard-accent-soft);
-    }
-
-    .tcsi-sidebar-app-copy strong {
-        color: var(--tcsi-dashboard-ink);
-    }
-
-    .tcsi-sidebar-link,
-    .tcsi-sidebar-group-title {
-        color: #33424b;
-
-        &:hover,
-        &:focus-visible,
-        &.is-active {
-            color: var(--tcsi-dashboard-ink);
-            background: var(--tcsi-dashboard-accent-soft);
-        }
-
-        &.is-active::before {
-            background: var(--tcsi-dashboard-accent);
-        }
-    }
-
-    .tcsi-sidebar-icon,
-    .tcsi-sidebar-link:hover .tcsi-sidebar-icon,
-    .tcsi-sidebar-link:focus-visible .tcsi-sidebar-icon,
-    .tcsi-sidebar-group-title:hover .tcsi-sidebar-icon {
-        color: #7c8992;
-    }
-
-    .tcsi-sidebar-link.is-active .tcsi-sidebar-icon {
-        color: var(--tcsi-dashboard-accent);
-    }
-
-    .tcsi-sidebar-footer {
-        color: var(--tcsi-dashboard-subtle);
-        border-top-color: var(--tcsi-dashboard-line);
-    }
-
-    .tcsi-app-switcher-list {
-        background: var(--tcsi-dashboard-surface);
-        border-color: var(--tcsi-dashboard-line);
-        box-shadow: 0 8px 24px rgba(27, 43, 54, .10);
-    }
-
-    .tcsi-app-switcher-item {
-        color: #46545e;
-
-        &:hover,
-        &:focus-visible,
-        &.is-current {
-            color: var(--tcsi-dashboard-ink);
-            background: var(--tcsi-dashboard-accent-soft);
-        }
-    }
-}
-
-body.tcsi-shell-active .tcsi-dashboard {
-    max-width: 1440px;
-    min-height: calc(100dvh - 56px);
-    padding: 28px 40px 64px;
-    color: var(--tcsi-dashboard-ink);
-    background: var(--tcsi-dashboard-page);
-
-    .tcsi-dashboard-header {
-        align-items: flex-end;
-        gap: 24px;
-        margin-bottom: 18px;
-    }
-
-    .tcsi-dashboard-heading {
-        max-width: 760px;
-
-        h1 {
-            margin: 8px 0 6px;
-            color: var(--tcsi-dashboard-ink);
-            font-size: 34px;
-            font-weight: 720;
-            letter-spacing: -.045em;
-            line-height: 1.05;
-        }
-
-        p {
-            max-width: 62ch;
-            color: var(--tcsi-dashboard-muted);
-            font-size: 13px;
-            line-height: 1.55;
-        }
-    }
-
-    .tcsi-dashboard-breadcrumb {
-        color: var(--tcsi-dashboard-subtle);
-        font-size: 11px;
-
-        strong {
-            color: var(--tcsi-dashboard-ink);
-        }
-    }
-
-    .tcsi-dashboard-header-actions {
-        gap: 8px;
-    }
-
-    .tcsi-reporting-window,
-    .tcsi-icon-button {
-        background: var(--tcsi-dashboard-surface);
-        border-color: var(--tcsi-dashboard-line);
-        border-radius: 6px;
-        box-shadow: none;
-    }
-
-    .tcsi-reporting-window {
-        min-width: 132px;
-        padding: 0 13px;
-
-        span {
-            color: var(--tcsi-dashboard-subtle);
-        }
-
-        strong {
-            color: var(--tcsi-dashboard-ink);
-        }
-    }
-
-    .tcsi-icon-button {
-        width: 40px;
-        min-height: 40px;
-        color: var(--tcsi-dashboard-muted);
-
-        &:hover,
-        &:focus-visible {
-            color: var(--tcsi-dashboard-accent);
-            border-color: var(--tcsi-dashboard-accent);
-            box-shadow: 0 0 0 3px rgba(107, 72, 216, .09);
-        }
-    }
-
-    .tcsi-dashboard-primary {
-        min-height: 40px;
-        padding: 0 15px;
-        color: #fff;
-        background: var(--tcsi-dashboard-accent);
-        border-color: var(--tcsi-dashboard-accent);
-        border-radius: 6px;
-        box-shadow: none;
-
-        &:hover,
-        &:focus-visible {
-            background: var(--tcsi-dashboard-accent-deep);
-            border-color: var(--tcsi-dashboard-accent-deep);
-            box-shadow: 0 6px 14px rgba(81, 48, 179, .16);
-        }
-    }
-
-    .tcsi-dashboard-statusbar {
-        min-height: 60px;
-        margin-bottom: 18px;
-        padding: 10px 14px;
-        background: var(--tcsi-dashboard-surface);
-        border: 1px solid var(--tcsi-dashboard-line);
-        border-radius: 7px;
-        box-shadow: none;
-    }
-
-    .tcsi-workspace-mark {
-        background: var(--tcsi-dashboard-accent-soft);
-        border-color: var(--tcsi-dashboard-accent-soft);
-        border-radius: 6px;
-    }
-
-    .tcsi-workspace-identity {
-        small {
-            color: var(--tcsi-dashboard-subtle);
-        }
-
-        strong {
-            color: var(--tcsi-dashboard-ink);
-        }
-    }
-
-    .tcsi-dashboard-status-meta {
-        color: var(--tcsi-dashboard-subtle);
-    }
-
-    .tcsi-live-dot,
-    .tcsi-status-dot {
-        background: #2f9d7c;
-        box-shadow: 0 0 0 3px rgba(47, 157, 124, .12);
-    }
-
-    .tcsi-dashboard-summary-grid,
-    .tcsi-dashboard-content-grid {
-        gap: 16px;
-        margin-bottom: 16px;
-    }
-
-    .tcsi-dashboard-panel {
-        padding: 22px;
-        background: var(--tcsi-dashboard-surface);
-        border: 1px solid var(--tcsi-dashboard-line);
-        border-radius: 8px;
-        box-shadow: none;
-    }
-
-    .tcsi-panel-header {
-        margin-bottom: 18px;
-
-        h2 {
-            color: var(--tcsi-dashboard-ink);
-            font-size: 16px;
-            font-weight: 680;
-        }
-    }
-
-    .tcsi-panel-eyebrow,
-    .tcsi-kpi-label {
-        color: var(--tcsi-dashboard-accent);
-    }
-
-    .tcsi-panel-note {
-        color: var(--tcsi-dashboard-subtle);
-    }
-
-    .tcsi-balance-panel {
-        min-height: 212px;
-        color: var(--tcsi-dashboard-ink);
-        background: var(--tcsi-dashboard-surface);
-        border-color: var(--tcsi-dashboard-line);
-        border-left: 1px solid var(--tcsi-dashboard-line);
-        box-shadow: none;
-
-        .tcsi-panel-header h2,
-        .tcsi-balance-value {
-            color: var(--tcsi-dashboard-ink);
-        }
-
-        .tcsi-panel-eyebrow {
-            color: var(--tcsi-dashboard-accent);
-        }
-
-        > p {
-            color: var(--tcsi-dashboard-muted);
-        }
-    }
-
-    .tcsi-panel-status {
-        color: var(--tcsi-dashboard-muted);
-        background: var(--tcsi-dashboard-accent-soft);
-        border-color: var(--tcsi-dashboard-accent-soft);
-    }
-
-    .tcsi-balance-footer {
-        color: var(--tcsi-dashboard-subtle);
-        border-top-color: var(--tcsi-dashboard-line);
-    }
-
-    .tcsi-panel-link,
-    .tcsi-text-button {
-        color: var(--tcsi-dashboard-accent);
-
-        &:hover,
-        &:focus-visible {
-            color: var(--tcsi-dashboard-accent-deep);
-        }
-    }
-
-    .tcsi-snapshot-row {
-        border-bottom-color: #edf1f3;
-
-        strong {
-            color: var(--tcsi-dashboard-ink);
-        }
-
-        small {
-            color: var(--tcsi-dashboard-muted);
-        }
-    }
-
-    .tcsi-chart-legend {
-        color: var(--tcsi-dashboard-muted);
-    }
-
-    .tcsi-legend-sales,
-    .tcsi-bar-sales {
-        background: var(--tcsi-dashboard-accent);
-    }
-
-    .tcsi-legend-costs,
-    .tcsi-bar-costs {
-        background: #9aaab4;
-    }
-
-    .tcsi-chart-gridline {
-        background: #e9eef1;
-    }
-
-    .tcsi-attention-item,
-    .tcsi-recent-row,
-    .tcsi-quick-action {
-        border-bottom-color: #e9eef1;
-
-        &:hover,
-        &:focus-visible {
-            background: #fafbfc;
-        }
-    }
-
-    .tcsi-attention-violet,
-    .tcsi-quick-icon-violet,
-    .tcsi-kpi-icon-violet {
-        color: var(--tcsi-dashboard-accent);
-        background: var(--tcsi-dashboard-accent-soft);
-    }
-
-    .tcsi-attention-amber,
-    .tcsi-quick-icon-amber,
-    .tcsi-kpi-icon-amber {
-        color: #8b6b26;
-        background: #fbf5e5;
-    }
-
-    .tcsi-attention-amount svg {
-        stroke: var(--tcsi-dashboard-accent);
-    }
-
-    .tcsi-recent-table-head {
-        color: var(--tcsi-dashboard-subtle);
-        border-bottom-color: var(--tcsi-dashboard-line);
-    }
-
-    .tcsi-recent-avatar {
-        color: var(--tcsi-dashboard-accent);
-        background: var(--tcsi-dashboard-accent-soft);
-    }
-
-    .tcsi-recent-date,
-    .tcsi-recent-total {
-        color: var(--tcsi-dashboard-muted);
-    }
-
-    .tcsi-quick-icon-teal,
-    .tcsi-kpi-icon-teal {
-        color: #2d8278;
-        background: #e8f4f1;
-    }
-
-    .tcsi-dashboard-empty,
-    .tcsi-dashboard-empty-compact {
-        color: var(--tcsi-dashboard-muted);
-        background: var(--tcsi-dashboard-surface);
-        border-color: var(--tcsi-dashboard-line);
-    }
-
-    .tcsi-empty-mark {
-        color: var(--tcsi-dashboard-accent);
-        background: var(--tcsi-dashboard-accent-soft);
-    }
-}
-
-@media (max-width: 1100px) {
-    body.tcsi-shell-active .tcsi-dashboard {
-        padding-right: 24px;
-        padding-left: 24px;
-    }
-}
-
-@media (max-width: 760px) {
-    body.tcsi-shell-active .tcsi-dashboard {
-        padding: 22px 16px 48px;
-
-        .tcsi-dashboard-header {
-            align-items: stretch;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .tcsi-dashboard-heading h1 {
-            font-size: 30px;
-        }
-
-        .tcsi-dashboard-header-actions {
-            width: 100%;
-
-            .tcsi-reporting-window {
-                flex: 1 1 auto;
-            }
-        }
-
-        .tcsi-dashboard-statusbar {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .tcsi-dashboard-status-meta {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .tcsi-dashboard-panel {
-            padding: 18px 16px;
-        }
-    }
-}
-
 // TCSI overview console ----------------------------------------------------
 // The overview is a first-class workspace screen, not a marketing bento
 // board. Keep the information architecture while making the visual rhythm
@@ -2105,7 +1315,13 @@ body.tcsi-shell-active.tcsi-route-dashboard {
 body.tcsi-shell-active .tcsi-dashboard {
     max-width: 1480px;
     min-height: calc(100dvh - 56px);
-    padding: 26px 40px 56px;
+    padding: 24px 32px 48px;
+    font-size: 13px;
+    line-height: 1.5;
+    --tcsi-dashboard-ink: var(--tcsi-route-ink, #1d2b33);
+    --tcsi-dashboard-muted: var(--tcsi-route-muted, #6e7c84);
+    --tcsi-dashboard-line: var(--tcsi-route-line, #e1e7ea);
+    --tcsi-dashboard-surface: var(--tcsi-route-surface, #ffffff);
     color: var(--tcsi-dashboard-ink);
     background: var(--tcsi-dashboard-page) !important;
     background-image: none !important;
@@ -2123,12 +1339,12 @@ body.tcsi-shell-active .tcsi-dashboard {
     }
 
     .tcsi-dashboard-heading h1 {
-        margin: 7px 0 6px;
+        margin: 8px 0;
         color: var(--tcsi-dashboard-ink);
-        font-size: clamp(28px, 3vw, 36px);
-        font-weight: 690;
-        letter-spacing: -.045em;
-        line-height: 1.05;
+        font-size: 24px;
+        font-weight: 650;
+        letter-spacing: -.025em;
+        line-height: 1.25;
     }
 
     .tcsi-dashboard-heading p {
@@ -2158,11 +1374,11 @@ body.tcsi-shell-active .tcsi-dashboard {
 
     .tcsi-reporting-window,
     .tcsi-icon-button {
-        min-height: 38px;
+        min-height: 36px;
     }
 
     .tcsi-icon-button {
-        width: 38px;
+        width: 36px;
         color: var(--tcsi-dashboard-muted);
 
         &:hover,
@@ -2175,11 +1391,11 @@ body.tcsi-shell-active .tcsi-dashboard {
     }
 
     .tcsi-dashboard-primary {
-        min-height: 38px;
+        min-height: 36px;
         color: #fff;
         background: var(--tcsi-dashboard-accent);
         border-color: var(--tcsi-dashboard-accent);
-        border-radius: 5px;
+        border-radius: 6px;
         box-shadow: none;
 
         &:hover,
@@ -2192,9 +1408,9 @@ body.tcsi-shell-active .tcsi-dashboard {
     }
 
     .tcsi-dashboard-statusbar {
-        min-height: 54px;
+        min-height: 56px;
         margin-bottom: 16px;
-        padding: 9px 13px;
+        padding: 12px 16px;
     }
 
     .tcsi-workspace-mark,
@@ -2205,7 +1421,7 @@ body.tcsi-shell-active .tcsi-dashboard {
     .tcsi-kpi-icon-violet {
         color: var(--tcsi-dashboard-accent);
         background: var(--tcsi-dashboard-accent-soft);
-        border-radius: 5px;
+        border-radius: 6px;
     }
 
     .tcsi-dashboard-summary-grid,
@@ -2217,8 +1433,8 @@ body.tcsi-shell-active .tcsi-dashboard {
 
     .tcsi-kpi-card,
     .tcsi-kpi-card-primary {
-        min-height: 126px;
-        padding: 18px;
+        min-height: 124px;
+        padding: 16px;
         color: var(--tcsi-dashboard-ink);
         background: var(--tcsi-dashboard-surface);
         border: 1px solid var(--tcsi-dashboard-line);
@@ -2261,7 +1477,7 @@ body.tcsi-shell-active .tcsi-dashboard {
     }
 
     .tcsi-balance-panel {
-        min-height: 198px;
+        min-height: 200px;
         color: var(--tcsi-dashboard-ink);
         background: var(--tcsi-dashboard-surface);
         border: 1px solid var(--tcsi-dashboard-line);
@@ -2353,6 +1569,69 @@ body.tcsi-shell-active .tcsi-dashboard {
     }
 }
 
+// Shared type scale and stable row padding prevent hover layout shifts.
+body.tcsi-shell-active .tcsi-dashboard {
+    .tcsi-dashboard-content-column { gap: 12px; }
+    .tcsi-dashboard-breadcrumb,
+    .tcsi-panel-note,
+    .tcsi-chart-legend,
+    .tcsi-panel-link,
+    .tcsi-text-button,
+    .tcsi-balance-footer,
+    .tcsi-dashboard-status-meta,
+    .tcsi-recent-date { font-size: 12px; }
+
+    .tcsi-panel-eyebrow,
+    .tcsi-kpi-label,
+    .tcsi-reporting-window span,
+    .tcsi-workspace-identity small,
+    .tcsi-recent-table-head {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .04em;
+    }
+
+    .tcsi-reporting-window { padding: 8px 12px; }
+    .tcsi-reporting-window strong { font-size: 12px; }
+    .tcsi-balance-value {
+        margin-top: 20px;
+        font-size: clamp(28px, 3vw, 36px);
+        letter-spacing: -.03em;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+    .tcsi-balance-footer { margin-top: 20px; padding-top: 12px; flex-wrap: wrap; }
+    .tcsi-panel-header { flex-wrap: wrap; }
+    .tcsi-snapshot-row { gap: 8px 16px; min-height: 56px; padding-block: 8px; flex-wrap: wrap; }
+    .tcsi-snapshot-row > div { min-width: 0; }
+    .tcsi-snapshot-row > strong { flex-shrink: 0; }
+    .tcsi-snapshot-row small,
+    .tcsi-attention-copy small,
+    .tcsi-recent-copy small,
+    .tcsi-quick-action > span:nth-child(2) small { font-size: 12px; }
+    .tcsi-attention-copy strong,
+    .tcsi-recent-copy strong,
+    .tcsi-quick-action > span:nth-child(2) strong,
+    .tcsi-snapshot-row strong { font-size: 13px; }
+
+    .tcsi-attention-item,
+    .tcsi-recent-row,
+    .tcsi-quick-action {
+        padding: 12px 8px;
+        border-radius: 4px;
+        transition: background-color .15s ease;
+        &:hover,
+        &:focus-visible { padding: 12px 8px; }
+        &:focus-visible { outline: 2px solid var(--tcsi-dashboard-accent); outline-offset: -2px; }
+    }
+    .tcsi-recent-table-head { padding-left: 52px; padding-right: 8px; gap: 12px; }
+    .tcsi-recent-row { gap: 12px; }
+    .tcsi-dashboard-empty { padding: 32px 20px; }
+    .tcsi-dashboard-empty-compact { min-height: 144px; padding: 20px 12px; }
+    .tcsi-skeleton,
+    .tcsi-dashboard-error { border-radius: 6px; box-shadow: none; }
+}
+
 @media (max-width: 900px) {
     body.tcsi-shell-active .tcsi-dashboard {
         padding-right: 24px;
@@ -2362,7 +1641,7 @@ body.tcsi-shell-active .tcsi-dashboard {
 
 @media (max-width: 720px) {
     body.tcsi-shell-active .tcsi-dashboard {
-        padding: 22px 16px 44px;
+        padding: 20px 16px 40px;
 
         .tcsi-dashboard-header {
             align-items: stretch;
@@ -2375,7 +1654,7 @@ body.tcsi-shell-active .tcsi-dashboard {
         }
 
         .tcsi-dashboard-panel {
-            padding: 18px 16px;
+            padding: 16px;
         }
     }
 }

@@ -19,6 +19,9 @@ infrastructure owner. The PRD is still version 0.1 review draft.
 | Unapproved report templates are visibly provisional | A report sample approval flag and revision are required before a custom layout can be represented as approved. |
 | Migration is source-identifier driven | Validation, dry-run, explicit `--apply`, duplicate-safe load, and reconciliation records precede any real cutover. |
 | Backup/restore targets are explicit and disposable | The scripts cover database, filestore, config, image metadata, hashes, and restore inspection; production scheduling is still client-owned. |
+| Trial mode relaxes only the legal-approval output gates | Companies flagged `thirdcode_trial_mode` may print invoice/receipt/statement output without BIR control numbers or approved client samples; every such print carries a visible TRIAL COPY marking and the readiness preflight reports the legal items as trial-deferred instead of blocking. Production companies keep the original gates. |
+| Privileged pilot provisioning rides a token-gated module endpoint | `/tcsi/setup` (plaintext token held by the operator outside the repository; only its SHA-256 is in the addon) provisions companies, charts, journals, open periods and named users idempotently on the hosted engine, so pilot setup does not depend on the technical administrator's password. |
+| Official-receipt numbering is per company | Each company lazily gets its own `thirdcode.official.receipt` sequence copy (`res.company._thirdcode_receipt_sequence()`), so every trial org numbers receipts from OR/00000001 independently; the seeded sequence stays bound to the main company. |
 
 ## Client decisions required before acceptance or production
 
@@ -64,3 +67,30 @@ infrastructure owner. The PRD is still version 0.1 review draft.
 
 These blockers do not prevent independent technical work, but no synthetic
 result should be labeled client acceptance or regulatory compliance.
+
+### Trial-launch engineering decisions — 3 October 2026
+
+- Privileged provisioning runs through the token-gated `/tcsi/setup` endpoint
+  as the superuser user (`with_user(SUPERUSER_ID)`), so pilot setup does not
+  depend on the Railway `TCSI_ADMIN_*` password.
+- Company creation passes country/currency explicitly; partial/anonymous
+  environments otherwise hit `currency_id` NULL inserts or
+  `Expected singleton: res.users()` from core defaults.
+- `report_action()` requires `company.external_report_layout_id` to point at
+  the layout view (`web.external_layout_standard`); otherwise admins get the
+  layout configurator action instead of the report (live symptom:
+  `AssertionError: template is required`).
+- Receipt numbering is per company: `res.company._thirdcode_receipt_sequence`
+  creates the `OR/…` sequence lazily for each company.
+- Engine runs prefork with request recycling (`limit_time_real`); database
+  maintenance ops are available through the setup endpoint.
+- Organization administrators manage their own employee accounts through
+  in-app wizards instead of Odoo's Settings app: granting
+  `base.group_erp_manager` would have exposed every company and every
+  internal user record (base rules give erp managers all companies).
+- `res.users` visibility is scoped by a TCSI record rule for all four role
+  groups (`company_ids in user companies`), closing cross-tenant
+  readability of names and logins that vanilla Odoo allows.
+- The platform owner superadmin is provisioned through the setup endpoint
+  (`extra_groups: [base.group_system]`); the service helper `provision_user`
+  is shared by the endpoint and the in-app wizards.

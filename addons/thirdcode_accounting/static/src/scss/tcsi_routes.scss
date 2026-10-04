@@ -1,2750 +1,582 @@
-// TCSI route system ---------------------------------------------------------
-// Shared presentation for native accounting routes. The shell keeps the
-// quiet Cloudflare-console rhythm: white navigation, cool gray workspace,
-// compact controls, and purple only for focus, selection, and primary action.
-
+// Workspace design contract: sidebar palette, flat surfaces, 4px spacing scale.
+// Shared by every native view, including dialogs opened over another view type.
+// Keep Odoo's grid cells, field widgets, scroll owners and semantic status colors.
 body.tcsi-shell-active {
-    --tcsi-route-page: #f4f6f7;
-    --tcsi-route-surface: #ffffff;
-    --tcsi-route-surface-soft: #f8fafb;
-    --tcsi-route-surface-hover: #f2f5f6;
-    --tcsi-route-ink: #17232c;
-    --tcsi-route-text: #34434d;
-    --tcsi-route-muted: #697781;
-    --tcsi-route-subtle: #8b98a1;
-    --tcsi-route-line: #dfe6ea;
-    --tcsi-route-line-strong: #cbd5db;
-    --tcsi-route-purple: #6b48d8;
-    --tcsi-route-purple-deep: #5130b3;
-    --tcsi-route-purple-soft: #f1edff;
-    --tcsi-route-radius: 8px;
-    --tcsi-route-radius-sm: 6px;
-    --tcsi-route-content-gutter: clamp(18px, 3vw, 40px);
+    // Values live in tcsi_tokens.scss; tcsi_dark.scss overrides them in dark mode.
+    --tcsi-route-page: var(--tcsi-color-canvas);
+    --tcsi-route-surface: var(--tcsi-color-surface);
+    --tcsi-route-surface-soft: var(--tcsi-color-surface-soft);
+    --tcsi-route-surface-hover: var(--tcsi-color-surface-hover);
+    --tcsi-route-ink: var(--tcsi-color-ink);
+    --tcsi-route-text: var(--tcsi-color-ink);
+    --tcsi-route-muted: var(--tcsi-color-ink-muted);
+    --tcsi-route-subtle: var(--tcsi-color-ink-soft);
+    --tcsi-route-line: var(--tcsi-color-line);
+    --tcsi-route-line-strong: var(--tcsi-color-line-strong);
+    --tcsi-route-accent: var(--tcsi-color-accent);
+    --tcsi-route-accent-deep: var(--tcsi-color-accent-deep);
+    --tcsi-route-accent-soft: var(--tcsi-color-accent-soft);
+    --tcsi-route-purple: var(--tcsi-route-accent);
+    --tcsi-route-purple-deep: var(--tcsi-route-accent-deep);
+    --tcsi-route-purple-soft: var(--tcsi-route-accent-soft);
+    --tcsi-route-radius: var(--tcsi-radius-panel);
+    --tcsi-route-radius-sm: var(--tcsi-radius-control);
+    --tcsi-route-content-gutter: 24px;
 
-    font-family: "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
     color: var(--tcsi-route-ink);
     background: var(--tcsi-route-page);
+    font-family: var(--tcsi-font-ui);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
-}
 
-body.tcsi-shell-active,
-body.tcsi-shell-active .o_web_client,
-body.tcsi-shell-active .o_action_manager,
-body.tcsi-shell-active .o_view_controller,
-body.tcsi-shell-active .o_content,
-body.tcsi-shell-active .o_action {
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active .o_action_manager {
-    min-height: calc(100dvh - 56px);
-    overflow: auto;
-}
-
-body.tcsi-shell-active .o_view_controller,
-body.tcsi-shell-active .o_form_view,
-body.tcsi-shell-active .o_list_view,
-body.tcsi-shell-active .o_kanban_view {
-    min-width: 0;
-}
-
-// Navigation and top chrome ------------------------------------------------
-body.tcsi-shell-active .tcsi-workspace-sidebar {
-    background: var(--tcsi-route-surface);
-    border-right: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .tcsi-sidebar-link,
-body.tcsi-shell-active .tcsi-sidebar-group-title {
-    transition: background-color .16s ease, color .16s ease, border-color .16s ease;
-
-    &:hover,
-    &:focus-visible {
-        background: var(--tcsi-route-surface-hover);
+    .o_action_manager, .o_action, .o_content, .o_view_controller {
+        min-width: 0;
+        background: var(--tcsi-route-page);
     }
 
-    &.is-active {
+    .o_content { max-width: none; }
+
+    // Navigation retains its established palette and dimensions.
+    .tcsi-workspace-sidebar, .o_main_navbar {
+        background: var(--tcsi-route-surface);
+        border-color: var(--tcsi-route-line);
+        box-shadow: none;
+    }
+
+    .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active {
+        color: var(--tcsi-route-ink) !important;
+        background: var(--tcsi-route-accent-soft) !important;
+    }
+
+    .tcsi-sidebar-link[aria-current="page"]::before { background: var(--tcsi-route-accent) !important; }
+    .tcsi-sidebar-link.is-active .tcsi-sidebar-icon { color: var(--tcsi-route-accent) !important; }
+
+    // One heading followed by one toolbar; forms retain their record breadcrumb.
+    .tcsi-native-route-header {
+        flex-shrink: 0;
+        margin: 0 !important;
+        padding: 20px var(--tcsi-route-content-gutter) 16px !important;
+        background: var(--tcsi-route-surface) !important;
+        border-bottom: 1px solid var(--tcsi-route-line) !important;
+    }
+
+    .tcsi-native-route-eyebrow {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--tcsi-route-muted) !important;
+        font-size: 10px;
+        font-weight: 650;
+        letter-spacing: .08em;
+    }
+
+    .tcsi-native-route-title {
+        margin: 0;
+        color: var(--tcsi-route-ink) !important;
+        font-size: 24px;
+        font-weight: 650;
+        line-height: 1.25;
+        letter-spacing: -.025em;
+    }
+
+    .tcsi-native-route-description {
+        margin: 8px 0 0;
+        max-width: 72ch;
+        color: var(--tcsi-route-muted) !important;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .o_control_panel {
+        flex-shrink: 0;
+        max-width: none;
+        min-height: 64px;
+        margin: 0;
+        padding: 12px var(--tcsi-route-content-gutter) !important;
+        background: var(--tcsi-route-surface) !important;
+        border-bottom: 1px solid var(--tcsi-route-line) !important;
+        box-shadow: none !important;
+    }
+
+    .o_control_panel_main { min-width: 0; align-items: center; gap: 12px; }
+    .o_control_panel_breadcrumbs { min-width: 0; }
+    .o_control_panel .breadcrumb,
+    .o_control_panel .o_breadcrumb,
+    .o_control_panel .breadcrumb-item:not(.active),
+    .o_control_panel .breadcrumb-item:not(.active) a {
+        margin: 0;
+        background: transparent !important;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.5;
+        letter-spacing: 0;
+    }
+    .o_control_panel .o_last_breadcrumb_item { font-size: 16px; font-weight: 600; letter-spacing: -.015em; }
+    .o_cp_pager { color: var(--tcsi-route-muted); font-size: 12px; }
+
+    .o_control_panel .o_searchview {
+        min-height: 36px;
+        padding: 4px 8px;
+        background: var(--tcsi-route-surface) !important;
+        border: 1px solid var(--tcsi-route-line-strong) !important;
+        border-radius: var(--tcsi-route-radius-sm) !important;
+        box-shadow: none !important;
+    }
+
+    .o_searchview_input_container { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+    .o_searchview .o_searchview_input { min-height: 24px; border: 0 !important; box-shadow: none !important; background: transparent !important; }
+    .o_searchview:focus-within { outline: 2px solid var(--tcsi-route-accent); outline-offset: 2px; }
+
+    // Controls. Only outer composite widgets own borders; children stay clean.
+    .btn, button.btn, .o_button {
+        min-height: 34px;
+        padding: 6px 12px;
+        border-radius: var(--tcsi-route-radius-sm);
+        box-shadow: none !important;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 20px;
+        transition: background-color .15s ease, border-color .15s ease;
+    }
+
+    .btn-secondary, .btn-light, .btn-outline-secondary {
         color: var(--tcsi-route-ink);
-        background: var(--tcsi-route-purple-soft);
-    }
-}
-
-body.tcsi-shell-active .tcsi-sidebar-link[aria-current="page"]::before {
-    background: var(--tcsi-route-purple);
-}
-
-body.tcsi-shell-active .o_main_navbar {
-    min-height: 56px;
-    background: var(--tcsi-route-surface);
-    border-bottom: 1px solid var(--tcsi-route-line);
-    box-shadow: none;
-}
-
-body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context {
-    border-right-color: var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-mark {
-    color: var(--tcsi-route-purple);
-    background: var(--tcsi-route-purple-soft);
-    border-color: #ddd4fa;
-}
-
-body.tcsi-shell-active .o_menu_systray .dropdown-toggle,
-body.tcsi-shell-active .o_menu_systray .o_user_menu .dropdown-toggle {
-    color: var(--tcsi-route-text);
-    border-color: transparent;
-    border-left-color: var(--tcsi-route-line);
-
-    &:hover,
-    &:focus-visible,
-    &[aria-expanded="true"] {
-        color: var(--tcsi-route-ink);
-        background: var(--tcsi-route-surface-hover);
-        outline: none;
-    }
-}
-
-body.tcsi-shell-active .o_menu_systray .o_avatar {
-    box-shadow: 0 0 0 2px #e4dcfb;
-}
-
-// Route header and search controls ----------------------------------------
-body.tcsi-shell-active .o_control_panel {
-    max-width: none;
-    margin: 0;
-    padding: 18px var(--tcsi-route-content-gutter) 14px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-page);
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_main {
-    min-width: 0;
-    gap: 12px 16px;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumb,
-body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs .breadcrumb,
-body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active,
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumbs .breadcrumb {
-    color: var(--tcsi-route-ink);
-    font-size: 22px;
-    font-weight: 720;
-    letter-spacing: -.035em;
-    line-height: 1.15;
-}
-
-body.tcsi-shell-active .o_control_panel .breadcrumb-item:not(.active) {
-    color: var(--tcsi-route-muted);
-    font-size: 12px;
-    font-weight: 540;
-}
-
-body.tcsi-shell-active .o_control_panel .breadcrumb-item + .breadcrumb-item::before {
-    color: var(--tcsi-route-subtle);
-    padding-right: 9px;
-    padding-left: 9px;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_searchview,
-body.tcsi-shell-active .o_control_panel .o_searchview {
-    min-height: 38px;
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none;
-
-    &:focus-within {
-        border-color: var(--tcsi-route-purple);
-        box-shadow: 0 0 0 3px rgba(107, 72, 216, .12);
-    }
-}
-
-body.tcsi-shell-active .o_searchview .o_searchview_input_container,
-body.tcsi-shell-active .o_searchview .o_searchview_input {
-    color: var(--tcsi-route-text);
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_buttons,
-body.tcsi-shell-active .o_control_panel .o_cp_action_menus,
-body.tcsi-shell-active .o_control_panel .o_cp_switch_buttons,
-body.tcsi-shell-active .o_control_panel .o_cp_pager {
-    gap: 8px;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_pager {
-    color: var(--tcsi-route-muted);
-}
-
-// Buttons and fields --------------------------------------------------------
-body.tcsi-shell-active .btn,
-body.tcsi-shell-active button.btn,
-body.tcsi-shell-active .o_button {
-    min-height: 36px;
-    padding: 7px 13px;
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none;
-    font-size: 12px;
-    font-weight: 650;
-    transition: color .16s ease, background-color .16s ease, border-color .16s ease, transform .16s ease;
-
-    &:hover,
-    &:focus-visible {
-        color: var(--tcsi-route-ink);
-        background: var(--tcsi-route-surface-hover);
-        border-color: #aebbc3;
+        background: var(--tcsi-route-surface);
+        border: 1px solid var(--tcsi-route-line-strong);
+        &:hover { background: var(--tcsi-route-surface-hover); border-color: var(--tcsi-route-muted); }
     }
 
-    &:active {
-        transform: translateY(1px);
-    }
-}
-
-body.tcsi-shell-active .btn-primary,
-body.tcsi-shell-active .oe_highlight,
-body.tcsi-shell-active .o_form_button_save,
-body.tcsi-shell-active .o_cp_buttons .btn-primary {
-    color: #fff;
-    background: var(--tcsi-route-purple);
-    border-color: var(--tcsi-route-purple);
-
-    &:hover,
-    &:focus-visible {
-        color: #fff;
-        background: var(--tcsi-route-purple-deep);
-        border-color: var(--tcsi-route-purple-deep);
-        box-shadow: 0 5px 12px rgba(81, 48, 179, .16);
-    }
-}
-
-body.tcsi-shell-active .btn-link,
-body.tcsi-shell-active .o_form_uri,
-body.tcsi-shell-active .o_form_view a {
-    color: var(--tcsi-route-purple-deep);
-
-    &:hover,
-    &:focus-visible {
-        color: var(--tcsi-route-purple);
-    }
-}
-
-body.tcsi-shell-active .form-control,
-body.tcsi-shell-active .form-select,
-body.tcsi-shell-active .o_input,
-body.tcsi-shell-active .o_field_widget .o_input,
-body.tcsi-shell-active .o_field_widget input,
-body.tcsi-shell-active .o_field_widget textarea,
-body.tcsi-shell-active .o_field_widget select,
-body.tcsi-shell-active .o_field_widget .o_input_dropdown {
-    min-height: 36px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none;
-
-    &:focus,
-    &:focus-within {
-        border-color: var(--tcsi-route-purple) !important;
-        box-shadow: 0 0 0 3px rgba(107, 72, 216, .12) !important;
-        outline: none;
-    }
-
-    &:disabled,
-    &[readonly] {
-        color: #65737c;
-        background: #f8fafb;
-    }
-}
-
-body.tcsi-shell-active textarea.o_input,
-body.tcsi-shell-active .o_field_widget textarea {
-    min-height: 88px;
-    padding-top: 9px;
-    padding-bottom: 9px;
-}
-
-body.tcsi-shell-active .o_field_widget .o_field_many2one_selection,
-body.tcsi-shell-active .o_field_widget .o_field_many2many_tags {
-    min-height: 36px;
-    padding: 3px 6px;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius-sm);
-}
-
-body.tcsi-shell-active .o_field_widget .badge,
-body.tcsi-shell-active .o_tag_badge,
-body.tcsi-shell-active .badge {
-    min-height: 24px;
-    padding: 4px 7px;
-    color: #4d3b9c;
-    background: var(--tcsi-route-purple-soft);
-    border: 1px solid #ded5fa;
-    border-radius: 5px;
-    font-weight: 650;
-}
-
-// Form routes --------------------------------------------------------------
-body.tcsi-shell-active .o_form_view {
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active .o_form_view .o_form_sheet_bg {
-    padding: 16px var(--tcsi-route-content-gutter) 48px;
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active .o_form_view .o_form_sheet {
-    width: 100%;
-    max-width: 1260px;
-    margin: 0 auto;
-    padding: 28px 32px 36px;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none;
-}
-
-body.tcsi-shell-active .o_form_view .o_form_statusbar {
-    min-height: 48px;
-    margin: -28px -32px 24px;
-    padding: 8px 32px;
-    background: var(--tcsi-route-surface-soft);
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o_form_view .o_form_statusbar .o_arrow_button {
-    min-height: 30px;
-    padding: 6px 12px;
-    color: var(--tcsi-route-muted);
-    background: var(--tcsi-route-surface);
-    border-color: var(--tcsi-route-line-strong);
-    border-radius: 5px;
-
-    &.btn-primary,
-    &.o_arrow_button_current {
-        color: #fff;
-        background: var(--tcsi-route-purple);
-        border-color: var(--tcsi-route-purple);
-    }
-}
-
-body.tcsi-shell-active .o_form_view .o_form_label,
-body.tcsi-shell-active .o_form_view .o_form_label.o_form_label_readonly {
-    color: var(--tcsi-route-muted);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .02em;
-}
-
-body.tcsi-shell-active .o_form_view .o_group {
-    column-gap: 28px;
-    row-gap: 16px;
-}
-
-body.tcsi-shell-active .o_form_view .o_inner_group {
-    row-gap: 12px;
-    column-gap: 14px;
-}
-
-body.tcsi-shell-active .o_form_view .tcsi-form-sections {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 20px 24px;
-    margin: 0 0 22px;
-}
-
-body.tcsi-shell-active .o_form_view .tcsi-form-section {
-    display: block;
-    min-width: 0;
-    margin: 0;
-    padding: 18px;
-    background: var(--tcsi-route-surface-soft);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-}
-
-body.tcsi-shell-active .o_form_view .tcsi-form-section-wide {
-    grid-column: 1 / -1;
-}
-
-body.tcsi-shell-active .o_form_view .tcsi-form-section > .o_horizontal_separator {
-    margin: 0 0 16px;
-    padding: 0 0 10px;
-    color: var(--tcsi-route-ink);
-    border-bottom: 1px solid var(--tcsi-route-line);
-    font-size: 12px;
-    font-weight: 720;
-    letter-spacing: .04em;
-    text-transform: none;
-}
-
-body.tcsi-shell-active .o_form_view .tcsi-form-section .o_inner_group {
-    grid-template-columns: minmax(104px, .42fr) minmax(0, 1fr);
-}
-
-body.tcsi-shell-active .o_form_view .tcsi-form-section .o_form_label {
-    align-self: center;
-    line-height: 1.3;
-}
-
-body.tcsi-shell-active .o_form_view .o_horizontal_separator,
-body.tcsi-shell-active .o_form_view .o_group > .o_form_label,
-body.tcsi-shell-active .o_form_view .o_form_sheet > .o_form_label {
-    color: var(--tcsi-route-ink);
-    border-color: var(--tcsi-route-line);
-    font-size: 12px;
-    font-weight: 720;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-}
-
-body.tcsi-shell-active .o_form_view .o_horizontal_separator {
-    margin-top: 24px;
-    margin-bottom: 14px;
-    padding-bottom: 8px;
-}
-
-body.tcsi-shell-active .o_form_view .o_notebook,
-body.tcsi-shell-active .o_notebook {
-    margin-top: 26px;
-}
-
-body.tcsi-shell-active .o_notebook .nav-tabs {
-    gap: 4px;
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o_notebook .nav-tabs .nav-link {
-    padding: 10px 13px;
-    color: var(--tcsi-route-muted);
-    background: transparent;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 0;
-    font-size: 12px;
-    font-weight: 650;
-
-    &:hover,
-    &:focus-visible {
-        color: var(--tcsi-route-purple);
-        border-bottom-color: #d8cdf8;
-    }
-
-    &.active {
-        color: var(--tcsi-route-purple-deep);
-        border-bottom-color: var(--tcsi-route-purple);
-    }
-}
-
-body.tcsi-shell-active .o_form_view .o_form_sheet > .o_field_widget.o_field_one2many,
-body.tcsi-shell-active .o_form_view .o_form_sheet > .o_field_widget.o_field_many2many {
-    display: block;
-    margin-top: 20px;
-    padding: 0;
-    overflow: auto;
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-}
-
-// List and kanban routes ---------------------------------------------------
-body.tcsi-shell-active .o_list_view,
-body.tcsi-shell-active .o_kanban_view {
-    padding: 16px var(--tcsi-route-content-gutter) 44px;
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active .o_list_view .o_list_renderer {
-    overflow: auto;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-}
-
-body.tcsi-shell-active .o_list_view .o_list_table {
-    min-width: 760px;
-    margin: 0;
-    overflow: hidden;
-    background: var(--tcsi-route-surface);
-    border: 0;
-    border-collapse: separate;
-    border-spacing: 0;
-    box-shadow: none;
-}
-
-body.tcsi-shell-active .o_list_view .o_list_table thead th {
-    height: 38px;
-    padding: 0 12px;
-    color: var(--tcsi-route-muted);
-    background: var(--tcsi-route-surface-soft);
-    border-bottom: 1px solid var(--tcsi-route-line);
-    font-size: 10px;
-    font-weight: 720;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-}
-
-body.tcsi-shell-active .o_list_view .o_list_table tbody td,
-body.tcsi-shell-active .o_list_view .o_list_table tbody th {
-    height: 44px;
-    padding: 9px 12px;
-    color: var(--tcsi-route-text);
-    border-bottom: 1px solid #edf1f3;
-    vertical-align: middle;
-}
-
-body.tcsi-shell-active .o_list_view .o_list_table tbody tr {
-    transition: background-color .14s ease;
-
-    &:hover {
-        background: var(--tcsi-route-surface-hover);
-    }
-
-    &.o_data_row_selected,
-    &:has(input[type="checkbox"]:checked) {
-        background: var(--tcsi-route-purple-soft);
-    }
-}
-
-body.tcsi-shell-active .o_list_view .o_list_table tfoot {
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface-soft);
-    border-top: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o_kanban_view .o_kanban_renderer {
-    gap: 14px;
-}
-
-body.tcsi-shell-active .o_kanban_view .o_kanban_record {
-    min-height: 132px;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none;
-    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
-
-    &:hover,
-    &:focus-within {
-        border-color: #c7b9ef;
-        box-shadow: 0 8px 22px rgba(27, 43, 54, .08);
-        transform: translateY(-1px);
-    }
-}
-
-// Chatter and activity panel ------------------------------------------------
-body.tcsi-shell-active .o_form_view .oe_chatter,
-body.tcsi-shell-active .o-mail-Chatter {
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none;
-}
-
-body.tcsi-shell-active .o-mail-Chatter .o-mail-Chatter-top {
-    min-height: 54px;
-    padding: 8px 12px;
-    background: var(--tcsi-route-surface-soft);
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o-mail-Chatter .o-mail-Chatter-top .btn {
-    min-height: 32px;
-}
-
-body.tcsi-shell-active .o-mail-Message {
-    padding-top: 12px;
-    padding-bottom: 12px;
-}
-
-body.tcsi-shell-active .o-mail-Message-avatarContainer,
-body.tcsi-shell-active .o-mail-NotificationItem-avatarContainer {
-    border-radius: 7px;
-}
-
-body.tcsi-shell-active .o-mail-Message-bubble {
-    border-color: var(--tcsi-route-line) !important;
-    background: #f7f9fa !important;
-}
-
-body.tcsi-shell-active .o-mail-Composer {
-    margin: 12px;
-    padding: 4px;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius);
-}
-
-// Menus, dialogs, toasts ---------------------------------------------------
-body.tcsi-shell-active .dropdown-menu,
-body.tcsi-shell-active .o-dropdown--menu,
-body.tcsi-shell-active .o_popover,
-body.tcsi-shell-active .popover,
-body.tcsi-shell-active .modal-content,
-body.tcsi-shell-active .o_dialog .modal-content {
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: 0 16px 38px rgba(27, 43, 54, .14);
-}
-
-body.tcsi-shell-active .dropdown-item,
-body.tcsi-shell-active .o-dropdown--menu-item {
-    min-height: 32px;
-    padding: 7px 10px;
-    color: var(--tcsi-route-text);
-    border-radius: 5px;
-
-    &:hover,
-    &:focus,
-    &.active {
-        color: var(--tcsi-route-ink);
-        background: var(--tcsi-route-purple-soft);
-    }
-}
-
-body.tcsi-shell-active .o_notification_manager .o_notification {
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-left: 3px solid var(--tcsi-route-purple);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: 0 12px 28px rgba(27, 43, 54, .14);
-}
-
-// The legacy bot sometimes renders its avatar as a div with an inline
-// background-image. Keep the visual replacement independent of DOM timing.
-body.tcsi-shell-active .o-mail-ChatHub-bubbleBtn.tcsi-assistant-bubble,
-body.tcsi-shell-active .o-mail-ChatBubble.tcsi-assistant-bubble {
-    .o-mail-ChatBubble-avatar,
-    .o-mail-ThreadAvatar {
-        background: #e9f2f0 url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=3.0.0") center / cover no-repeat !important;
-        border: 1px solid #d2e3df;
-        box-shadow: 0 0 0 2px var(--tcsi-route-surface);
-    }
-
-    .o-mail-ChatBubble-avatar img,
-    .o-mail-ThreadAvatar img {
-        content: url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=3.0.0");
-    }
-
-    .fa-heart {
-        display: none !important;
-    }
-}
-
-body.tcsi-shell-active .o-mail-ChatHub-bubbleBtn:has(.fa-heart) {
-    .o-mail-ChatBubble-avatar,
-    .o-mail-ThreadAvatar {
-        background: #e9f2f0 url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=3.0.0") center / cover no-repeat !important;
-        border: 1px solid #d2e3df;
-    }
-
-    .o-mail-ChatBubble-avatar img,
-    .o-mail-ThreadAvatar img,
-    .fa-heart {
-        display: none !important;
-    }
-}
-
-body.tcsi-shell-active :focus-visible {
-    outline: 2px solid rgba(107, 72, 216, .72);
-    outline-offset: 2px;
-}
-
-// Responsive route rhythm --------------------------------------------------
-@media (max-width: 900px) {
-    body.tcsi-shell-active {
-        .o_control_panel,
-        .o_list_view,
-        .o_kanban_view,
-        .o_form_view .o_form_sheet_bg {
-            padding-right: 16px;
-            padding-left: 16px;
-        }
-
-        .o_form_view .o_form_sheet {
-            padding: 24px;
-        }
-
-        .o_form_view .o_form_statusbar {
-            margin-right: -24px;
-            margin-left: -24px;
-            padding-right: 24px;
-            padding-left: 24px;
-        }
-
-        .o_form_view .o_group {
-            column-gap: 18px;
-        }
-
-        .o_form_view .tcsi-form-sections {
-            gap: 16px;
-        }
-    }
-}
-
-@media (max-width: 640px) {
-    body.tcsi-shell-active {
-        .o_control_panel {
-            padding-top: 14px;
-            padding-bottom: 12px;
-        }
-
-        .o_control_panel .o_cp_breadcrumb,
-        .o_control_panel .o_control_panel_breadcrumbs .breadcrumb-item.active {
-            font-size: 18px;
-        }
-
-        .o_form_view .o_form_sheet {
-            padding: 20px 16px 28px;
-            border-right: 0;
-            border-left: 0;
-            border-radius: 0;
-        }
-
-        .o_form_view .o_form_statusbar {
-            margin-right: -16px;
-            margin-left: -16px;
-            padding-right: 16px;
-            padding-left: 16px;
-        }
-
-        .o_form_view .o_group {
-            grid-template-columns: minmax(0, 1fr) !important;
-        }
-
-        .o_form_view .tcsi-form-sections {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .o_form_view .tcsi-form-section-wide {
-            grid-column: auto;
-        }
-
-        .o_form_view .tcsi-form-section {
-            padding: 15px;
-        }
-
-        .o_list_view .o_list_table {
-            min-width: 680px;
-        }
-
-        .o-mail-Composer {
-            margin-right: 8px;
-            margin-left: 8px;
-        }
-    }
-}
-
-// TCSI final route cascade -----------------------------------------------
-// This last layer wins over the native-accounting compatibility pass above.
-// It keeps every route on one neutral console system without changing the
-// underlying actions, records, permissions, or renderer behavior.
-body.tcsi-shell-active {
-    --tcsi-route-page: #fbfbfd;
-    --tcsi-route-surface: #ffffff;
-    --tcsi-route-surface-soft: #f8fafb;
-    --tcsi-route-surface-hover: #f3f6f7;
-    --tcsi-route-ink: #1d2b33;
-    --tcsi-route-text: #3d4d56;
-    --tcsi-route-muted: #6e7c84;
-    --tcsi-route-subtle: #8d999f;
-    --tcsi-route-line: #e1e7ea;
-    --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #6b48d8;
-    --tcsi-route-accent-deep: #5130b3;
-    --tcsi-route-accent-soft: #f1edff;
-    --tcsi-route-radius: 6px;
-    --tcsi-route-radius-sm: 4px;
-}
-
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active {
-    color: var(--tcsi-route-ink) !important;
-    background: var(--tcsi-route-accent-soft) !important;
-}
-
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active::before,
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link[aria-current="page"]::before {
-    background: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active .tcsi-sidebar-icon {
-    color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .o_control_panel {
-    min-height: 58px;
-    padding: 0 24px !important;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface) !important;
-    border-bottom: 1px solid var(--tcsi-route-line) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_main {
-    min-height: 58px;
-    align-items: center;
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs,
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumb,
-body.tcsi-shell-active .o_control_panel .o_breadcrumb {
-    color: var(--tcsi-route-ink) !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_searchview,
-body.tcsi-shell-active .o_control_panel .o_cp_searchview,
-body.tcsi-shell-active .o_control_panel .o_searchview_input_container {
-    background: var(--tcsi-route-surface) !important;
-    border-color: var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_searchview:focus-within,
-body.tcsi-shell-active .o_control_panel .o_cp_searchview:focus-within {
-    border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_buttons .btn-primary,
-body.tcsi-shell-active .o_control_panel .o_cp_action_menus .btn-primary,
-body.tcsi-shell-active .o_control_panel .o_searchview .btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .tcsi-native-route-header {
-    margin: 0 !important;
-    padding: 24px 24px 18px !important;
-    background: var(--tcsi-route-surface) !important;
-    border-bottom: 1px solid var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active .tcsi-native-route-eyebrow {
-    color: var(--tcsi-route-accent) !important;
-    font-size: 10px;
-    letter-spacing: .08em;
-}
-
-body.tcsi-shell-active .tcsi-native-route-title {
-    color: var(--tcsi-route-ink) !important;
-    font-size: clamp(24px, 2.2vw, 32px);
-    font-weight: 690;
-}
-
-body.tcsi-shell-active .tcsi-native-route-description {
-    color: var(--tcsi-route-muted) !important;
-}
-
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_control_panel_breadcrumbs {
-    display: none !important;
-}
-
-body.tcsi-shell-active .btn,
-body.tcsi-shell-active button.btn,
-body.tcsi-shell-active .o_button {
-    min-height: 33px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface);
-    border-color: var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .btn:hover,
-body.tcsi-shell-active .btn:focus-visible,
-body.tcsi-shell-active button.btn:hover,
-body.tcsi-shell-active button.btn:focus-visible {
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface-soft);
-    border-color: #aebbc2;
-}
-
-body.tcsi-shell-active .btn-primary,
-body.tcsi-shell-active .o_form_button_save,
-body.tcsi-shell-active .o_cp_buttons .btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .btn-primary:hover,
-body.tcsi-shell-active .btn-primary:focus-visible,
-body.tcsi-shell-active .o_form_button_save:hover,
-body.tcsi-shell-active .o_form_button_save:focus-visible {
-    color: #fff !important;
-    background: var(--tcsi-route-accent-deep) !important;
-    border-color: var(--tcsi-route-accent-deep) !important;
-}
-
-body.tcsi-shell-active .form-control,
-body.tcsi-shell-active .form-select,
-body.tcsi-shell-active .o_input,
-body.tcsi-shell-active .o_field_widget input,
-body.tcsi-shell-active .o_field_widget textarea,
-body.tcsi-shell-active .o_field_widget select {
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface) !important;
-    border-color: var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .form-control:focus,
-body.tcsi-shell-active .form-select:focus,
-body.tcsi-shell-active .o_input:focus,
-body.tcsi-shell-active .o_field_widget input:focus,
-body.tcsi-shell-active .o_field_widget textarea:focus,
-body.tcsi-shell-active .o_field_widget select:focus {
-    border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_content {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_renderer {
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table {
-    min-width: 720px;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table thead th {
-    color: var(--tcsi-route-muted) !important;
-    background: var(--tcsi-route-surface-soft) !important;
-    border-bottom-color: var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody td,
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody th {
-    color: var(--tcsi-route-text) !important;
-    background: var(--tcsi-route-surface) !important;
-    border-bottom-color: #edf1f3 !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody tr:hover > *,
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody tr.o_data_row_selected > * {
-    background: var(--tcsi-route-surface-hover) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record {
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-inline-start-color: var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record::before,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record::after {
-    display: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record:hover,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record:focus-within {
-    border-color: var(--tcsi-route-line-strong) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_control_panel .o_control_panel_breadcrumbs,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_breadcrumb {
-    display: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_content {
-    padding: 16px 24px 40px !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 0;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 286px;
-    margin: 0 !important;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-inline-start: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record > span > a.oe_kanban_action {
-    color: var(--tcsi-route-ink) !important;
-    font-size: 17px;
-    font-weight: 680;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record a.oe_kanban_action {
-    color: var(--tcsi-route-accent-deep) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record button.btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_dashboard_graph,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_graph_barchart,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_graph_linechart {
-    background: var(--tcsi-route-surface-soft) !important;
-    border-top-color: var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view canvas {
-    filter: grayscale(.72);
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet_bg {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet {
-    max-width: 1160px;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet h1,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet .o_form_title {
-    color: var(--tcsi-route-ink) !important;
-    font-size: clamp(26px, 3vw, 36px);
-    font-weight: 690;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar {
-    background: var(--tcsi-route-surface-soft) !important;
-    border-bottom-color: var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar .o_arrow_button.o_arrow_button_current,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar .o_arrow_button.btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .oe_chatter,
-body.tcsi-shell-active.tcsi-view-form .o-mail-Chatter {
-    background: var(--tcsi-route-surface) !important;
-    border-top-color: var(--tcsi-route-line) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-view-graph .o_graph_view,
-body.tcsi-shell-active.tcsi-view-pivot .o_pivot_view,
-body.tcsi-shell-active.tcsi-view-calendar .o_calendar_view,
-body.tcsi-shell-active.tcsi-view-hierarchy .o_hierarchy_view,
-body.tcsi-shell-active.tcsi-view-gantt .o_gantt_view,
-body.tcsi-shell-active.tcsi-view-activity .o_activity_view {
-    margin: 16px 24px 40px;
-    padding: 16px;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-reconciliation .o_reconciliation {
-    margin: 16px 24px 0;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .modal-content,
-body.tcsi-shell-active .o_dialog .modal-content {
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: 0 12px 32px rgba(29, 43, 51, .16) !important;
-}
-
-body.tcsi-shell-active .badge,
-body.tcsi-shell-active .o_tag_badge,
-body.tcsi-shell-active .o_field_widget .badge {
-    color: var(--tcsi-route-text);
-    background: #f1f4f5;
-    border-color: var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius-sm);
-}
-
-body.tcsi-shell-active .badge.text-bg-success,
-body.tcsi-shell-active .badge.bg-success {
-    color: #247d61 !important;
-    background: #e8f5ef !important;
-    border-color: #c6e4d5 !important;
-}
-
-body.tcsi-shell-active .badge.text-bg-danger,
-body.tcsi-shell-active .badge.bg-danger {
-    color: #b24b4b !important;
-    background: #fff0f0 !important;
-    border-color: #efcfcf !important;
-}
-
-@media (max-width: 900px) {
-    body.tcsi-shell-active {
-        .o_control_panel {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        .tcsi-native-route-header {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        .tcsi-view-list .o_list_view,
-        .tcsi-view-list .o_list_view .o_content,
-        .tcsi-view-form .o_form_view .o_form_sheet_bg {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .tcsi-view-graph .o_graph_view,
-        .tcsi-view-pivot .o_pivot_view,
-        .tcsi-view-calendar .o_calendar_view,
-        .tcsi-view-hierarchy .o_hierarchy_view,
-        .tcsi-view-gantt .o_gantt_view,
-        .tcsi-view-activity .o_activity_view {
-            margin: 16px;
-        }
-    }
-}
-
-@media (max-width: 640px) {
-    body.tcsi-shell-active {
-        .o_control_panel .o_control_panel_main {
-            align-items: stretch;
-            flex-wrap: wrap;
-            padding-top: 8px;
-            padding-bottom: 8px;
-        }
-
-        .o_control_panel .o_cp_searchview,
-        .o_control_panel .o_searchview {
-            flex: 1 1 100%;
-        }
-
-        .tcsi-view-form .o_form_view .o_form_sheet {
-            padding-right: 16px;
-            padding-left: 16px;
-            border-right: 0 !important;
-            border-left: 0 !important;
-            border-radius: 0 !important;
-        }
-    }
-}
-
-// TCSI console surface -----------------------------------------------------
-// This is the final renderer layer for every native workspace route. It is
-// intentionally flat and compact: content is separated by rules and spacing,
-// not by Odoo-style color bars, gradients, or oversized floating cards.
-body.tcsi-shell-active {
-    --tcsi-route-page: #fbfbfd;
-    --tcsi-route-surface: #ffffff;
-    --tcsi-route-surface-soft: #f8fafb;
-    --tcsi-route-surface-hover: #f3f6f7;
-    --tcsi-route-ink: #1d2b33;
-    --tcsi-route-text: #3d4d56;
-    --tcsi-route-muted: #6e7c84;
-    --tcsi-route-subtle: #8d999f;
-    --tcsi-route-line: #e1e7ea;
-    --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #6b48d8;
-    --tcsi-route-accent-deep: #5130b3;
-    --tcsi-route-accent-soft: #f1edff;
-    --tcsi-route-success: #247d61;
-    --tcsi-route-warning: #9a6c16;
-    --tcsi-route-danger: #b24b4b;
-    --tcsi-route-radius: 6px;
-    --tcsi-route-radius-sm: 4px;
-    --tcsi-route-shadow: none;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-page);
-    font-family: "Aptos", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
-    font-size: 13px;
-}
-
-body.tcsi-shell-active,
-body.tcsi-shell-active .o_web_client,
-body.tcsi-shell-active .o_action_manager,
-body.tcsi-shell-active .o_view_controller,
-body.tcsi-shell-active .o_action,
-body.tcsi-shell-active .o_content {
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active .o_action_manager {
-    min-height: calc(100dvh - 56px);
-    overflow: auto;
-}
-
-// Shared control panel -----------------------------------------------------
-body.tcsi-shell-active .o_control_panel {
-    display: block;
-    max-width: none;
-    min-height: 58px;
-    margin: 0;
-    padding: 0 24px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface) !important;
-    border-bottom: 1px solid var(--tcsi-route-line);
-    box-shadow: none;
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_main {
-    display: flex;
-    min-height: 58px;
-    align-items: center;
-    gap: 10px 14px;
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs,
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumbs,
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumb {
-    min-width: 0;
-    color: var(--tcsi-route-ink);
-    font-size: 18px;
-    font-weight: 680;
-    letter-spacing: -.025em;
-    line-height: 1.2;
-}
-
-body.tcsi-shell-active .o_control_panel .breadcrumb-item:not(.active) {
-    color: var(--tcsi-route-muted);
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_searchview,
-body.tcsi-shell-active .o_control_panel .o_searchview,
-body.tcsi-shell-active .o_control_panel .o_searchview_input_container {
-    min-height: 36px;
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface) !important;
-    border-color: var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_searchview:focus-within,
-body.tcsi-shell-active .o_control_panel .o_searchview:focus-within {
-    border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_buttons,
-body.tcsi-shell-active .o_control_panel .o_cp_action_menus,
-body.tcsi-shell-active .o_control_panel .o_cp_switch_buttons,
-body.tcsi-shell-active .o_control_panel .o_cp_pager {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_pager {
-    color: var(--tcsi-route-muted);
-    white-space: nowrap;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_pager button,
-body.tcsi-shell-active .o_control_panel .o_cp_switch_buttons button {
-    min-width: 32px;
-    min-height: 32px;
-}
-
-body.tcsi-shell-active .o_control_panel .o_breadcrumb,
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumb,
-body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs {
-    background: transparent;
-}
-
-// Buttons and fields --------------------------------------------------------
-body.tcsi-shell-active .btn,
-body.tcsi-shell-active button.btn,
-body.tcsi-shell-active .o_button,
-body.tcsi-shell-active .o_form_button_save {
-    min-height: 33px;
-    padding: 6px 12px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-    font-size: 12px;
-    font-weight: 620;
-    transition: background-color .14s ease, border-color .14s ease, color .14s ease;
-
-    &:hover,
-    &:focus-visible {
-        color: var(--tcsi-route-ink);
-        background: var(--tcsi-route-surface-soft);
-        border-color: #aebbc2;
-        outline: none;
-    }
-
-    &:active {
-        transform: none;
-    }
-}
-
-body.tcsi-shell-active .btn-primary,
-body.tcsi-shell-active .o_form_button_save,
-body.tcsi-shell-active .o_cp_buttons .btn-primary,
-body.tcsi-shell-active .o_form_button_save.btn-primary {
-    color: #fff;
-    background: var(--tcsi-route-accent);
-    border-color: var(--tcsi-route-accent);
-
-    &:hover,
-    &:focus-visible {
-        color: #fff;
-        background: var(--tcsi-route-accent-deep);
-        border-color: var(--tcsi-route-accent-deep);
-    }
-}
-
-body.tcsi-shell-active .form-control,
-body.tcsi-shell-active .form-select,
-body.tcsi-shell-active .o_input,
-body.tcsi-shell-active .o_field_widget .o_input,
-body.tcsi-shell-active .o_field_widget input,
-body.tcsi-shell-active .o_field_widget textarea,
-body.tcsi-shell-active .o_field_widget select {
-    min-height: 35px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-
-    &:focus {
+    .btn-primary, .oe_highlight, .o_form_button_save {
+        color: #fff !important;
+        background: var(--tcsi-route-accent) !important;
         border-color: var(--tcsi-route-accent) !important;
-        box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
-        outline: none;
+        &:hover { background: var(--tcsi-route-accent-deep) !important; border-color: var(--tcsi-route-accent-deep) !important; }
     }
-}
 
-// Route heading ------------------------------------------------------------
-body.tcsi-shell-active .tcsi-native-route-header {
-    position: relative;
-    display: block;
-    margin: 0;
-    padding: 24px 24px 18px;
-    background: var(--tcsi-route-surface);
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .tcsi-native-route-eyebrow {
-    display: block;
-    margin-bottom: 7px;
-    color: var(--tcsi-route-accent);
-    font-size: 10px;
-    font-weight: 720;
-    letter-spacing: .08em;
-    line-height: 1.2;
-}
-
-body.tcsi-shell-active .tcsi-native-route-title {
-    margin: 0;
-    color: var(--tcsi-route-ink);
-    font-size: clamp(24px, 2.2vw, 32px);
-    font-weight: 690;
-    letter-spacing: -.04em;
-    line-height: 1.08;
-}
-
-body.tcsi-shell-active .tcsi-native-route-description {
-    max-width: 680px;
-    margin: 8px 0 0;
-    color: var(--tcsi-route-muted);
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel {
-    border-bottom: 0;
-}
-
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_breadcrumb,
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_cp_breadcrumb,
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_control_panel_breadcrumbs {
-    display: none;
-}
-
-// Lists --------------------------------------------------------------------
-body.tcsi-shell-active .tcsi-view-list .o_list_view,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_content {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_renderer {
-    overflow: auto;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table {
-    min-width: 720px;
-    margin: 0;
-    border: 0;
-    border-collapse: separate;
-    border-spacing: 0;
-    background: var(--tcsi-route-surface);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table thead th {
-    height: 40px;
-    padding: 0 14px;
-    color: var(--tcsi-route-muted);
-    background: var(--tcsi-route-surface-soft);
-    border-bottom: 1px solid var(--tcsi-route-line);
-    font-size: 10px;
-    font-weight: 720;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody td,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody th {
-    height: 46px;
-    padding: 9px 14px;
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface) !important;
-    border-bottom: 1px solid #edf1f3;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr:hover > *,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr.o_data_row_selected > *,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr:has(input[type="checkbox"]:checked) > * {
-    background: var(--tcsi-route-surface-hover) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tfoot > * {
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface-soft);
-    border-top: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_record_selector input,
-body.tcsi-shell-active .tcsi-view-list input[type="checkbox"] {
-    accent-color: var(--tcsi-route-accent);
-}
-
-// Kanban and account landing cards ----------------------------------------
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_renderer {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
-    align-items: stretch;
-    gap: 12px;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 150px;
-    margin: 0 !important;
-    overflow: hidden;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record::before,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record::after,
-body.tcsi-shell-active .o_kanban_view [class*="o_kanban_color_"]::before,
-body.tcsi-shell-active .o_kanban_view [class*="o_kanban_color_"]::after {
-    display: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record:hover,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record:focus-within {
-    border-color: var(--tcsi-route-line-strong) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record [class*="o_kanban_color_"] {
-    background-color: var(--tcsi-route-surface) !important;
-    border-inline-start-color: var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-    padding: 0 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_content {
-    padding: 16px 0 0 !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 0;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 286px;
-    margin: 0 !important;
-    overflow: hidden;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-inline-start: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record [class*="o_kanban_color_"] {
-    background-color: var(--tcsi-route-surface) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record::before,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record::after {
-    display: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_card_header {
-    padding: 16px 18px 12px;
-    color: var(--tcsi-route-ink);
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_card_content {
-    padding: 12px 18px 16px;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_dashboard_graph,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_graph_barchart,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_graph_linechart {
-    min-height: 132px;
-    background: var(--tcsi-route-surface-soft) !important;
-    border-top: 1px solid var(--tcsi-route-line);
-}
-
-// Forms and chatter --------------------------------------------------------
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet_bg {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet {
-    max-width: 1160px;
-    padding: 26px 30px 34px;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet h1,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet .o_form_title {
-    color: var(--tcsi-route-ink);
-    font-size: clamp(26px, 3vw, 36px);
-    font-weight: 690;
-    letter-spacing: -.045em;
-    line-height: 1.08;
-    text-transform: none;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .oe_title .o_form_label,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_inner_group > .o_form_label,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_group > .o_form_label {
-    color: var(--tcsi-route-muted);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar {
-    min-height: 40px;
-    padding: 4px 0;
-    background: var(--tcsi-route-surface-soft);
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar .o_arrow_button {
-    min-height: 29px;
-    color: var(--tcsi-route-muted);
-    background: var(--tcsi-route-surface);
-    border-color: var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius-sm);
-
-    &.btn-primary,
-    &.o_arrow_button_current {
-        color: #fff;
-        background: var(--tcsi-route-accent);
-        border-color: var(--tcsi-route-accent);
+    .btn-link { color: var(--tcsi-route-purple-deep); background: transparent; border-color: transparent; }
+    :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+        outline: 2px solid var(--tcsi-route-purple) !important;
+        outline-offset: 2px;
     }
-}
+    .btn:disabled { cursor: not-allowed; transform: none; }
 
-body.tcsi-shell-active.tcsi-view-form .o_notebook .nav-tabs {
-    border-bottom: 1px solid var(--tcsi-route-line);
+    .o_form_view {
+        min-width: 0;
+        background: var(--tcsi-route-page);
+        .o_form_renderer { max-width: none; min-width: 0; }
+        .o_form_sheet_bg {
+            min-width: 0;
+            max-width: none;
+            padding: 16px var(--tcsi-route-content-gutter) 32px !important;
+            background: var(--tcsi-route-page) !important;
+        }
+        .o_form_sheet {
+            --formView-sheet-padding-x: 24px;
+            --formView-sheet-padding-y: 24px;
+            width: 100%;
+            min-width: 0;
+            min-height: 0;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px;
+            background: var(--tcsi-route-surface) !important;
+            border: 1px solid var(--tcsi-route-line) !important;
+            border-radius: var(--tcsi-route-radius) !important;
+            box-shadow: none !important;
+            // Size relative to available document width, not entire browser.
+            container: tcsi-document / inline-size;
+        }
+        .oe_title { max-width: 100%; margin-bottom: 24px; }
+        .o_form_sheet h1, .o_form_sheet .o_form_title {
+            min-height: 0;
+            margin: 0 0 8px;
+            color: var(--tcsi-route-ink) !important;
+            font-size: 24px;
+            font-weight: 650;
+            letter-spacing: -.025em;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+        }
+        .oe_title h1 .o_field_widget, .oe_title h1 .o_input {
+            min-height: 0;
+            font: inherit;
+            letter-spacing: inherit;
+            line-height: inherit;
+        }
+        .o_form_sheet > .oe_avatar { width: 64px; height: 64px; margin-left: 24px; }
+        .o_form_sheet h2 { font-size: 20px; font-weight: 600; line-height: 1.3; }
+        .o_group { margin-top: 0; margin-bottom: 20px; row-gap: 16px; }
+        .o_inner_group { min-width: 0; row-gap: 8px; column-gap: 16px; margin-bottom: 0; align-content: start; }
+        .o_cell { min-width: 0; }
+        .o_wrap_label { padding-top: 6px; }
+        .o_wrap_input > :is(.o_field_char, .o_field_selection, .o_field_date, .o_field_datetime, .o_field_many2one, .o_field_monetary, .o_field_float, .o_field_integer).o_readonly_modifier {
+            min-height: 30px;
+            padding-top: 6px;
+        }
+        .o_form_label, .o_form_label.o_form_label_readonly, .oe_title .o_form_label {
+            color: var(--tcsi-route-muted);
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0;
+            text-transform: none;
+            line-height: 1.4;
+        }
+        .o_form_sheet .o_horizontal_separator {
+            margin: 0 0 16px;
+            padding: 0 0 12px;
+            color: var(--tcsi-route-ink);
+            border-bottom: 1px solid var(--tcsi-route-line);
+            font-size: 13px;
+            font-weight: 650;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        // Header lives BEFORE sheet. Negative sheet margins used to clip actions.
+        .o_form_statusbar {
+            min-height: 52px;
+            margin: 0 0 16px;
+            padding: 8px 0;
+            gap: 8px 16px;
+            flex-wrap: wrap;
+            background: transparent !important;
+            border: 0;
+            box-shadow: none;
+        }
+        .o_statusbar_buttons { gap: 8px; flex-wrap: wrap; }
+        .o_statusbar_status { margin-left: auto; align-self: center; gap: 4px; }
+        .o_form_statusbar .o_arrow_button {
+            min-height: 30px;
+            margin: 0 !important;
+            padding: 4px 12px !important;
+            color: var(--tcsi-route-muted);
+            background: var(--tcsi-route-surface) !important;
+            border: 1px solid var(--tcsi-route-line) !important;
+            border-radius: var(--tcsi-route-radius-sm) !important;
+            transform: none;
+            clip-path: none;
+            &::before, &::after { display: none !important; }
+            &.o_arrow_button_current, &[aria-checked="true"] {
+                color: var(--tcsi-route-purple-deep) !important;
+                background: var(--tcsi-route-accent-soft) !important;
+                border-color: var(--tcsi-route-purple) !important;
+            }
+        }
+    }
 
-    .nav-link {
+    .tcsi-form-sections {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        margin: 0 0 24px;
+        align-items: start;
+    }
+    .o_form_view .tcsi-form-section {
+        display: grid;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+    }
+    .tcsi-form-section-wide { grid-column: 1 / -1; }
+
+    .form-control, .form-select, .o_input, .o_field_widget input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), .o_field_widget textarea, .o_field_widget select {
+        min-height: 36px;
+        padding: 7px 10px;
+        color: var(--tcsi-route-ink);
+        background: var(--tcsi-route-surface) !important;
+        border: 1px solid var(--tcsi-route-line-strong) !important;
+        border-radius: var(--tcsi-route-radius-sm);
+        box-shadow: none !important;
+        &:focus { border-color: var(--tcsi-route-purple) !important; }
+        &:disabled { color: var(--tcsi-route-muted); background: var(--tcsi-route-surface-soft) !important; }
+    }
+    .o_field_widget textarea { min-height: 80px; }
+    .o_field_widget .o_field_many2one_selection,
+    .o_field_widget .o_input_dropdown {
+        min-height: 0;
+        padding: 0;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        outline: 0;
+    }
+    .o_field_many2many_tags .o_field_tags.o_tags_input {
+        min-height: 36px;
+        padding: 3px 6px;
+        border: 1px solid var(--tcsi-route-line-strong) !important;
+        background: var(--tcsi-route-surface) !important;
+        .o-autocomplete input.o_input {
+            min-height: 26px;
+            padding: 0 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+        &:focus-within { outline: 2px solid var(--tcsi-route-purple); outline-offset: 2px; }
+    }
+    .o_field_widget .o_dropdown_button { right: 8px; }
+    .o_field_widget .o_input_dropdown input { padding-right: 28px !important; }
+    .o_field_widget input[type="checkbox"], .o_field_widget input[type="radio"], .o_list_record_selector input, .o_list_table thead input[type="checkbox"] {
+        appearance: auto;
+        width: 16px;
+        height: 16px;
+        min-height: 16px;
+        padding: 0;
+        accent-color: var(--tcsi-route-purple);
+        box-shadow: none !important;
+    }
+    .o_field_boolean .form-check { min-height: 20px; margin: 0; padding-top: 8px; }
+    .o_field_boolean .form-check-input::after { display: none; }
+
+    // Tabs and detail tables stay attached to their document surface.
+    .o_notebook { margin-top: 20px; min-width: 0; }
+    .o_form_view .o_form_sheet .o_notebook {
+        --notebook-margin-x: 0px;
+        --notebook-padding-x: 0px;
+        margin-right: 0;
+        margin-left: 0;
+        width: auto !important;
+    }
+    .o_notebook .nav-tabs { gap: 16px; padding: 0; border-bottom: 1px solid var(--tcsi-route-line); }
+    .o_notebook .nav-tabs .nav-link {
+        padding: 12px 0;
         color: var(--tcsi-route-muted);
+        background: transparent;
+        border: 0;
         border-bottom: 2px solid transparent;
         border-radius: 0;
+        font-size: 12px;
+        font-weight: 600;
+        &.active { color: var(--tcsi-route-purple-deep); border-bottom-color: var(--tcsi-route-purple); }
+    }
+    .o_notebook .tab-content { padding-top: 0; border-bottom: 0; }
+    .o_form_view .o_notebook > .tab-content > .tab-pane { padding: 16px 0 0; }
+    // Odoo expands notebook tables with negative margins. Within a bordered
+    // document that clips the first account digits; reset the renderer variables.
+    .o_form_view .o_field_x2many.o_field_x2many_list .o_list_renderer {
+        --ListRenderer-margin-x: 0px !important;
+        --ListRenderer-table-padding-x: 12px !important;
+        width: 100%;
+        margin: 0 !important;
+        border: 1px solid var(--tcsi-route-line);
+        border-radius: var(--tcsi-route-radius);
+        overflow-x: auto;
+    }
+    .o_form_view .o_field_x2many .o_list_table { min-width: 640px; }
+    .o_form_view .o_field_x2many .o_list_view { padding: 0 !important; }
 
-        &:hover,
-        &:focus-visible {
+    // All list routes, including embedded lists. Preserve numeric alignment.
+    .o_list_view { padding: 0 !important; }
+    .o_list_view > .o_content { padding: 16px var(--tcsi-route-content-gutter) 32px; }
+    .o_list_view .o_list_renderer { min-width: 0; background: var(--tcsi-route-surface); border: 1px solid var(--tcsi-route-line); border-radius: var(--tcsi-route-radius); box-shadow: none !important; }
+    .o_list_view .o_list_table, .o_form_view .o_list_table {
+        --table-color: var(--tcsi-route-text);
+        --table-bg: var(--tcsi-route-surface);
+        --bs-table-color: var(--tcsi-route-text);
+        --bs-table-bg: var(--tcsi-route-surface);
+        margin: 0;
+        font-size: 13px;
+        background: var(--tcsi-route-surface);
+        border-collapse: separate;
+        border-spacing: 0;
+        box-shadow: none !important;
+        thead th {
+            height: 40px;
+            padding: 10px 12px;
+            color: var(--tcsi-route-muted);
+            background: var(--tcsi-route-surface-soft);
+            border-bottom: 1px solid var(--tcsi-route-line);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .02em;
+            text-transform: none;
+        }
+        tbody td { height: 44px; padding: 10px 12px; border-bottom: 1px solid var(--tcsi-route-line); vertical-align: middle; }
+        tbody tr:hover > td { background: var(--tcsi-route-surface-hover); }
+        tbody tr.o_data_row_selected > td, tbody tr:has(.o_list_record_selector input:checked) > td { background: var(--tcsi-route-accent-soft); }
+        tfoot td { padding: 12px; color: var(--tcsi-route-ink); background: var(--tcsi-route-surface-soft); border-top: 1px solid var(--tcsi-route-line); font-weight: 650; }
+        .o_field_number { font-variant-numeric: tabular-nums; }
+    }
+
+    .o_kanban_view { padding: 0 !important; }
+    .o_kanban_view > .o_content { padding: 16px var(--tcsi-route-content-gutter) 32px; }
+    .o_kanban_renderer { gap: 16px; background: var(--tcsi-route-page); }
+    .o_kanban_record {
+        background: var(--tcsi-route-surface) !important;
+        border: 1px solid var(--tcsi-route-line) !important;
+        border-radius: var(--tcsi-route-radius) !important;
+        box-shadow: none !important;
+        transform: none !important;
+        &:hover { border-color: var(--tcsi-route-line-strong) !important; }
+    }
+    .o_account_dashboard_kanban_view .o_kanban_renderer { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 0; }
+    .o_account_dashboard_kanban_view .o_kanban_record { width: auto !important; min-width: 0 !important; max-width: none !important; min-height: 240px; margin: 0 !important; }
+    .o_account_dashboard_kanban_view .o_kanban_record > span > a { font-size: 17px; font-weight: 600; color: var(--tcsi-route-ink); }
+
+    // Activity remains available, with more width reserved for accounting work.
+    .o-mail-ChatterContainer { min-width: 0; padding: 16px 16px 24px 0; }
+    .o-mail-Chatter {
+        margin: 0;
+        padding: 0;
+        background: var(--tcsi-route-surface);
+        border: 1px solid var(--tcsi-route-line);
+        border-radius: var(--tcsi-route-radius);
+        box-shadow: none !important;
+    }
+    .o-mail-Chatter .o-mail-Chatter-top { min-height: 52px; padding: 12px; background: var(--tcsi-route-surface); border-bottom: 1px solid var(--tcsi-route-line); }
+    .o-mail-Chatter .o-mail-Chatter-topbar {
+        flex-wrap: wrap;
+        gap: 6px;
+        overflow: visible !important;
+        align-items: center;
+    }
+    .o-mail-Chatter .o-mail-Chatter-topbar > .btn { margin: 0 !important; }
+    .o-mail-Chatter .o-mail-Chatter-topbarGrow { display: none; }
+    // Follow contains an invisible sizing span and an absolute label. Preserve
+    // that native structure; wrapping belongs to the toolbar, not the label.
+    .o-mail-Chatter-topbar > button:has(.o-mail-Chatter-follow) { flex-shrink: 0; }
+    .o-mail-Chatter-top .btn { min-height: 30px; padding: 4px 8px; font-size: 11px; }
+    .o-mail-Message { padding-top: 12px; padding-bottom: 12px; font-size: 12px; line-height: 1.5; }
+    .o-mail-Composer { margin: 12px; border-radius: var(--tcsi-route-radius); }
+
+    // Reports, calendars and settings use the same surfaces without taking over
+    // each specialized renderer's grid, scroll or drag-and-drop layout.
+    .o_graph_renderer, .o_pivot_renderer, .o_calendar_renderer, .o_activity_renderer, .o_hierarchy_renderer, .o_reconciliation {
+        color: var(--tcsi-route-text);
+        background: var(--tcsi-route-surface);
+        border: 1px solid var(--tcsi-route-line);
+        border-radius: var(--tcsi-route-radius);
+        box-shadow: none !important;
+    }
+    .o_graph_renderer, .o_pivot_renderer, .o_activity_renderer { padding: 16px; }
+    .o_pivot_renderer .table {
+        --table-color: var(--tcsi-route-text);
+        --table-bg: var(--tcsi-route-surface);
+        font-size: 12px;
+        th, td { padding: 10px 12px; border-color: var(--tcsi-route-line); }
+        thead th { background: var(--tcsi-route-surface-soft); font-weight: 600; }
+    }
+    .o_calendar_renderer .fc {
+        --fc-border-color: var(--tcsi-route-line);
+        --fc-page-bg-color: var(--tcsi-route-surface);
+        --fc-neutral-bg-color: var(--tcsi-route-surface-soft);
+        font-size: 12px;
+        .fc-toolbar-title { font-size: 18px; font-weight: 600; }
+    }
+    .o_view_nocontent { color: var(--tcsi-route-muted); font-size: 13px; }
+    .o_view_nocontent .o_view_nocontent_smiling_face { color: var(--tcsi-route-ink); font-size: 20px; font-weight: 600; }
+
+    .o_base_settings_view .o_form_renderer {
+        background: var(--tcsi-route-page);
+        .o_setting_container { min-width: 0; }
+        .settings_tab {
+            padding: 12px 8px;
+            color: var(--tcsi-route-text);
+            background: var(--tcsi-route-surface);
+            border-right: 1px solid var(--tcsi-route-line);
+            .tab { padding: 10px 12px; margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
+            .tab:hover { background: var(--tcsi-route-surface-hover); }
+            .tab.selected { color: var(--tcsi-route-purple-deep); background: var(--tcsi-route-accent-soft); box-shadow: none; }
+        }
+        .settings { min-width: 0; background: var(--tcsi-route-page); }
+        .settings > .app_settings_block :is(h2, .h2, h3, .h3) {
+            margin: 0;
+            padding: 16px 24px;
             color: var(--tcsi-route-ink);
-            border-bottom-color: var(--tcsi-route-line-strong);
+            background: var(--tcsi-route-surface-soft);
+            border-bottom: 1px solid var(--tcsi-route-line);
+            font-size: 16px;
+            font-weight: 600;
         }
-
-        &.active {
-            color: var(--tcsi-route-accent-deep);
-            border-bottom-color: var(--tcsi-route-accent);
-        }
+        .o_settings_container { margin: 0; padding: 8px 12px; }
+        .o_setting_box { margin: 0; padding: 16px 12px; }
+        .o_setting_right_pane { border-color: var(--tcsi-route-line); }
     }
-}
 
-body.tcsi-shell-active.tcsi-view-form .oe_chatter,
-body.tcsi-shell-active.tcsi-view-form .o-mail-Chatter {
-    margin-top: 24px;
-    padding-top: 20px;
-    background: var(--tcsi-route-surface);
-    border-top: 1px solid var(--tcsi-route-line);
-    box-shadow: none !important;
-}
-
-// Reports, charts, hierarchy, calendars, and other views -----------------
-body.tcsi-shell-active.tcsi-view-graph .o_graph_view,
-body.tcsi-shell-active.tcsi-view-pivot .o_pivot_view,
-body.tcsi-shell-active.tcsi-view-calendar .o_calendar_view,
-body.tcsi-shell-active.tcsi-view-hierarchy .o_hierarchy_view,
-body.tcsi-shell-active.tcsi-view-gantt .o_gantt_view,
-body.tcsi-shell-active.tcsi-view-activity .o_activity_view {
-    margin: 16px 24px 40px;
-    padding: 16px;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-view-graph .o_graph_renderer,
-body.tcsi-shell-active.tcsi-view-pivot .o_pivot_renderer,
-body.tcsi-shell-active.tcsi-view-calendar .o_calendar_renderer,
-body.tcsi-shell-active.tcsi-view-hierarchy .o_hierarchy_renderer,
-body.tcsi-shell-active.tcsi-view-gantt .o_gantt_renderer,
-body.tcsi-shell-active.tcsi-view-activity .o_activity_renderer {
-    background: var(--tcsi-route-surface) !important;
-}
-
-body.tcsi-shell-active .o_graph_view .o_graph_controller,
-body.tcsi-shell-active .o_pivot_view .o_pivot_buttons,
-body.tcsi-shell-active .o_calendar_view .o_calendar_header {
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface-soft);
-    border-color: var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .o_hierarchy_view .o_hierarchy_node,
-body.tcsi-shell-active .o_gantt_view .o_gantt_row,
-body.tcsi-shell-active .o_calendar_view .fc-scrollgrid,
-body.tcsi-shell-active .o_calendar_view .fc-daygrid-day {
-    border-color: var(--tcsi-route-line) !important;
-}
-
-// Reconciliation and dialogs ----------------------------------------------
-body.tcsi-shell-active.tcsi-route-reconciliation .o_action_manager .o_action {
-    padding-bottom: 40px;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-reconciliation .o_reconciliation {
-    margin: 16px 24px 0;
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .modal-backdrop.show {
-    opacity: .34;
-    background: #1d2b33;
-}
-
-body.tcsi-shell-active .modal-dialog,
-body.tcsi-shell-active .o_dialog .modal-dialog {
-    width: calc(100vw - 32px);
-    max-width: 920px;
-}
-
-body.tcsi-shell-active .modal-content,
-body.tcsi-shell-active .o_dialog .modal-content {
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius);
-    box-shadow: 0 12px 32px rgba(29, 43, 51, .16) !important;
-}
-
-body.tcsi-shell-active .modal-header,
-body.tcsi-shell-active .modal-footer,
-body.tcsi-shell-active .o_dialog .modal-header,
-body.tcsi-shell-active .o_dialog .modal-footer {
-    background: var(--tcsi-route-surface);
-    border-color: var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .modal-title,
-body.tcsi-shell-active .o_dialog .modal-title {
-    color: var(--tcsi-route-ink);
-    font-size: 18px;
-    font-weight: 680;
-}
-
-body.tcsi-shell-active .o_error_dialog .modal-header {
-    color: var(--tcsi-route-danger);
-    border-bottom-color: #efd3d3;
-}
-
-// Status chips -------------------------------------------------------------
-body.tcsi-shell-active .badge,
-body.tcsi-shell-active .o_tag_badge,
-body.tcsi-shell-active .o_field_widget .badge {
-    min-height: 22px;
-    padding: 3px 7px;
-    color: var(--tcsi-route-text);
-    background: #f1f4f5;
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: var(--tcsi-route-radius-sm);
-    font-weight: 650;
-}
-
-body.tcsi-shell-active .badge.text-bg-success,
-body.tcsi-shell-active .badge.bg-success,
-body.tcsi-shell-active .o_field_widget .badge.text-bg-success {
-    color: var(--tcsi-route-success);
-    background: #e8f5ef;
-    border-color: #c6e4d5;
-}
-
-body.tcsi-shell-active .badge.text-bg-danger,
-body.tcsi-shell-active .badge.bg-danger,
-body.tcsi-shell-active .o_field_widget .badge.text-bg-danger {
-    color: var(--tcsi-route-danger);
-    background: #fff0f0;
-    border-color: #efcfcf;
-}
-
-body.tcsi-shell-active .badge.text-bg-warning,
-body.tcsi-shell-active .badge.bg-warning,
-body.tcsi-shell-active .o_field_widget .badge.text-bg-warning {
-    color: var(--tcsi-route-warning);
-    background: #fff8e6;
-    border-color: #ead9a9;
-}
-
-// Discuss uses the same flat surfaces as the rest of the console.
-body.tcsi-shell-active.tcsi-route-discuss .o-mail-Discuss,
-body.tcsi-shell-active.tcsi-route-discuss .o-mail-DiscussSidebar,
-body.tcsi-shell-active.tcsi-route-discuss .o-mail-DiscussContent {
-    background: var(--tcsi-route-surface);
-    border-color: var(--tcsi-route-line);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-discuss .o-mail-DiscussSidebar-item,
-body.tcsi-shell-active.tcsi-route-discuss .o-mail-Mailbox,
-body.tcsi-shell-active.tcsi-route-discuss .o-mail-DiscussSidebarChannel {
-    color: var(--tcsi-route-text) !important;
-    background: transparent !important;
-    border-color: transparent !important;
-    border-radius: var(--tcsi-route-radius-sm) !important;
-
-    &:hover,
-    &:focus-visible,
-    &.o-active {
-        color: var(--tcsi-route-ink) !important;
-        background: var(--tcsi-route-surface-soft) !important;
-        border-color: var(--tcsi-route-line) !important;
-        outline: none;
-    }
-}
-
-// Responsive route rhythm -------------------------------------------------
-@media (max-width: 900px) {
-    body.tcsi-shell-active {
-        .o_control_panel {
-            min-height: 56px;
-            padding-right: 16px;
-            padding-left: 16px;
+    // OCA reconciliation has its own field renderers outside normal notebooks.
+    .o_account_reconcile_oca {
+        .o_account_reconcile_oca_selector, .o_account_reconcile_oca_info { min-width: 0; }
+        .o_form_statusbar.o_account_reconcile_oca_statusbar { padding: 12px 16px; margin: 0 0 16px; }
+        .o_kanban_record.o_kanban_record_reconcile_oca_selected {
+            background: var(--tcsi-route-accent-soft) !important;
+            border-color: var(--tcsi-route-accent) !important;
         }
-
-        .o_control_panel .o_control_panel_main {
-            min-height: 56px;
-            flex-wrap: wrap;
-            padding: 8px 0;
-        }
-
-        .tcsi-native-route-header {
-            padding: 22px 16px 16px;
-        }
-
-        .tcsi-view-list .o_list_view,
-        .tcsi-view-list .o_list_view .o_content,
-        .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        &.tcsi-route-reconciliation .o_reconciliation {
-            margin-right: 16px;
-            margin-left: 16px;
-        }
-
-        .tcsi-view-graph .o_graph_view,
-        .tcsi-view-pivot .o_pivot_view,
-        .tcsi-view-calendar .o_calendar_view,
-        .tcsi-view-hierarchy .o_hierarchy_view,
-        .tcsi-view-gantt .o_gantt_view,
-        .tcsi-view-activity .o_activity_view {
-            margin: 16px;
-        }
-
-        .tcsi-view-form .o_form_view .o_form_sheet_bg {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        .tcsi-view-form .o_form_view .o_form_sheet {
-            padding: 22px 20px 28px;
-        }
-    }
-}
-
-@media (max-width: 640px) {
-    body.tcsi-shell-active {
-        .tcsi-native-route-title {
-            font-size: 26px;
-        }
-
-        .o_control_panel .o_control_panel_main {
-            align-items: stretch;
-        }
-
-        .o_control_panel .o_cp_searchview,
-        .o_control_panel .o_searchview {
-            flex: 1 1 100%;
-            min-width: 0;
-        }
-
-        .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_renderer {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .tcsi-view-form .o_form_view .o_form_sheet {
-            padding-right: 16px;
-            padding-left: 16px;
-            border-right: 0;
-            border-left: 0;
-            border-radius: 0;
-        }
-
-        .modal-dialog,
-        .o_dialog .modal-dialog {
-            max-width: calc(100vw - 20px);
-            margin: 10px auto;
-        }
-    }
-}
-
-// TCSI route refresh -------------------------------------------------------
-// Native records keep their accounting behavior, but their presentation is
-// intentionally rebuilt around TCSI's quieter command-center language.
-body.tcsi-shell-active {
-    --tcsi-route-page: #fbfbfd;
-    --tcsi-route-surface: #ffffff;
-    --tcsi-route-surface-soft: #f7f9fa;
-    --tcsi-route-surface-hover: #f0f4f5;
-    --tcsi-route-ink: #14232c;
-    --tcsi-route-text: #344852;
-    --tcsi-route-muted: #73818a;
-    --tcsi-route-subtle: #94a0a7;
-    --tcsi-route-line: #dbe3e7;
-    --tcsi-route-line-strong: #c7d2d8;
-    --tcsi-route-shadow: 0 8px 28px rgba(20, 35, 44, .06);
-}
-
-body.tcsi-shell-active .o_action_manager {
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active .tcsi-native-route-header {
-    position: relative;
-    display: block;
-    margin: 0 var(--tcsi-route-content-gutter);
-    padding: 28px 0 18px;
-    background: transparent;
-    border-bottom: 1px solid var(--tcsi-route-line);
-}
-
-body.tcsi-shell-active .tcsi-native-route-eyebrow {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--tcsi-route-purple-deep);
-    font-size: 10px;
-    font-weight: 760;
-    letter-spacing: .12em;
-    line-height: 1.2;
-}
-
-body.tcsi-shell-active .tcsi-native-route-title {
-    margin: 0;
-    color: var(--tcsi-route-ink);
-    font-size: clamp(24px, 2.3vw, 34px);
-    font-weight: 760;
-    letter-spacing: -.045em;
-    line-height: 1.05;
-}
-
-body.tcsi-shell-active .tcsi-native-route-description {
-    max-width: 680px;
-    margin: 9px 0 0;
-    color: var(--tcsi-route-muted);
-    font-size: 13px;
-    line-height: 1.55;
-}
-
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel {
-    padding-top: 13px;
-    border-bottom: 0;
-}
-
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_breadcrumb,
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_cp_breadcrumb,
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_control_panel_breadcrumbs {
-    display: none;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_buttons .btn,
-body.tcsi-shell-active .o_control_panel .o_cp_action_menus .btn,
-body.tcsi-shell-active .o_control_panel .o_cp_switch_buttons .btn,
-body.tcsi-shell-active .o_control_panel .o_cp_pager button {
-    min-height: 34px;
-}
-
-// Lists are deliberately dense, calm, and single-accent. The old striped
-// table treatment is removed so the content, not the chrome, carries weight.
-body.tcsi-shell-active .tcsi-view-list .o_list_view {
-    padding-top: 0;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_renderer {
-    border-radius: 12px;
-    box-shadow: var(--tcsi-route-shadow);
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table {
-    border-radius: 12px;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table thead th {
-    height: 46px;
-    padding: 0 15px;
-    color: #687982;
-    background: #f5f8f9;
-    border-bottom-color: var(--tcsi-route-line);
-    font-size: 10px;
-    letter-spacing: .08em;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody td,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody th {
-    height: 52px;
-    padding: 10px 15px;
-    color: var(--tcsi-route-text);
-    background: var(--tcsi-route-surface);
-    border-bottom-color: #edf1f2;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr:nth-of-type(odd) > *,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table.table-striped > tbody > tr:nth-of-type(odd) > * {
-    --bs-table-accent-bg: transparent;
-    background: var(--tcsi-route-surface);
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr:hover > * {
-    background: var(--tcsi-route-surface-hover);
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr.o_data_row_selected > *,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tbody tr:has(input[type="checkbox"]:checked) > * {
-    background: var(--tcsi-route-purple-soft);
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_table tfoot > * {
-    background: #f5f8f9;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_record_selector,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_list_record_selector input {
-    accent-color: var(--tcsi-route-purple);
-}
-
-// Kanban cards use one consistent surface instead of per-record color bars.
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) {
-    padding-top: 0;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_renderer {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    align-items: stretch;
-    gap: 16px;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 168px;
-    margin: 0 !important;
-    overflow: hidden;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: 12px;
-    background: var(--tcsi-route-surface) !important;
-    box-shadow: var(--tcsi-route-shadow);
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record::before,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record::after {
-    display: none;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record:hover,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record:focus-within {
-    border-color: #b9a9ee !important;
-    box-shadow: 0 12px 30px rgba(20, 35, 44, .1);
-    transform: translateY(-2px);
-}
-
-// The account dashboard is the primary finance landing surface. It is a
-// deliberate two-column command center, not a row of stock application tiles.
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_content {
-    padding: 0 var(--tcsi-route-content-gutter) 56px !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-    gap: 16px;
-    padding: 22px 0 0;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 306px;
-    margin: 0 !important;
-    overflow: hidden;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-left: 1px solid var(--tcsi-route-line) !important;
-    border-radius: 12px;
-    background: var(--tcsi-route-surface) !important;
-    box-shadow: var(--tcsi-route-shadow);
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record > * {
-    min-width: 0;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_ghost {
-    display: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record .o_kanban_card_header,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record .o_kanban_card_content {
-    padding-right: 20px;
-    padding-left: 20px;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record .o_kanban_card_header {
-    padding-top: 20px;
-    color: var(--tcsi-route-ink);
-    border-bottom: 1px solid #edf1f2;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record .o_kanban_card_content {
-    padding-top: 14px;
-    padding-bottom: 18px;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_dashboard_graph,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_graph_barchart,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_graph_linechart {
-    min-height: 144px;
-    background: #fbfcfc;
-    border-top: 1px solid #edf1f2;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .btn,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view button {
-    min-height: 34px;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .oe_kanban_action,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view a {
-    color: var(--tcsi-route-purple-deep);
-}
-
-// Forms become a focused document surface with a quieter activity rail.
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet_bg {
-    padding-top: 8px;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet {
-    max-width: 1320px;
-    border-radius: 14px;
-    box-shadow: var(--tcsi-route-shadow);
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet h1,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet .o_form_title {
-    color: var(--tcsi-route-ink);
-    font-size: clamp(28px, 3vw, 42px);
-    font-weight: 760;
-    letter-spacing: -.05em;
-    line-height: 1.05;
-    text-transform: none;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .oe_title .o_form_label {
-    display: block;
-    margin-bottom: 7px;
-    color: var(--tcsi-route-purple-deep);
-    font-size: 11px;
-    font-weight: 760;
-    letter-spacing: .1em;
-    line-height: 1.2;
-    text-transform: none;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar {
-    background: #f5f8f9;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_inner_group > .o_form_label,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_group > .o_form_label {
-    color: #73818a;
-    font-size: 10px;
-    letter-spacing: .09em;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .oe_chatter,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o-mail-Chatter {
-    box-shadow: var(--tcsi-route-shadow);
-}
-
-// Reconciliation uses the same surface treatment even though its renderer is
-// not a standard list, form, or kanban view.
-body.tcsi-shell-active.tcsi-route-reconciliation .o_action_manager .o_action {
-    padding-bottom: 36px;
-    background: var(--tcsi-route-page);
-}
-
-body.tcsi-shell-active.tcsi-route-reconciliation .o_action_manager .o_action > .o_control_panel {
-    border-bottom: 0;
-}
-
-body.tcsi-shell-active.tcsi-route-reconciliation .o_action_manager .o_action .o_reconciliation {
-    margin: 0 var(--tcsi-route-content-gutter);
-    border: 1px solid var(--tcsi-route-line);
-    border-radius: 12px;
-    background: var(--tcsi-route-surface);
-    box-shadow: var(--tcsi-route-shadow);
-}
-
-body.tcsi-shell-active .o_field_widget .badge,
-body.tcsi-shell-active .o_tag_badge,
-body.tcsi-shell-active .badge {
-    border-color: #d8e1e5;
-    border-radius: 999px;
-    background: #eef3f4;
-    color: #4a5d66;
-}
-
-body.tcsi-shell-active .o_field_widget .badge.text-bg-success,
-body.tcsi-shell-active .badge.text-bg-success,
-body.tcsi-shell-active .badge.bg-success {
-    border-color: #bfe0d0;
-    background: #e6f5ed;
-    color: #1f6b49;
-}
-
-body.tcsi-shell-active .o_field_widget .badge.text-bg-danger,
-body.tcsi-shell-active .badge.text-bg-danger,
-body.tcsi-shell-active .badge.bg-danger {
-    border-color: #efc6ca;
-    background: #fff0f1;
-    color: #a13f49;
-}
-
-body.tcsi-shell-active .o_field_widget .badge.text-bg-warning,
-body.tcsi-shell-active .badge.text-bg-warning,
-body.tcsi-shell-active .badge.bg-warning {
-    border-color: #e8d6a6;
-    background: #fff8e8;
-    color: #81621b;
-}
-
-@media (max-width: 900px) {
-    body.tcsi-shell-active {
-        .tcsi-native-route-header {
-            margin-right: 16px;
-            margin-left: 16px;
-            padding-top: 22px;
-        }
-
-        .tcsi-native-route-title {
-            font-size: 28px;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_content {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_renderer {
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        }
-    }
-}
-
-@media (max-width: 640px) {
-    body.tcsi-shell-active {
-        .tcsi-native-route-header {
-            margin-right: 16px;
-            margin-left: 16px;
-            padding-top: 18px;
-            padding-bottom: 14px;
-        }
-
-        .tcsi-native-route-description {
+        .o_field_account_reconcile_oca_data, .o_field_account_reconcile_oca_match { min-width: 0; overflow-x: auto; }
+        .o_reconcile_widget_table {
+            width: 100%;
             font-size: 12px;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record {
-            min-height: 274px;
-        }
-
-        .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_renderer {
-            grid-template-columns: minmax(0, 1fr);
+            th, td { padding: 10px 12px; border-color: var(--tcsi-route-line); }
+            th { color: var(--tcsi-route-muted); background: var(--tcsi-route-surface-soft); font-weight: 600; }
+            .o_reconcile_widget_line.selected { background: var(--tcsi-route-accent-soft); }
         }
     }
+    .o_search_panel { background: var(--tcsi-route-surface); border-color: var(--tcsi-route-line); }
+    .o_search_panel .active { background: var(--tcsi-route-accent-soft); }
+
+    // Menus and popovers are controls, not surfaces: keep the control radius
+    // and the shared elevation so they match the dashboard's floating layers.
+    .dropdown-menu, .o-dropdown--menu, .o_popover, .popover {
+        color: var(--tcsi-route-text);
+        background: var(--tcsi-route-surface);
+        border: 1px solid var(--tcsi-route-line);
+        border-radius: var(--tcsi-route-radius-sm);
+        box-shadow: var(--tcsi-shadow-surface);
+    }
+    .dropdown-item { min-height: 32px; padding: 7px 12px; &:hover, &:focus { background: var(--tcsi-route-surface-hover); } }
+    .modal-content { background: var(--tcsi-route-surface); border: 1px solid var(--tcsi-route-line); border-radius: 8px; box-shadow: 0 16px 48px rgba(27, 43, 54, .16); }
+    .modal-header, .modal-footer { padding: 16px 24px; border-color: var(--tcsi-route-line); background: var(--tcsi-route-surface); }
+    .modal-title { font-size: 18px; font-weight: 650; letter-spacing: -.02em; }
+    .modal-body { min-height: 0; }
+    .modal-body .o_form_view .o_form_sheet_bg { padding: 0 !important; }
+    .modal-body .o_form_view .o_form_sheet { max-width: none; min-height: 0; padding: 24px; border: 0 !important; border-radius: 0 !important; }
+    .modal-body .o_form_view .o_form_nosheet { padding: 24px; }
+    .modal-body .o_form_view .o_form_statusbar { margin: 0; padding: 12px 24px; border-bottom: 1px solid var(--tcsi-route-line); }
+    .modal-dialog:has(.tcsi-report-wizard) { width: calc(100% - 32px); max-width: 800px; }
+    .modal-content:has(.tcsi-report-wizard), .modal-body:has(.tcsi-report-wizard) { min-height: 0 !important; height: auto !important; }
+    .tcsi-report-wizard .tcsi-form-sections { margin-bottom: 0; }
+    .tcsi-report-wizard .alert { margin-bottom: 24px; padding: 12px 16px; font-size: 12px; line-height: 1.5; }
 }
 
-// TCSI terminal route overrides ------------------------------------------
-// Form links use the same restrained warm accent as the rest of the TCSI console.
-body.tcsi-shell-active.tcsi-view-form .o_form_view a:not(.btn) {
-    color: var(--tcsi-route-accent-deep) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view a:not(.btn):hover,
-body.tcsi-shell-active.tcsi-view-form .o_form_view a:not(.btn):focus-visible {
-    color: var(--tcsi-route-accent) !important;
-}
-// The legacy route block ends above; these selectors are deliberately last so
-// the browser resolves one visual contract for every workspace renderer.
-body.tcsi-shell-active {
-    --tcsi-route-page: #fbfbfd;
-    --tcsi-route-surface: #ffffff;
-    --tcsi-route-surface-soft: #f8fafb;
-    --tcsi-route-surface-hover: #f3f6f7;
-    --tcsi-route-ink: #1d2b33;
-    --tcsi-route-text: #3d4d56;
-    --tcsi-route-muted: #6e7c84;
-    --tcsi-route-line: #e1e7ea;
-    --tcsi-route-line-strong: #cbd5da;
-    --tcsi-route-accent: #6b48d8;
-    --tcsi-route-accent-deep: #5130b3;
-    --tcsi-route-accent-soft: #f1edff;
-    --tcsi-route-radius: 6px;
-    --tcsi-route-radius-sm: 4px;
-}
-
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active {
-    color: var(--tcsi-route-ink) !important;
-    background: var(--tcsi-route-accent-soft) !important;
-}
-
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active::before,
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link[aria-current="page"]::before {
-    background: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-sidebar-link.is-active .tcsi-sidebar-icon {
-    color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .o_control_panel {
-    min-height: 58px;
-    padding: 0 24px !important;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface) !important;
-    border-bottom: 1px solid var(--tcsi-route-line) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_main {
-    min-height: 58px;
-    align-items: center;
-}
-
-body.tcsi-shell-active .o_control_panel .o_control_panel_breadcrumbs,
-body.tcsi-shell-active .o_control_panel .o_cp_breadcrumb,
-body.tcsi-shell-active .o_control_panel .o_breadcrumb {
-    color: var(--tcsi-route-ink) !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_searchview,
-body.tcsi-shell-active .o_control_panel .o_cp_searchview,
-body.tcsi-shell-active .o_control_panel .o_searchview_input_container {
-    background: var(--tcsi-route-surface) !important;
-    border-color: var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_searchview:focus-within,
-body.tcsi-shell-active .o_control_panel .o_cp_searchview:focus-within {
-    border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
-}
-
-body.tcsi-shell-active .o_control_panel .o_cp_buttons .btn-primary,
-body.tcsi-shell-active .o_control_panel .o_cp_action_menus .btn-primary,
-body.tcsi-shell-active .o_control_panel .o_searchview .btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .tcsi-native-route-header {
-    margin: 0 !important;
-    padding: 24px 24px 18px !important;
-    background: var(--tcsi-route-surface) !important;
-    border-bottom: 1px solid var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active .tcsi-native-route-eyebrow {
-    color: var(--tcsi-route-accent) !important;
-    font-size: 10px;
-    letter-spacing: .08em;
-}
-
-body.tcsi-shell-active .tcsi-native-route-title {
-    color: var(--tcsi-route-ink) !important;
-    font-size: clamp(24px, 2.2vw, 32px);
-    font-weight: 690;
-}
-
-body.tcsi-shell-active .tcsi-native-route-description {
-    color: var(--tcsi-route-muted) !important;
-}
-
-body.tcsi-shell-active .o_action:has(> .tcsi-native-route-header) .o_control_panel .o_control_panel_breadcrumbs,
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_control_panel .o_control_panel_breadcrumbs {
-    display: none !important;
-}
-
-body.tcsi-shell-active .btn,
-body.tcsi-shell-active button.btn,
-body.tcsi-shell-active .o_button {
-    min-height: 33px;
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface);
-    border-color: var(--tcsi-route-line-strong);
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .btn:hover,
-body.tcsi-shell-active .btn:focus-visible,
-body.tcsi-shell-active button.btn:hover,
-body.tcsi-shell-active button.btn:focus-visible {
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface-soft);
-    border-color: #aebbc2;
-}
-
-body.tcsi-shell-active .btn-primary,
-body.tcsi-shell-active .o_form_button_save,
-body.tcsi-shell-active .o_cp_buttons .btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active .btn-primary:hover,
-body.tcsi-shell-active .btn-primary:focus-visible,
-body.tcsi-shell-active .o_form_button_save:hover,
-body.tcsi-shell-active .o_form_button_save:focus-visible {
-    color: #fff !important;
-    background: var(--tcsi-route-accent-deep) !important;
-    border-color: var(--tcsi-route-accent-deep) !important;
-}
-
-body.tcsi-shell-active .form-control,
-body.tcsi-shell-active .form-select,
-body.tcsi-shell-active .o_input,
-body.tcsi-shell-active .o_field_widget input,
-body.tcsi-shell-active .o_field_widget textarea,
-body.tcsi-shell-active .o_field_widget select {
-    color: var(--tcsi-route-ink);
-    background: var(--tcsi-route-surface) !important;
-    border-color: var(--tcsi-route-line-strong) !important;
-    border-radius: var(--tcsi-route-radius-sm);
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .form-control:focus,
-body.tcsi-shell-active .form-select:focus,
-body.tcsi-shell-active .o_input:focus,
-body.tcsi-shell-active .o_field_widget input:focus,
-body.tcsi-shell-active .o_field_widget textarea:focus,
-body.tcsi-shell-active .o_field_widget select:focus {
-    border-color: var(--tcsi-route-accent) !important;
-    box-shadow: 0 0 0 2px rgba(107, 72, 216, .12) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_view,
-body.tcsi-shell-active .tcsi-view-list .o_list_view .o_content {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_renderer {
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table {
-    min-width: 720px;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table thead th {
-    color: var(--tcsi-route-muted) !important;
-    background: var(--tcsi-route-surface-soft) !important;
-    border-bottom-color: var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody td,
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody th {
-    color: var(--tcsi-route-text) !important;
-    background: var(--tcsi-route-surface) !important;
-    border-bottom-color: #edf1f3 !important;
-}
-
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody tr:hover > *,
-body.tcsi-shell-active .tcsi-view-list .o_list_table tbody tr.o_data_row_selected > * {
-    background: var(--tcsi-route-surface-hover) !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view:not(.o_account_dashboard_kanban_view) .o_kanban_record {
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-inline-start-color: var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-    transform: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record::before,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record::after {
-    display: none !important;
-}
-
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record:hover,
-body.tcsi-shell-active .tcsi-view-kanban .o_kanban_view .o_kanban_record:focus-within {
-    border-color: var(--tcsi-route-line-strong) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_content {
-    padding: 16px 24px 40px !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 0;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 286px;
-    margin: 0 !important;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-inline-start: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record > span > a.oe_kanban_action {
-    color: var(--tcsi-route-ink) !important;
-    font-size: 17px;
-    font-weight: 680;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record a.oe_kanban_action {
-    color: var(--tcsi-route-accent-deep) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_record button.btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view canvas {
-    filter: grayscale(.72);
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet_bg {
-    padding: 16px 24px 40px !important;
-    background: var(--tcsi-route-page) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet {
-    max-width: 1160px;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet h1,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_sheet .o_form_title {
-    color: var(--tcsi-route-ink) !important;
-    font-size: clamp(26px, 3vw, 36px);
-    font-weight: 690;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar {
-    background: var(--tcsi-route-surface-soft) !important;
-    border-bottom-color: var(--tcsi-route-line) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar .o_arrow_button.o_arrow_button_current,
-body.tcsi-shell-active.tcsi-view-form .o_form_view .o_form_statusbar .o_arrow_button.btn-primary {
-    color: #fff !important;
-    background: var(--tcsi-route-accent) !important;
-    border-color: var(--tcsi-route-accent) !important;
-}
-
-body.tcsi-shell-active.tcsi-view-form .oe_chatter,
-body.tcsi-shell-active.tcsi-view-form .o-mail-Chatter {
-    background: var(--tcsi-route-surface) !important;
-    border-top-color: var(--tcsi-route-line) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-view-graph .o_graph_view,
-body.tcsi-shell-active.tcsi-view-pivot .o_pivot_view,
-body.tcsi-shell-active.tcsi-view-calendar .o_calendar_view,
-body.tcsi-shell-active.tcsi-view-hierarchy .o_hierarchy_view,
-body.tcsi-shell-active.tcsi-view-gantt .o_gantt_view,
-body.tcsi-shell-active.tcsi-view-activity .o_activity_view {
-    margin: 16px 24px 40px;
-    padding: 16px;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active.tcsi-route-reconciliation .o_reconciliation {
-    margin: 16px 24px 0;
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: none !important;
-}
-
-body.tcsi-shell-active .modal-content,
-body.tcsi-shell-active .o_dialog .modal-content {
-    background: var(--tcsi-route-surface) !important;
-    border: 1px solid var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius) !important;
-    box-shadow: 0 12px 32px rgba(29, 43, 51, .16) !important;
-}
-
-body.tcsi-shell-active .badge,
-body.tcsi-shell-active .o_tag_badge,
-body.tcsi-shell-active .o_field_widget .badge {
-    color: var(--tcsi-route-text) !important;
-    background: #f1f4f5 !important;
-    border-color: var(--tcsi-route-line) !important;
-    border-radius: var(--tcsi-route-radius-sm) !important;
-}
-
-body.tcsi-shell-active .badge.text-bg-success,
-body.tcsi-shell-active .badge.bg-success {
-    color: #247d61 !important;
-    background: #e8f5ef !important;
-    border-color: #c6e4d5 !important;
-}
-
-body.tcsi-shell-active .badge.text-bg-danger,
-body.tcsi-shell-active .badge.bg-danger {
-    color: #b24b4b !important;
-    background: #fff0f0 !important;
-    border-color: #efcfcf !important;
-}
-
-@media (max-width: 900px) {
-    body.tcsi-shell-active {
-        .o_control_panel,
-        .tcsi-view-list .o_list_view,
-        .tcsi-view-list .o_list_view .o_content,
-        .tcsi-view-form .o_form_view .o_form_sheet_bg {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        .tcsi-native-route-header {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view {
-            padding-right: 16px !important;
-            padding-left: 16px !important;
-        }
-
-        &.tcsi-route-accounting-dashboard .o_account_dashboard_kanban_view .o_kanban_renderer {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .tcsi-view-graph .o_graph_view,
-        .tcsi-view-pivot .o_pivot_view,
-        .tcsi-view-calendar .o_calendar_view,
-        .tcsi-view-hierarchy .o_hierarchy_view,
-        .tcsi-view-gantt .o_gantt_view,
-        .tcsi-view-activity .o_activity_view {
-            margin: 16px;
-        }
+// Respect the width Odoo reserves for chatter; never widen it at laptop sizes.
+@media (min-width: 1400px) {
+    body.tcsi-shell-active .o_form_renderer > .o-mail-ChatterContainer.o-aside {
+        flex: 0 0 360px;
+        width: 360px;
+        max-width: 360px;
     }
 }
-
-@media (max-width: 640px) {
+@container tcsi-document (max-width: 640px) {
+    body.tcsi-shell-active .tcsi-form-sections { grid-template-columns: minmax(0, 1fr); }
+    body.tcsi-shell-active .o_form_sheet > .o_group > .o_inner_group { width: 100%; }
+}
+@media (max-width: 1100px) {
+    body.tcsi-shell-active .o_account_dashboard_kanban_view .o_kanban_renderer { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 767px) {
     body.tcsi-shell-active {
-        .o_control_panel .o_control_panel_main {
-            align-items: stretch;
-            flex-wrap: wrap;
-            padding-top: 8px;
-            padding-bottom: 8px;
-        }
-
-        .o_control_panel .o_cp_searchview,
-        .o_control_panel .o_searchview {
-            flex: 1 1 100%;
-        }
-
-        .tcsi-view-form .o_form_view .o_form_sheet {
-            padding-right: 16px;
-            padding-left: 16px;
-            border-right: 0 !important;
-            border-left: 0 !important;
-            border-radius: 0 !important;
-        }
+        --tcsi-route-content-gutter: 16px;
+        .tcsi-native-route-title { font-size: 22px; }
+        .o_control_panel_main { flex-wrap: wrap; }
+        .o_control_panel .o_searchview { min-width: 0; width: 100%; }
+        .o_form_view .o_form_sheet { --formView-sheet-padding-x: 16px; padding: 16px; }
+        .o_form_view .o_form_sheet h1 { font-size: 22px; }
+        .o_base_settings_view .o_form_renderer .settings_tab { padding-block: 0; }
+        .tcsi-form-sections { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+        .o-mail-ChatterContainer { padding: 0 16px 24px; }
+        .o_notebook .nav-tabs { gap: 12px; flex-wrap: nowrap; overflow-x: auto; }
+        .o_notebook .nav-link { white-space: nowrap; }
+        .modal-header, .modal-footer, .modal-body .o_form_view .o_form_sheet, .modal-body .o_form_view .o_form_nosheet { padding: 16px; }
+        .o_form_view .o_statusbar_status { margin-left: 0; }
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    body.tcsi-shell-active .btn, body.tcsi-shell-active .o_kanban_record { transition: none; }
+}
+@media print {
+    body.tcsi-shell-active {
+        .o_form_view .o_form_sheet_bg, .o_form_view .o_form_sheet { padding: 0 !important; border: 0 !important; }
+        .o_form_view .o_form_statusbar, .o-mail-ChatterContainer { display: none !important; }
     }
 }

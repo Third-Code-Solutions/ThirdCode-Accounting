@@ -9,13 +9,13 @@ body.tcsi-shell-active .o-mail-NotificationItem.tcsi-assistant-notification {
     .o-mail-NotificationItem-avatarContainer {
         background: #e9f2f0;
         border: 1px solid #d2e3df;
-        border-radius: 10px;
+        border-radius: 6px;
         overflow: hidden;
     }
 
     .o-mail-NotificationItem-avatarContainer img {
         display: block;
-        border-radius: 8px !important;
+        border-radius: 4px !important;
         object-fit: cover;
     }
 
@@ -54,5 +54,26 @@ body.tcsi-shell-active {
     .o-mail-DiscussSidebarChannel img[src*="id=2"] {
         content: url("/thirdcode_accounting/static/src/img/orvexa-avatar.png?v=2.9.0");
         background: #e9f2f0;
+    }
+}
+
+// Discuss and assistant surfaces use the same compact workspace rhythm.
+body.tcsi-shell-active {
+    .o-mail-Discuss { font-size: 13px; line-height: 1.5; }
+    .o-mail-DiscussSidebar { padding: 12px 8px; }
+    .o-mail-DiscussSidebar-top,
+    .o-mail-Discuss-header { min-height: 56px; padding: 12px 16px; gap: 8px; }
+    .o-mail-DiscussSidebarCategory { margin-top: 16px; font-size: 12px; }
+    .o-mail-DiscussSidebar-item,
+    .o-mail-DiscussSidebarChannel { min-height: 36px; padding: 8px 12px; border-radius: 6px; }
+    .o-mail-Discuss .o-mail-Message { padding-block: 8px; }
+    .o-mail-Discuss .o-mail-Message-body { font-size: 13px; line-height: 1.6; }
+    .o-mail-Discuss .o-mail-Composer { padding: 12px 16px; }
+    .o-mail-Discuss .o-mail-Composer-input { font-size: 13px; line-height: 1.5; }
+    .o-mail-ChatWindow.tcsi-chat-window {
+        border-radius: 6px 6px 0 0;
+        .o-mail-ChatWindow-header { min-height: 48px; padding: 8px 12px; }
+        .o-mail-ChatWindow-command { min-width: 32px; min-height: 32px; }
+        .o-mail-Message-body { font-size: 13px; line-height: 1.6; }
     }
 }

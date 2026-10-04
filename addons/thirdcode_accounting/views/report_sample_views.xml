@@ -26,7 +26,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="pending,approved,rejected"/>
                 </header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Sample details" class="tcsi-form-section">
                             <field name="name"/>
                             <field name="company_id"/>
@@ -40,7 +40,7 @@
                             <field name="approved_at" readonly="1"/>
                             <field name="notes"/>
                         </group>
-                    </group>
+                    </div>
                     <chatter/>
                 </sheet>
             </form>

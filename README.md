@@ -1,7 +1,10 @@
 # TCSI Accounting Workspace
 
-For employee workflows and the five-company setup sequence, see
-[`docs/accounting-user-guide.md`](docs/accounting-user-guide.md).
+For the current client-facing guide, use [User Guide (PDF)](docs/userguide.pdf)
+([editable source](docs/userguide.md)), reviewed against the hosted workspace on
+3 October 2026. Historical setup and operator notes remain in
+[`docs/accounting-user-guide.md`](docs/accounting-user-guide.md) and
+[`docs/team-operations-guide.md`](docs/team-operations-guide.md).
 
 Third Code Solutions Inc. local implementation of the feasible portions of `Accounting_System_PRD_v0.1`
 using Odoo Community 18.0, PostgreSQL 16, pinned OCA modules, and the separate
@@ -143,8 +146,12 @@ client's on-premise hardware, data volume, browser, or network.
 
 ## Repository status and boundaries
 
-- The source is in the local working tree on `main`; no commit, push, external
-  deployment, or production database change was performed by this task.
+- The source of truth is `main` on GitHub. Pushes deploy through the Vercel
+  and Railway Git integrations: the portal at
+  <https://tcsi-accounting-portal.vercel.app>, the engine on Railway, and the
+  Supabase project `zcalwevgunkevwzficvm` for portal leads and the hardened
+  standalone schema. Verify tenant isolation and the role matrix with
+  `npm run verify:rbac` before onboarding a new organization.
 - Client-specific report samples, BIR acknowledgement/control values, tax and
   withholding rates, EIS classification, MYOB extraction/mapping, live-history
   policy, parallel run, production roles, infrastructure, and statutory/legal

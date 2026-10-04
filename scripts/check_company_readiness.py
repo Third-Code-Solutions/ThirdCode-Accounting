@@ -5,17 +5,31 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import http.client
 import json
 import os
 import socket
 import sys
+import time
 import xmlrpc.client
 from datetime import date
 from typing import Any
 
+LEGAL_GATED_CHECKS = frozenset(
+    {
+        "legal_identifier_recorded",
+        "approved_tax_profile",
+        "approved_bir_control",
+        "eis_assessed",
+        "report_samples_approved",
+        "backup_owner",
+        "restore_owner",
+    }
+)
 
-def check_company(call: Any, company: dict[str, Any], on_date: str,
-                  expected_country_code: str | None = None,
+
+def check_company(call: Any, company: dict[str, Any], on_date: str, trial: bool = False,
+                  *, expected_country_code: str | None = None,
                   expected_currency_code: str | None = None) -> dict[str, Any]:
     company_id = company["id"]
     context = {"allowed_company_ids": [company_id]}
@@ -73,12 +87,18 @@ def check_company(call: Any, company: dict[str, Any], on_date: str,
         checks["expected_country"] = country_code == expected_country_code
     if expected_currency_code is not None:
         checks["expected_currency"] = currency_code == expected_currency_code
+    trial_deferred: dict[str, Any] = {}
+    if trial:
+        trial_deferred = {
+            key: checks.pop(key) for key in list(checks) if key in LEGAL_GATED_CHECKS
+        }
     return {
         "id": company_id,
         "name": company["name"],
         "identity": {"country_code": country_code, "currency_code": currency_code,
-                     "legal_identifier_recorded": checks["legal_identifier_recorded"]},
+                     "legal_identifier_recorded": bool(company["vat"] or company["company_registry"])},
         "checks": checks,
+        "trial_deferred": trial_deferred,
         "counts": {"accounts": accounts, "journals": journals, "open_periods_today": periods,
                    "configured_tax_profiles": tax_profiles, "approved_report_samples": approved_samples},
         "structurally_ready": all(checks.values()),
@@ -93,6 +113,9 @@ def main() -> int:
     parser.add_argument("--expected-companies", type=int, default=5)
     parser.add_argument("--expected-country-code", help="Approved two-letter company country code")
     parser.add_argument("--expected-currency-code", help="Approved three-letter book currency code")
+    parser.add_argument("--trial", action="store_true",
+                        help="Trial/personal use: legal identifier, BIR, EIS, report-sample and backup-owner items are "
+                             "reported separately as trial-deferred instead of blocking.")
     parser.add_argument("--date", default=date.today().isoformat())
     args = parser.parse_args()
     if args.expected_companies < 1:
@@ -119,7 +142,19 @@ def main() -> int:
         return 2
 
     def call(model: str, method: str, positional: list[Any], keyword: dict[str, Any] | None = None) -> Any:
-        return models.execute_kw(args.database, uid, password, model, method, positional, keyword or {})
+        # Read-only preflight: retry once the origin edge drops a connection
+        # mid-response (IncompleteRead / reset), which the hosted proxy
+        # occasionally does.
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                return models.execute_kw(
+                    args.database, uid, password, model, method, positional, keyword or {}
+                )
+            except (OSError, http.client.HTTPException, xmlrpc.client.ProtocolError) as error:
+                last_error = error
+                time.sleep(1.5 * (attempt + 1))
+        raise last_error  # type: ignore[misc]
 
     user = call("res.users", "read", [[uid]], {"fields": ["company_ids"]})[0]
     allowed = user["company_ids"]
@@ -129,12 +164,16 @@ def main() -> int:
         "thirdcode_eis_status", "thirdcode_report_samples_approved",
         "thirdcode_backup_owner", "thirdcode_restore_owner",
     ]})
-    checked = [check_company(call, company, args.date, args.expected_country_code,
-                             args.expected_currency_code) for company in companies]
+    checked = [check_company(
+        call, company, args.date, trial=args.trial,
+        expected_country_code=args.expected_country_code,
+        expected_currency_code=args.expected_currency_code,
+    ) for company in companies]
     checks = {"expected_company_count": len(checked) == args.expected_companies,
               "all_company_structures": all(item["structurally_ready"] for item in checked)}
     print(json.dumps({
         "status": "structurally_ready" if all(checks.values()) else "blocked",
+        "trial_mode": args.trial,
         "checks": checks,
         "companies": checked,
         "manual_gates_not_verified": [

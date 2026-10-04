@@ -19,6 +19,7 @@
     "typecheck": "npm run build:contracts && npm --workspace @tcsi/web run typecheck && npm --workspace @tcsi/worker run typecheck",
     "test": "npm run build:contracts && npm --workspace @tcsi/contracts run test && npm --workspace @tcsi/worker run test && npm --workspace @tcsi/web run test",
     "validate:migrations": "node scripts/validate-supabase.mjs",
+    "verify:rbac": "node scripts/verify-rbac-supabase.mjs",
     "ci": "npm run lint && npm run typecheck && npm test && npm run validate:migrations && npm run build && npm audit --audit-level=high"
   },
   "engines": {

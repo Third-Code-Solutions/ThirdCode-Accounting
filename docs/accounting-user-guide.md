@@ -70,15 +70,17 @@ resetting this demo. A paired snapshot from 28 September 2026 is stored in
 `tcsi_demo_20260928.dump` and `tcsi_demo_filestore_20260928.tgz`; these files
 are local and outside Git.
 
-**Current live state (28 September 2026):** the read-only production preflight
-found one company with no country or legal identifier recorded, USD as its
-current book currency, and no chart of accounts, sales/purchase/general/bank
-journals, current open period, configured tax profile, approved document
-samples, or assigned backup/restore owners. Login and server health work, but
-real posting is not accepted. Confirm the intended legal country, book currency,
-and registration details before changing them. Do not treat a green
-`/api/readiness` response as financial readiness; it checks only service
-availability.
+**Current live state (2 October 2026):** the four named production logins
+(`administrator@`, `accountant@`, `encoder@`, `readonly@tcsi.local`) are active
+with their correct TCSI roles and company assignment on the hosted workspace and
+sign in through the portal; PHP is activated and the Philippines is set as the
+company country. The chart of accounts, journals, and the open period are the
+remaining engine-administrator setup steps — `scripts/configure_company_setup.py`
+completes them idempotently. Tax profiles, BIR values, and report-sample
+approvals remain accountant-owned and must not be invented. Login and server
+health work, but real posting for five companies is not accepted yet. Do not
+treat a green `/api/readiness` response as financial readiness; it checks only
+service availability.
 
 ## The basic model
 

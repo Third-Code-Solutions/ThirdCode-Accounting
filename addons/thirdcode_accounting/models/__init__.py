@@ -16,6 +16,13 @@ from . import recurring_journal
 from . import report_sample
 from . import report_access
 from . import res_company
+from . import setup_service
 from . import tax_profile
 from . import year_end_close
 from . import orvexa
+from . import org_users
+from . import platform_console
+from . import ir_http
+from . import res_users
+from . import tcsi_auth_throttle
+from . import tcsi_cookie_policy

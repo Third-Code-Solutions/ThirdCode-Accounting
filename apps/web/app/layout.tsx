@@ -10,9 +10,9 @@ export const metadata: Metadata = {
   description: "TCSI Accounting connects ledger work, invoicing, reconciliation, controls, and reporting in one clear workspace for finance teams.",
   applicationName: "TCSI Accounting",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: ["/favicon.ico", "/icon.svg"],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
   openGraph: {
     title: "TCSI Accounting · Clear books, clear next steps",

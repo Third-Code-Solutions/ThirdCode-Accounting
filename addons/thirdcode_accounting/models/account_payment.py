@@ -190,9 +190,7 @@ class AccountPayment(models.Model):
             if not payment.thirdcode_receipt_number:
                 payment.sudo().write(
                     {
-                        "thirdcode_receipt_number": self.env["ir.sequence"].next_by_code(
-                            "thirdcode.official.receipt"
-                        ),
+                        "thirdcode_receipt_number": payment.company_id._thirdcode_receipt_sequence().next_by_id(),
                         "thirdcode_receipt_issued_at": fields.Datetime.now(),
                     }
                 )
@@ -214,8 +212,11 @@ class AccountPayment(models.Model):
             if payment.payment_type != "inbound" or payment.partner_type != "customer":
                 raise UserError(_("Official Receipts are only for incoming customer payments."))
             if not (
-                payment.company_id.thirdcode_bir_ack_approved
-                and payment.company_id.thirdcode_bir_ack_control_number
+                payment.company_id.thirdcode_trial_mode
+                or (
+                    payment.company_id.thirdcode_bir_ack_approved
+                    and payment.company_id.thirdcode_bir_ack_control_number
+                )
             ):
                 raise UserError(
                     _(

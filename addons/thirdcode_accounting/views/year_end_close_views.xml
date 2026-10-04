@@ -27,7 +27,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
                 </header>
                 <sheet>
-                    <group col="2" class="tcsi-form-sections">
+                    <div class="tcsi-form-sections">
                         <group string="Close details" class="tcsi-form-section">
                             <field name="name"/>
                             <field name="company_id"/>
@@ -43,7 +43,7 @@
                         <group string="Notes" class="tcsi-form-section tcsi-form-section-wide">
                             <field name="notes"/>
                         </group>
-                    </group>
+                    </div>
                 </sheet>
             </form>
         </field>

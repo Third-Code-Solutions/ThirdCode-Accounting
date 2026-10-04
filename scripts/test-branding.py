@@ -8,9 +8,10 @@ import xml.etree.ElementTree as ET
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ADDON = ROOT / "addons/thirdcode_accounting"
 tree = ast.parse((ADDON / "models/branding.py").read_text())
-function = next(node for node in tree.body if isinstance(node, ast.FunctionDef))
+functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
 namespace = {"re": re}
-exec(compile(ast.Module(body=[function], type_ignores=[]), "branding.py", "exec"), namespace)
+for name in ("brand_invitation", "brand_chat_body"):
+    exec(compile(ast.Module(body=[functions[name]], type_ignores=[]), "branding.py", "exec"), namespace)
 
 
 class BrandingTests(unittest.TestCase):
@@ -37,12 +38,37 @@ class BrandingTests(unittest.TestCase):
         self.assertIn('t-att-href="object.partner_id._get_signup_url()"', result)
         self.assertEqual(result, namespace["brand_invitation"](result))
 
+    def test_chat_bodies_lose_the_brand_even_as_link_text_or_lowercase(self):
+        body = ('<p>Welcome to odoo. See '
+                '<a href="https://thirdcodesolutions.com">odoo.com</a> '
+                'and ask the odoo assistant.</p>')
+        result = namespace["brand_chat_body"](body)
+        self.assertNotIn("odoo", result.lower())
+        self.assertIn("thirdcodesolutions.com", result)
+        self.assertEqual(result, namespace["brand_chat_body"](result))
+
+    def test_chat_branding_keeps_the_invisible_command_class(self):
+        body = '<p>Try <span class="o_odoobot_command">:)</span></p>'
+        self.assertEqual(namespace["brand_chat_body"](body), body)
+
     def test_form_views_declare_models_and_use_stable_selectors(self):
         root = ET.parse(ADDON / "views/branding_communications.xml").getroot()
         for record in root.findall("record"):
             self.assertIsNotNone(record.find("field[@name='model']"))
         for selector in root.iter("xpath"):
             self.assertNotIn("@string", selector.get("expr"))
+
+    def test_error_dialogs_lift_real_messages_without_the_brand(self):
+        js = (ADDON / "static/src/js/tcsi_error_branding.js").read_text()
+        self.assertIn("GENERIC_FALLBACKS", js)
+        self.assertIn("Odoo Server Error", js)
+        self.assertIn("data.message", js)
+        self.assertIn(r'replace(/\bOdoo\b/g, "TCSI")', js)
+        xml = (ADDON / "static/src/xml/tcsi_error_dialogs.xml").read_text()
+        self.assertNotIn("Odoo", xml)
+        self.assertIn("TCSI Session Expired", xml)
+        manifest = (ADDON / "__manifest__.py").read_text()
+        self.assertIn("tcsi_error_dialogs.xml", manifest)
 
 
 if __name__ == "__main__":

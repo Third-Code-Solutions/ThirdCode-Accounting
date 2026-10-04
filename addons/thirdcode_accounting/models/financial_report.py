@@ -33,19 +33,27 @@ class FinancialReportWizard(models.TransientModel):
         default="posted",
     )
     report_status = fields.Selection(
-        selection=[("draft", "Draft layout"), ("approved", "Approved layout")],
+        selection=[
+            ("draft", "Draft layout"),
+            ("approved", "Approved layout"),
+            ("trial", "Trial copy"),
+        ],
         compute="_compute_report_status",
         string="Layout status",
     )
 
-    @api.depends("company_id.thirdcode_report_samples_approved")
+    @api.depends(
+        "company_id.thirdcode_report_samples_approved",
+        "company_id.thirdcode_trial_mode",
+    )
     def _compute_report_status(self):
         for wizard in self:
-            wizard.report_status = (
-                "approved"
-                if wizard.company_id.thirdcode_report_samples_approved
-                else "draft"
-            )
+            if wizard.company_id.thirdcode_report_samples_approved:
+                wizard.report_status = "approved"
+            elif wizard.company_id.thirdcode_trial_mode:
+                wizard.report_status = "trial"
+            else:
+                wizard.report_status = "draft"
 
     @api.constrains("date_from", "date_to")
     def _check_dates(self):
@@ -202,9 +210,15 @@ class FinancialReportWizard(models.TransientModel):
             "date_from": self.date_from,
             "date_to": self.date_to,
             "target_move": target_move.get(self.target_move),
-            "layout_status": "Approved layout"
-            if self.company_id.thirdcode_report_samples_approved
-            else "DRAFT LAYOUT - client sample approval pending",
+            "layout_status": (
+                "TRIAL COPY - no client sample approval required"
+                if self.company_id.thirdcode_trial_mode
+                else (
+                    "Approved layout"
+                    if self.company_id.thirdcode_report_samples_approved
+                    else "DRAFT LAYOUT - client sample approval pending"
+                )
+            ),
             "sections": sections,
             "balance_check": self._amount(balance_check) if balance_check is not None else False,
             "balanced": balance_check is not None and abs(balance_check) < Decimal("0.005"),

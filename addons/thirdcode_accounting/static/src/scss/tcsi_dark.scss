@@ -289,6 +289,15 @@ html[data-tcsi-theme="dark"] body.tcsi-shell-active {
         border-color: var(--tcsi-route-accent) !important;
     }
 
+    // Native statusbar buttons are secondary buttons, but the current step
+    // must remain distinguishable from the general dark button surface.
+    .o_form_view .o_form_statusbar .o_arrow_button.o_arrow_button_current,
+    .o_form_view .o_form_statusbar .o_arrow_button[aria-checked="true"] {
+        color: var(--tcsi-route-purple-deep) !important;
+        background: var(--tcsi-route-accent-soft) !important;
+        border-color: var(--tcsi-route-purple) !important;
+    }
+
     .badge,
     .o_tag_badge,
     .o_field_widget .badge {

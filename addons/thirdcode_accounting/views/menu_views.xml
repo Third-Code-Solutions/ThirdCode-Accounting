@@ -11,7 +11,7 @@
         </menuitem>
         <menuitem id="menu_thirdcode_payment_batches" name="Payment batches" action="action_thirdcode_payment_batch" sequence="30"/>
         <menuitem id="menu_thirdcode_bank_reconciliations" name="Bank reconciliations" action="action_thirdcode_bank_reconciliation" sequence="35"/>
-        <menuitem id="menu_thirdcode_financial_reports" name="Financial statements" action="action_thirdcode_financial_report" sequence="37" groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+        <menuitem id="menu_thirdcode_financial_reports" name="Financial statements" action="action_thirdcode_financial_report" sequence="37" groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_encoder,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
         <menuitem id="menu_thirdcode_migration" name="Migration batches" action="action_thirdcode_migration_batch" sequence="40" groups="thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
     </menuitem>
 </odoo>

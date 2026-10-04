@@ -6,6 +6,7 @@ from .write_tokens import BANK_STATEMENT_SYNC_TOKEN
 
 _RECONCILIATION_METADATA_TOKEN = object()
 _REVERSAL_METADATA_TOKEN = object()
+_STATE_TRANSITION_TOKEN = object()
 
 
 class AccountMove(models.Model):
@@ -128,6 +129,11 @@ class AccountMove(models.Model):
             and protected_fields <= {"currency_id", "journal_id", "line_ids", "partner_id"}
             and all(move.sudo().statement_line_ids for move in self)
         )
+        state_transition_write = (
+            self.env.context.get("thirdcode_state_transition_token")
+            is _STATE_TRANSITION_TOKEN
+            and protected_fields <= {"state", "auto_post", "sending_data"}
+        )
         if (
             protected_fields
             and any(move.state == "posted" for move in self)
@@ -135,6 +141,7 @@ class AccountMove(models.Model):
             and not reconciliation_metadata_write
             and not reversal_metadata_write
             and not bank_statement_sync_write
+            and not state_transition_write
         ):
             raise UserError(
                 _(
@@ -152,9 +159,28 @@ class AccountMove(models.Model):
     def unlink(self):
         if any(move.state == "posted" for move in self):
             raise UserError(
-                _("Posted accounting entries cannot be deleted. Use a supported reversal instead.")
+                _(
+                    "Posted accounting entries cannot be deleted. Cancel the entry "
+                    "or use a supported reversal instead."
+                )
             )
         return super().unlink()
+
+    def button_draft(self):
+        # Reset-to-draft and cancellation are the sanctioned ways out of
+        # posted (cancel runs through reset-to-draft first internally). The
+        # token lets exactly those state transitions through the
+        # posted-immutability guard without opening direct field edits.
+        return super(
+            AccountMove,
+            self.with_context(thirdcode_state_transition_token=_STATE_TRANSITION_TOKEN),
+        ).button_draft()
+
+    def button_cancel(self):
+        return super(
+            AccountMove,
+            self.with_context(thirdcode_state_transition_token=_STATE_TRANSITION_TOKEN),
+        ).button_cancel()
 
     def action_post(self):
         if self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder"):
@@ -172,8 +198,11 @@ class AccountMove(models.Model):
             if move.state != "posted":
                 raise UserError(_("Only posted invoices may be printed."))
             if not (
-                move.company_id.thirdcode_bir_ack_approved
-                and move.company_id.thirdcode_bir_ack_control_number
+                move.company_id.thirdcode_trial_mode
+                or (
+                    move.company_id.thirdcode_bir_ack_approved
+                    and move.company_id.thirdcode_bir_ack_control_number
+                )
             ):
                 raise UserError(
                     _(
@@ -181,3 +210,42 @@ class AccountMove(models.Model):
                     )
                 )
         return self.env.ref("thirdcode_accounting.action_report_thirdcode_invoice").report_action(self)
+
+
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
+
+    def write(self, vals):
+        # The move-level guard does not cover direct writes on move lines
+        # (self._name is "account.move.line" there), which let API clients
+        # reclassify posted amounts between accounts while keeping the entry
+        # balanced. Block the accounting-relevant fields for non-superuser
+        # writes on posted lines; drafts are unaffected.
+        blocked_fields = {
+            "account_id",
+            "amount_currency",
+            "credit",
+            "date",
+            "debit",
+            "name",
+            "price_unit",
+            "product_id",
+            "quantity",
+            "ref",
+            "tax_ids",
+        }
+        if (
+            blocked_fields.intersection(vals)
+            and not self.env.su
+            and any(line.move_id.state == "posted" for line in self)
+            and self.env.context.get("thirdcode_bank_statement_sync_token")
+            is not BANK_STATEMENT_SYNC_TOKEN
+            and self.env.context.get("thirdcode_reconciliation_metadata_token")
+            is not _RECONCILIATION_METADATA_TOKEN
+        ):
+            raise UserError(
+                _(
+                    "Posted accounting entries are immutable. Use a supported reversal or correction document."
+                )
+            )
+        return super().write(vals)

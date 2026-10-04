@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="thirdcode_accounting.PlatformConsole">
+        <main class="tcsi-console" aria-labelledby="tcsi-console-title">
+            <header class="tcsi-console-head">
+                <div>
+                    <p class="tcsi-console-kicker">Third Code Solutions Inc. — system owner</p>
+                    <h1 id="tcsi-console-title">Platform console</h1>
+                    <p class="tcsi-console-sub">Every organisation, trial window, activity and risk in one place.</p>
+                </div>
+                <div class="tcsi-console-meta" t-if="state.data">
+                    <span t-esc="state.data.generated_at"/>
+                    <button type="button" class="btn btn-secondary" t-att-disabled="busy" t-on-click="load">Refresh</button>
+                </div>
+            </header>
+
+            <div t-if="state.error" class="tcsi-console-error" role="alert">
+                <p t-esc="state.error"/>
+                <button type="button" class="btn btn-secondary" t-on-click="load">Retry</button>
+            </div>
+            <p t-if="state.loading" class="tcsi-console-loading" role="status">Loading the platform picture…</p>
+
+            <t t-if="state.data">
+                <section class="tcsi-console-kpis" aria-label="Key indicators">
+                    <article t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.key" class="tcsi-console-kpi">
+                        <p class="tcsi-console-kpi-label" t-esc="kpi.label"/>
+                        <p class="tcsi-console-kpi-value" t-esc="kpi.value"/>
+                        <p class="tcsi-console-kpi-sub" t-esc="kpi.sub"/>
+                    </article>
+                </section>
+
+                <section class="tcsi-console-trend" aria-label="Documents created, last 14 days">
+                    <h2>Documents created · last 14 days</h2>
+                    <div class="tcsi-console-bars">
+                        <div t-foreach="state.data.trend" t-as="point" t-key="point.date" class="tcsi-console-bar">
+                            <div class="tcsi-console-bar-track"><div class="tcsi-console-bar-fill" t-att-style="'height:' + point.height + '%'" t-att-title="point.label + ' — ' + point.count + ' document(s)'"/></div>
+                            <span t-esc="point.label"/>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="tcsi-console-alerts" aria-label="Attention items">
+                    <h2>Attention list</h2>
+                    <p t-if="!state.data.alerts.length" class="tcsi-console-empty">No attention items — every organisation looks healthy.</p>
+                    <article t-foreach="state.data.alerts" t-as="alert" t-key="alert_index" t-att-class="'tcsi-console-alert is-' + alert.level">
+                        <p class="tcsi-console-alert-title"><t t-esc="alert.title"/><span t-if="alert.company" class="tcsi-console-alert-org" t-esc="' · ' + alert.company"/></p>
+                        <p class="tcsi-console-alert-detail" t-esc="alert.detail"/>
+                    </article>
+                </section>
+
+                <section class="tcsi-console-orgs" aria-label="Organisations">
+                    <h2>Organisations</h2>
+                    <div class="tcsi-console-table-wrap">
+                        <table class="tcsi-console-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Organisation</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Trial window</th>
+                                    <th scope="col">Users</th>
+                                    <th scope="col">Documents</th>
+                                    <th scope="col">Last activity</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="state.data.organizations" t-as="org" t-key="org.id">
+                                    <td>
+                                        <p class="tcsi-console-org-name" t-esc="org.name"/>
+                                        <p t-if="!org.baseline_ready" class="tcsi-console-org-warn">baseline incomplete — <t t-esc="org.accounts"/> accounts, <t t-esc="org.journals"/> journals</p>
+                                    </td>
+                                    <td><span t-att-class="'tcsi-console-badge is-' + org.status" t-esc="org.status_label"/></td>
+                                    <td>
+                                        <t t-if="org.trial_end">
+                                            <p t-esc="org.trial_start + ' → ' + org.trial_end"/>
+                                            <p t-if="org.status === 'trial' and org.days_left !== null" t-att-class="'tcsi-console-days' + (org.days_left &lt; 0 ? ' is-over' : (org.days_left &lt;= 7 ? ' is-soon' : ''))">
+                                                <t t-if="org.days_left &lt; 0"><t t-esc="-org.days_left"/> day(s) overdue</t>
+                                                <t t-else=""><t t-esc="org.days_left"/> day(s) left</t>
+                                            </p>
+                                        </t>
+                                        <p t-else="" class="tcsi-console-muted">no window set</p>
+                                    </td>
+                                    <td>
+                                        <p><t t-esc="org.users"/> active</p>
+                                        <p class="tcsi-console-muted"><t t-esc="org.users_week"/> in this week</p>
+                                    </td>
+                                    <td>
+                                        <p><t t-esc="org.docs"/> posted</p>
+                                        <p class="tcsi-console-muted"><t t-esc="org.docs_week"/> this week</p>
+                                    </td>
+                                    <td>
+                                        <p t-if="org.last_document" t-esc="org.last_document"/>
+                                        <p t-else="" class="tcsi-console-muted">no documents</p>
+                                        <p t-if="org.last_login" class="tcsi-console-muted">login <t t-esc="org.last_login"/></p>
+                                    </td>
+                                    <td class="tcsi-console-actions">
+                                        <button t-if="org.status === 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.extend(org, 7)">+7d</button>
+                                        <button t-if="org.status === 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.extend(org, 30)">+30d</button>
+                                        <button t-if="org.status === 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.convert(org)">Convert</button>
+                                        <button t-if="org.status !== 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.markTrial(org)">Start trial</button>
+                                        <button t-if="org.status !== 'suspended'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.suspend(org)">Suspend</button>
+                                        <button t-else="" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.resume(org)">Resume</button>
+                                        <button t-if="!org.baseline_ready" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.baseline(org)">Baseline</button>
+                                        <button type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.openOrg(org)">Enter</button>
+                                        <button type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.openUsers(org)">Users</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="tcsi-console-cols">
+                    <div class="tcsi-console-col">
+                        <h2>Recent documents</h2>
+                        <p t-if="!state.data.activity.documents.length" class="tcsi-console-empty">Nothing posted yet.</p>
+                        <ul class="tcsi-console-list">
+                            <li t-foreach="state.data.activity.documents" t-as="doc" t-key="doc.id">
+                                <p><strong t-esc="doc.ref"/> · <t t-esc="doc.kind"/> · <span class="tcsi-console-muted" t-esc="doc.state"/></p>
+                                <p class="tcsi-console-muted"><t t-esc="doc.company"/> · <t t-esc="doc.user"/> · <t t-esc="doc.when"/><t t-if="doc.amount"> · <t t-esc="doc.currency"/> <t t-esc="doc.amount.toLocaleString()"/></t></p>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="tcsi-console-col">
+                        <h2>Latest sign-ins</h2>
+                        <p t-if="!state.data.activity.signins.length" class="tcsi-console-empty">No sign-ins recorded yet.</p>
+                        <ul class="tcsi-console-list">
+                            <li t-foreach="state.data.activity.signins" t-as="signin" t-key="signin_index">
+                                <p><t t-esc="signin.name"/> <span class="tcsi-console-muted" t-esc="'(' + signin.login + ')'"/></p>
+                                <p class="tcsi-console-muted"><t t-esc="signin.company"/> · <t t-esc="signin.when"/></p>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+
+                <footer class="tcsi-console-system" aria-label="System">
+                    <dl>
+                        <div t-foreach="state.data.system" t-as="item" t-key="item.label">
+                            <dt t-esc="item.label"/>
+                            <dd t-esc="item.value"/>
+                        </div>
+                    </dl>
+                </footer>
+            </t>
+        </main>
+    </t>
+</templates>

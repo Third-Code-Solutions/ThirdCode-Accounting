@@ -7,8 +7,32 @@ import re
 
 
 def branded_workspace_url(url):
-    """Change only the internal workspace prefix, preserving query and fragment."""
-    return re.sub(r"^/odoo(?=[/?#]|$)", "/workspace", url)
+    """Change only the internal workspace prefix, preserving query and fragment.
+
+    The login redirect chain produced ``/workspace?`` and ``/workspace/?`` for a
+    bare workspace request: ``Home.index`` builds the redirect from the raw
+    ``full_path``, so an empty query string survives as a lone ``?`` (finding
+    M6). Normalising the empty query and the redundant trailing slash keeps
+    every branded URL canonical.
+    """
+    if not url:
+        return url
+    branded = re.sub(r"^/odoo(?=[/?#]|$)", "/workspace", url)
+    branded = re.sub(r"^(/workspace)/?(?=[?#]|$)", r"\1", branded)
+    return branded[:-1] if branded.endswith("?") else branded
+
+
+def _workspace_action_url():
+    """Resolve a stable target for the legacy dashboard shortcuts.
+
+    Action ids are database-specific, so the overview action is resolved by
+    XML id at request time instead of being hard-coded; a stale id would send
+    bookmarks to an unrelated action.
+    """
+    action_id = request.env["ir.model.data"].sudo()._xmlid_to_res_id(
+        "thirdcode_accounting.action_tcsi_dashboard", raise_if_not_found=False
+    )
+    return f"/workspace/action-{action_id}" if action_id else "/workspace"
 
 
 class TCSIWebClient(Home):
@@ -51,19 +75,19 @@ class TCSIWebClient(Home):
     @http.route("/dashboards", type="http", auth="none", readonly=False)
     def dashboards_alias(self, **kw):
         """Keep the product-facing dashboard URL useful for bookmarks and deep links."""
-        return request.redirect("/workspace/action-425")
+        return request.redirect(_workspace_action_url())
 
     @http.route("/workspace/dashboards", type="http", auth="none", readonly=False)
     def workspace_dashboards_alias(self, **kw):
         """Redirect the legacy native dashboard path to the TCSI overview."""
-        return request.redirect("/workspace/action-425")
+        return request.redirect(_workspace_action_url())
 
     @http.route("/action-307", type="http", auth="none", readonly=False)
     def action_307_alias(self, **kw):
-        """Keep the legacy action shortcut inside the branded workspace shell."""
-        return request.redirect("/workspace/action-307")
+        """Route the legacy numeric shortcut to the live TCSI overview."""
+        return request.redirect(_workspace_action_url())
 
     @http.route("/action-425", type="http", auth="none", readonly=False)
     def action_425_alias(self, **kw):
-        """Keep the command-center shortcut inside the branded workspace shell."""
-        return request.redirect("/workspace/action-425")
+        """Route the legacy numeric shortcut to the live TCSI overview."""
+        return request.redirect(_workspace_action_url())

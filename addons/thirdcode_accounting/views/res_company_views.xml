@@ -7,53 +7,62 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Third Code Accounting" groups="thirdcode_accounting.group_thirdcode_administrator,thirdcode_accounting.group_thirdcode_accountant">
-                    <group string="Regulatory configuration">
-                        <field name="thirdcode_bir_ack_control_number"/>
-                        <field name="thirdcode_bir_ack_approved"/>
-                        <field name="thirdcode_eis_status"/>
-                        <button name="action_validate_thirdcode_configuration" type="object" string="Validate configuration" class="oe_highlight"/>
-                    </group>
-                    <group string="Report approval gates">
-                        <field name="thirdcode_report_samples_approved"/>
-                        <field name="thirdcode_invoice_layout_revision"/>
-                        <field name="thirdcode_statement_layout_revision"/>
-                        <field name="thirdcode_financial_statement_layout_revision"/>
-                        <field name="thirdcode_receipt_layout_revision"/>
-                        <field name="thirdcode_receipt_signatory_name"/>
-                        <field name="thirdcode_receipt_signatory_title"/>
-                        <field name="thirdcode_reconciliation_layout_revision"/>
-                        <field name="thirdcode_numbering_owner"/>
-                        <field name="thirdcode_retained_earnings_account_id"/>
-                        <field name="thirdcode_year_end_journal_id"/>
-                        <field name="thirdcode_reconciliation_definition"/>
-                    </group>
-                    <group string="Migration and operations">
-                        <field name="thirdcode_live_history_policy"/>
-                        <field name="thirdcode_statutory_retention_years"/>
-                        <field name="thirdcode_backup_owner"/>
-                        <field name="thirdcode_restore_owner"/>
-                    </group>
-                    <group string="Optional payment approval">
-                        <field name="thirdcode_payment_approval_enabled"/>
-                        <field name="thirdcode_payment_approval_threshold"/>
-                    </group>
-                    <group string="Configured records">
-                        <field name="thirdcode_tax_profile_ids" readonly="1">
-                            <list>
-                                <field name="name"/>
-                                <field name="status"/>
-                                <field name="effective_date"/>
-                            </list>
-                        </field>
-                        <field name="thirdcode_report_sample_ids" readonly="1">
-                            <list>
-                                <field name="name"/>
-                                <field name="sample_type"/>
-                                <field name="revision"/>
-                                <field name="state"/>
-                            </list>
-                        </field>
-                    </group>
+                    <div class="tcsi-form-sections">
+                        <group string="Regulatory configuration" class="tcsi-form-section">
+                            <field name="thirdcode_trial_mode" string="Trial mode"/>
+                            <field name="thirdcode_bir_ack_control_number" string="BIR control number"/>
+                            <field name="thirdcode_bir_ack_approved" string="Control number approved"/>
+                            <field name="thirdcode_eis_status" string="EIS status"/>
+                            <button name="action_validate_thirdcode_configuration" type="object" string="Validate configuration" class="oe_highlight"/>
+                        </group>
+                        <group string="Report layouts" class="tcsi-form-section">
+                            <field name="thirdcode_report_samples_approved" string="Client samples approved"/>
+                            <field name="thirdcode_invoice_layout_revision" string="Invoice revision"/>
+                            <field name="thirdcode_statement_layout_revision" string="Statement revision"/>
+                            <field name="thirdcode_financial_statement_layout_revision" string="Financial statement revision"/>
+                            <field name="thirdcode_receipt_layout_revision" string="Receipt revision"/>
+                            <field name="thirdcode_reconciliation_layout_revision" string="Reconciliation revision"/>
+                        </group>
+                        <group string="Receipt signatory" class="tcsi-form-section">
+                            <field name="thirdcode_receipt_signatory_name" string="Signatory name"/>
+                            <field name="thirdcode_receipt_signatory_title" string="Signatory title"/>
+                        </group>
+                        <group string="Payment approval" class="tcsi-form-section">
+                            <field name="thirdcode_payment_approval_enabled" string="Approval enabled"/>
+                            <field name="thirdcode_payment_approval_threshold" string="Approval threshold"/>
+                        </group>
+                        <group string="Ledger controls" class="tcsi-form-section">
+                            <field name="thirdcode_numbering_owner" string="Numbering owner"/>
+                            <field name="thirdcode_retained_earnings_account_id" string="Retained earnings account"/>
+                            <field name="thirdcode_year_end_journal_id" string="Year-end journal"/>
+                            <field name="thirdcode_reconciliation_definition" string="Reconciliation definition"/>
+                        </group>
+                        <group string="Data and operations" class="tcsi-form-section">
+                            <field name="thirdcode_live_history_policy" string="Live history policy"/>
+                            <field name="thirdcode_statutory_retention_years" string="Retention years"/>
+                            <field name="thirdcode_backup_owner" string="Backup owner"/>
+                            <field name="thirdcode_restore_owner" string="Restore owner"/>
+                        </group>
+                        <group string="Tax profiles" class="tcsi-form-section tcsi-form-section-wide">
+                            <field name="thirdcode_tax_profile_ids" readonly="1" nolabel="1" colspan="2">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="status"/>
+                                    <field name="effective_date"/>
+                                </list>
+                            </field>
+                        </group>
+                        <group string="Report samples" class="tcsi-form-section tcsi-form-section-wide">
+                            <field name="thirdcode_report_sample_ids" readonly="1" nolabel="1" colspan="2">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="sample_type"/>
+                                    <field name="revision"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </group>
+                    </div>
                 </page>
             </xpath>
         </field>

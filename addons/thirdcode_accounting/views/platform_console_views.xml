@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action types use separate inherited SQL tables; flush the old path before
+         the client action checks uniqueness across those tables. -->
+    <function model="ir.actions.act_window" name="flush_model"><value eval="['path']"/></function>
+    <record id="action_thirdcode_platform_console" model="ir.actions.client">
+        <field name="name">Platform console</field>
+        <field name="tag">tcsi_platform_console</field>
+        <field name="path">console</field>
+    </record>
+    <menuitem id="menu_thirdcode_platform_console" name="Platform Console" parent="menu_thirdcode_accounting_root" action="action_thirdcode_platform_console" sequence="1" groups="thirdcode_accounting.group_thirdcode_platform_console,base.group_system"/>
+</odoo>
