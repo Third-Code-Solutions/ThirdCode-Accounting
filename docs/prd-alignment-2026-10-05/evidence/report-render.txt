@@ -1,0 +1,20 @@
+2026-10-04 20:25:07,271 211 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 20:25:07,272 211 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 20:25:07,272 211 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 20:25:07,272 211 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 20:25:07,395 211 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 20:25:07,399 211 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 20:25:07,509 211 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 20:25:07,509 211 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 20:25:07,524 211 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 1 modules...
+2026-10-04 20:25:07,528 211 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 20:25:07,543 211 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 63 modules...
+2026-10-04 20:25:07,960 211 INFO tcsi_alignment_candidate_v2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 20:25:07,964 211 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 63 modules loaded in 0.42s, 0 queries (+0 extra)
+2026-10-04 20:25:08,080 211 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: Modules loaded.
+2026-10-04 20:25:08,094 211 INFO tcsi_alignment_candidate_v2 odoo.modules.registry: Registry loaded in 0.584s
+2026-10-04 20:25:10,469 211 INFO tcsi_alignment_candidate_v2 odoo.addons.base.models.ir_actions_report: The PDF report has been generated for model: thirdcode.financial.report.wizard, records [74].
+2026-10-04 20:25:12,642 211 INFO tcsi_alignment_candidate_v2 odoo.addons.base.models.ir_actions_report: The PDF report has been generated for model: thirdcode.financial.report.wizard, records [77].
+2026-10-04 20:25:14,866 211 INFO tcsi_alignment_candidate_v2 odoo.addons.base.models.ir_actions_report: The PDF report has been generated for model: thirdcode.financial.report.wizard, records [80].
+ALIGNMENT_REPORTS {"balance_sheet": {"render_seconds": 2.338, "pdf_bytes": 19713}, "profit_loss": {"render_seconds": 2.172, "pdf_bytes": 16275}, "cash_flow": {"render_seconds": 2.222, "pdf_bytes": 21395}}

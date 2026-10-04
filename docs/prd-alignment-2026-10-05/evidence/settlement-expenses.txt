@@ -1,0 +1,31 @@
+Running as user 'root' is a security risk.
+2026-10-04 20:39:25,192 1 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 20:39:25,192 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 20:39:25,192 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 20:39:25,192 1 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 20:39:25,326 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 20:39:25,331 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 20:39:25,430 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on 98828cbe9e9b:8069
+2026-10-04 20:39:25,446 1 INFO tcsi_alignment_upgrade odoo.tests.common: Importing test framework
+2026-10-04 20:39:25,460 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 1 modules...
+2026-10-04 20:39:25,509 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 1 modules loaded in 0.05s, 0 queries (+0 extra)
+2026-10-04 20:39:25,526 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 63 modules...
+2026-10-04 20:39:26,250 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 20:39:26,266 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 63 modules loaded in 0.74s, 0 queries (+0 extra)
+2026-10-04 20:39:26,382 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Modules loaded.
+2026-10-04 20:39:26,396 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry loaded in 0.965s
+2026-10-04 20:39:26,396 1 INFO tcsi_alignment_upgrade odoo.service.server: Starting post tests
+2026-10-04 20:39:31,230 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_advance_later_allocation_and_customer_refund_reconcile ...
+2026-10-04 20:39:34,491 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_employee_reimbursement_and_company_paid_expense_post_to_ledger ...
+2026-10-04 20:39:35,740 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #127 deleted mail.activity records with IDs: [1]
+2026-10-04 20:39:37,236 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_attachment: filestore gc 8 checked, 8 removed
+2026-10-04 20:39:37,236 1 INFO tcsi_alignment_upgrade odoo.service.server: 2 post-tests in 10.84s, 19550 queries
+2026-10-04 20:39:37,236 1 INFO tcsi_alignment_upgrade odoo.tests.stats: thirdcode_accounting: 4 tests 10.81s 19550 queries
+2026-10-04 20:39:37,236 1 INFO tcsi_alignment_upgrade odoo.tests.result: 0 failed, 0 error(s) of 2 tests when loading database 'tcsi_alignment_upgrade'
+2026-10-04 20:39:37,237 1 INFO tcsi_alignment_upgrade odoo.service.server: Initiating shutdown
+2026-10-04 20:39:37,237 1 INFO tcsi_alignment_upgrade odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 20:39:37,237 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_http: Generating routing map for key None
+2026-10-04 20:39:37,262 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 20:39:37] "GET /web/health HTTP/1.1" 200 - 4 0.004 7.335
+2026-10-04 20:39:37,440 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections
+2026-10-04 20:39:37,440 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read-only;used=0/count=0/max=64): Closed 1 connections

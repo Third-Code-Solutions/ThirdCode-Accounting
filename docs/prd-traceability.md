@@ -1,5 +1,8 @@
 # PRD traceability — full local implementation
 
+> Current scope amendment (5 October 2026): the approved target is Vercel portal/proxy, Railway Odoo Community/PostgreSQL and persistent filestore, preserving Supabase responsibilities. On-premise/client-owned-server/LAN-only mismatch findings are withdrawn. Historical local claims below are not refreshed production evidence. Use [the refreshed traceability and release record](prd-alignment-2026-10-05/REPORT.md) and [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md). Product readiness for white-label turnover is distinct from each future client's accounting configuration and acceptance.
+
+
 Source: [Accounting System PRD v0.1](../../Accounting_System_PRD_v0.1.pdf), dated
 19 September 2026, eight pages. The PRD is explicitly a review draft and says
 it is not a build specification until the open questions are closed and v1.0 is

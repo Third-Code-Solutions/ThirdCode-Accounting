@@ -1,0 +1,228 @@
+{
+  "balance_sheet": {
+    "calculation": {
+      "title": "Balance sheet",
+      "date_from": "2025-01-01",
+      "date_to": "2025-12-31",
+      "target_move": "Posted entries only",
+      "layout_status": "TRIAL COPY - client acceptance pending",
+      "sections": [
+        {
+          "name": "Assets",
+          "lines": [
+            {
+              "code": "101000",
+              "name": "Current Assets",
+              "amount": "150.00"
+            },
+            {
+              "code": "121000",
+              "name": "Account Receivable",
+              "amount": "1,050.00"
+            }
+          ],
+          "total": "1,200.00"
+        },
+        {
+          "name": "Liabilities",
+          "lines": [],
+          "total": "0.00"
+        },
+        {
+          "name": "Equity",
+          "lines": [],
+          "total": "0.00"
+        },
+        {
+          "name": "Current period earnings",
+          "lines": [
+            {
+              "code": "",
+              "name": "Current period earnings",
+              "amount": "1,200.00"
+            }
+          ],
+          "total": "1,200.00"
+        }
+      ],
+      "balance_check": "0.00",
+      "balanced": true,
+      "net_result": false,
+      "comparison": {
+        "title": "Balance sheet",
+        "date_from": "2024-01-01",
+        "date_to": "2024-12-31",
+        "target_move": "Posted entries only",
+        "layout_status": "TRIAL COPY - client acceptance pending",
+        "sections": [
+          {
+            "name": "Assets",
+            "lines": [],
+            "total": "0.00"
+          },
+          {
+            "name": "Liabilities",
+            "lines": [],
+            "total": "0.00"
+          },
+          {
+            "name": "Equity",
+            "lines": [],
+            "total": "0.00"
+          }
+        ],
+        "balance_check": "0.00",
+        "balanced": true,
+        "net_result": false,
+        "comparison": false
+      }
+    },
+    "render_seconds": 2.338,
+    "pdf_bytes": 19713,
+    "sha256": "30d0cf04a6f074c7c2998c88151248c50f809f8a7de2362b0a0806aea12484ad"
+  },
+  "profit_loss": {
+    "calculation": {
+      "title": "Profit and loss",
+      "date_from": "2025-01-01",
+      "date_to": "2025-12-31",
+      "target_move": "Posted entries only",
+      "layout_status": "TRIAL COPY - client acceptance pending",
+      "sections": [
+        {
+          "name": "Income",
+          "lines": [
+            {
+              "code": "400000",
+              "name": "Product Sales",
+              "amount": "1,200.00"
+            }
+          ],
+          "total": "1,200.00"
+        },
+        {
+          "name": "Expenses",
+          "lines": [],
+          "total": "0.00"
+        }
+      ],
+      "balance_check": false,
+      "balanced": false,
+      "net_result": "1,200.00",
+      "comparison": {
+        "title": "Profit and loss",
+        "date_from": "2024-01-01",
+        "date_to": "2024-12-31",
+        "target_move": "Posted entries only",
+        "layout_status": "TRIAL COPY - client acceptance pending",
+        "sections": [
+          {
+            "name": "Income",
+            "lines": [],
+            "total": "0.00"
+          },
+          {
+            "name": "Expenses",
+            "lines": [],
+            "total": "0.00"
+          }
+        ],
+        "balance_check": false,
+        "balanced": false,
+        "net_result": "0.00",
+        "comparison": false
+      }
+    },
+    "render_seconds": 2.172,
+    "pdf_bytes": 16275,
+    "sha256": "6265dbdcc2a76fd1d0b8e01f07482c44b3c27636e631c2040934a7482ee3186b"
+  },
+  "cash_flow": {
+    "calculation": {
+      "title": "Cash flow (provisional classification)",
+      "date_from": "2025-01-01",
+      "date_to": "2025-12-31",
+      "target_move": "Posted entries only",
+      "layout_status": "TRIAL COPY - client acceptance pending",
+      "sections": [
+        {
+          "name": "Operating activities",
+          "lines": [
+            {
+              "code": "PQAB/2025/00001",
+              "name": "BATCH/2026/00001",
+              "amount": "150.00"
+            }
+          ],
+          "total": "150.00"
+        },
+        {
+          "name": "Investing activities",
+          "lines": [],
+          "total": "0.00"
+        },
+        {
+          "name": "Financing activities",
+          "lines": [],
+          "total": "0.00"
+        },
+        {
+          "name": "Classification or allocation required",
+          "lines": [],
+          "total": "0.00"
+        }
+      ],
+      "balance_check": false,
+      "balanced": false,
+      "net_result": false,
+      "opening_cash": "0.00",
+      "closing_cash": "150.00",
+      "cash_movement": "150.00",
+      "cash_reconciliation_difference": "0.00",
+      "classification_complete": true,
+      "unclassified_count": 0,
+      "comparison": {
+        "title": "Cash flow (provisional classification)",
+        "date_from": "2024-01-01",
+        "date_to": "2024-12-31",
+        "target_move": "Posted entries only",
+        "layout_status": "TRIAL COPY - client acceptance pending",
+        "sections": [
+          {
+            "name": "Operating activities",
+            "lines": [],
+            "total": "0.00"
+          },
+          {
+            "name": "Investing activities",
+            "lines": [],
+            "total": "0.00"
+          },
+          {
+            "name": "Financing activities",
+            "lines": [],
+            "total": "0.00"
+          },
+          {
+            "name": "Classification or allocation required",
+            "lines": [],
+            "total": "0.00"
+          }
+        ],
+        "balance_check": false,
+        "balanced": false,
+        "net_result": false,
+        "opening_cash": "0.00",
+        "closing_cash": "0.00",
+        "cash_movement": "0.00",
+        "cash_reconciliation_difference": "0.00",
+        "classification_complete": true,
+        "unclassified_count": 0,
+        "comparison": false
+      }
+    },
+    "render_seconds": 2.222,
+    "pdf_bytes": 21395,
+    "sha256": "d8a6a0672953db241521ba711a138555a38a6f1959eff5b4f56cb552dae62cba"
+  }
+}

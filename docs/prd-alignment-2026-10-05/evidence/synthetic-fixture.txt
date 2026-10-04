@@ -1,0 +1,17 @@
+2026-10-04 20:25:05,383 189 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 20:25:05,384 189 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 20:25:05,384 189 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 20:25:05,384 189 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 20:25:05,509 189 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 20:25:05,513 189 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 20:25:05,610 189 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 20:25:05,611 189 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 20:25:05,626 189 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 1 modules...
+2026-10-04 20:25:05,630 189 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 20:25:05,645 189 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: loading 63 modules...
+2026-10-04 20:25:06,072 189 INFO tcsi_alignment_candidate_v2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 20:25:06,077 189 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: 63 modules loaded in 0.43s, 0 queries (+0 extra)
+2026-10-04 20:25:06,201 189 INFO tcsi_alignment_candidate_v2 odoo.modules.loading: Modules loaded.
+2026-10-04 20:25:06,216 189 INFO tcsi_alignment_candidate_v2 odoo.modules.registry: Registry loaded in 0.605s
+ALIGNMENT_SNAPSHOT {"attachments": [{"bytes": 60, "name": "alignment-recovery-proof.txt", "sha256": "840473b4a62f8d5942eff3eb630a137a8a113c0ee375b7ba5a36e432e1582bc9"}], "audit_count": 164, "audit_line_count": 3580, "audit_sha256": "a55ae9e3e9c51974a439792ad49c96d487cddaad147212f5d9b157505e031f96", "balances": {"101000": 150.0, "121000": 1050.0, "400000": -1200.0}, "dataset": "Synthetic twelve-month fixture; not a production backup", "posted_moves": 13}

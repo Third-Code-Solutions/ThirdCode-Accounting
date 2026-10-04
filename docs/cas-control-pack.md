@@ -1,5 +1,8 @@
 # CAS control pack — implementation template
 
+> Current scope amendment (5 October 2026): the approved target is Vercel portal/proxy, Railway Odoo Community/PostgreSQL and persistent filestore, preserving Supabase responsibilities. On-premise/client-owned-server/LAN-only mismatch findings are withdrawn. Historical local claims below are not refreshed production evidence. Use [the refreshed traceability and release record](prd-alignment-2026-10-05/REPORT.md) and [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md). Product readiness for white-label turnover is distinct from each future client's accounting configuration and acceptance.
+
+
 This document is a technical control-pack template for the proposed Odoo
 Community installation. It is not a BIR certificate, legal opinion, or client
 acceptance record. Fields marked `BLOCKED — CLIENT DECISION` require the named

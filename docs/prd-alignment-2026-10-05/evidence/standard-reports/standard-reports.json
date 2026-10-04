@@ -1,0 +1,32 @@
+{
+  "journal_listing": {
+    "report": "account_financial_report.journal_ledger",
+    "bytes": 47583,
+    "sha256": "bfe78f638443eff96a07b5a54300303530bcbee97f47022b4bdad380a61ba49d",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "customer_ageing": {
+    "report": "account_financial_report.aged_partner_balance",
+    "bytes": 26770,
+    "sha256": "2c17fbd65e525e91321058e5d74b2ec44a1c59eeff7a943364f76fe973a70e52",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "supplier_ageing": {
+    "report": "account_financial_report.aged_partner_balance",
+    "bytes": 30712,
+    "sha256": "4d283444afca946e3acaae3a0c2dd0ec54e66705c3805cb4876b0e4daf5aa94d",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "unpaid_balances": {
+    "report": "account_financial_report.open_items",
+    "bytes": 50160,
+    "sha256": "c346ac8142695773ee4100025a309280aeb7ad2a85eb64fbbd10693a1a518de1",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "vat_summary": {
+    "report": "account_financial_report.vat_report",
+    "bytes": 11183,
+    "sha256": "f30908dd70a5246e0f3148126f7cfe276057f2f644227dba02a887ea741be16a",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  }
+}

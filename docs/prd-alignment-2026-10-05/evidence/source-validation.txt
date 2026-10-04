@@ -1,0 +1,5 @@
+PASS: 58 accounting manifest resources are present and deployable
+Python compileall: passed
+Git diff --check: passed
+Traceability: 92 unique, populated requirement rows; no stale in-progress statuses
+Candidate manifest: 18.0.2.12.0

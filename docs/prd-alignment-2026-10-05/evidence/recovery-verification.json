@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "source_database": "tcsi_alignment_upgrade",
+  "restored_database": "tcsi_alignment_restored",
+  "snapshot": {
+    "attachments": [
+      {
+        "bytes": 27,
+        "name": "upgrade-proof.txt",
+        "sha256": "9e264fe621b0bd32ae4fbf1662681d140d8f69965b866d2b3433af9a3579eb83"
+      }
+    ],
+    "audit_count": 5,
+    "audit_line_count": 108,
+    "audit_sha256": "5fe85bc616f3e78012f15b9d9f35fc371051a5f7c44bff9fb7372b1367fd60a4",
+    "balances": {
+      "QA100": 50.0,
+      "QA300": -50.0
+    },
+    "dataset": "One isolated synthetic posted journal; not a production backup",
+    "posted_moves": 1
+  },
+  "production_representative": false,
+  "external_destination_verified": false,
+  "restore_seconds": 6.383,
+  "backup_bytes": 4248989,
+  "backup_sha256": "b9493cdb93065232211cc02267537dd10b1acf2b500074cd019ad4848c5f807f",
+  "metadata_correction": "The raw snapshot logs mistakenly label this one-journal recovery fixture as twelve-month; balances and hashes are unchanged."
+}
