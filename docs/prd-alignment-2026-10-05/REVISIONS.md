@@ -1,6 +1,6 @@
 # Candidate revisions
 
-All commits are local on branch `work`; none was pushed to a deployment branch.
+The combined candidate through `8ff19d373f7c32893a90de73d0328b91104ad121` was pushed to `release/accounting-18.0.2.13.0` on 5 October 2026 (Asia/Manila) following the product owner's push/deploy instruction. [Draft PR #7](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/7) targets `main`. Production has not been released; see [the deployment attempt](DEPLOYMENT.md).
 
 | Revision | Change |
 |---|---|
@@ -13,5 +13,6 @@ All commits are local on branch `work`; none was pushed to a deployment branch.
 | `b60e037` | Atomic residual cutover, retained original/mapping files, immutable queryable history and matching native tests. |
 | `1788736` | Reversal-preserving statement matching, cash allocation/tax/bank/SOA output, native UI and workflow/role regressions. |
 | `80a9684` | Reproducible cutover/report/concurrency/snapshot/restore scripts and isolated benchmark guard. |
+| `8ff19d3` | Final phase 2 evidence, traceability, cutover policy and remaining hosted release gates. |
 
-Final candidate application source is `1788736`; verification tooling is `80a9684`. These commits are a review sequence for one candidate and were tested together, not separately certified releases. Final native evidence is109 tests in one combined run plus the stronger SOA ageing assertion, as detailed in `phase-2/evidence/TEST-RESULTS.md`. Candidate runtime source was bind-mounted. No production release identifier is claimed; no commit was pushed.
+Final candidate application source is `1788736`; verification tooling is `80a9684`. These commits are a review sequence for one candidate and were tested together, not separately certified releases. Final native evidence is109 tests in one combined run plus the stronger SOA ageing assertion, as detailed in `phase-2/evidence/TEST-RESULTS.md`. Candidate runtime source was bind-mounted. The release branch is published; no production release identifier is claimed.
