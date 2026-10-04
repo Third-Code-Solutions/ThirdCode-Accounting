@@ -5,6 +5,7 @@ from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tools import date_utils
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.addons.hr_expense.tests.common import TestExpenseCommon
 
 
 @tagged("post_install", "-at_install")
@@ -1283,3 +1284,69 @@ class TestFinancialControls(AccountTestInvoicingCommon):
                 ).create({"journal_id": bank.id, "amount": 25})._create_payments()
                 self.assertEqual(moves.amount_residual, 0)
             self.assertEqual(sheet.state, "done")
+
+
+@tagged("post_install", "-at_install")
+class TestExpenseRole(TestExpenseCommon):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        company = cls.company_data["company"]
+        cls.accountant = cls.env["res.users"].create({
+            "name": "Expense workflow accountant",
+            "login": "expense-workflow-accountant",
+            "company_id": company.id,
+            "company_ids": [Command.set([company.id])],
+            "groups_id": [Command.set([
+                cls.env.ref("thirdcode_accounting.group_thirdcode_accountant").id
+            ])],
+        })
+        cls.unassigned_accountant = cls.env["res.users"].create({
+            "name": "Unassigned expense accountant",
+            "login": "unassigned-expense-accountant",
+            "company_id": company.id,
+            "company_ids": [Command.set([company.id])],
+            "groups_id": [Command.set([
+                cls.env.ref("thirdcode_accounting.group_thirdcode_accountant").id
+            ])],
+        })
+        cls.expense_employee.expense_manager_id = cls.accountant
+
+    def test_accountant_can_approve_post_and_reimburse_employee_expense(self):
+        company = self.company_data["company"]
+        sheet = self.create_expense_report({
+            "name": "Synthetic employee reimbursement",
+            "expense_line_ids": [Command.create({
+                "name": "Synthetic employee purchase",
+                "employee_id": self.expense_employee.id,
+                "product_id": self.product_c.id,
+                "total_amount_currency": 100.0,
+                "tax_ids": [Command.clear()],
+                "payment_mode": "own_account",
+                "date": fields.Date.today(),
+                "company_id": company.id,
+                "currency_id": company.currency_id.id,
+            })],
+        })
+
+        sheet.action_submit_sheet()
+        with self.assertRaises(UserError):
+            sheet.with_user(self.unassigned_accountant).action_approve_expense_sheets()
+        sheet.with_user(self.accountant).action_approve_expense_sheets()
+        sheet.with_user(self.accountant).action_sheet_move_post()
+
+        self.assertEqual(sheet.state, "post")
+        self.assertEqual(sheet.account_move_ids.state, "posted")
+        self.assertEqual(sheet.payment_state, "not_paid")
+
+        payment_register = self.env["account.payment.register"].with_user(
+            self.accountant
+        ).with_context(
+            active_model="account.move", active_ids=sheet.account_move_ids.ids
+        ).create({
+            "journal_id": self.company_data["default_journal_bank"].id,
+            "amount": sheet.total_amount,
+        })
+        payment_register.action_create_payments()
+
+        self.assertEqual(sheet.payment_state, "paid")

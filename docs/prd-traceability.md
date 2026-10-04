@@ -90,7 +90,7 @@ Status vocabulary:
 | --- | --- | --- | --- | --- |
 | AP-01 p3 | Launch | Native supplier partner, terms, VAT/TIN/contact | Create supplier and verify payable identity | **VERIFIED LOCALLY** for synthetic path |
 | AP-02 p3 | Launch | Native supplier bill with attachment support | Post bill and verify source attachment | **PARTIAL** — bill path verified; attachment-specific acceptance not separately run |
-| AP-03 p3 | Launch | Native `hr_expense` employee-expense surface; payment batch/petty-cash journals | Create expense and post/reimburse through approved flow | **PARTIAL** — draft expense surface verified; full reimbursement policy pending |
+| AP-03 p3 | Launch | Native `hr_expense` employee-expense surface; payment batch/petty-cash journals | Create expense and post/reimburse through approved flow | **VERIFIED LOCALLY / BLOCKED — CLIENT DECISION** — assigned manager approval, Accountant posting, reimbursement, and unassigned Accountant denial passed on synthetic data; real reimbursement policy pending |
 | AP-04 p3 | Launch | `thirdcode.payment.batch`, native payment register, instrument fields | Submit/post multiple lines and verify one native payment per line | **VERIFIED LOCALLY** |
 | AP-05 p3 | Launch | Native/OCA aged payable and unpaid listings | Render supplier ageing and reconcile to ledger | **PARTIAL** — surface installed; client report sample pending |
 | AP-06 p3 | Launch | Native `in_refund` debit note/supplier credit | Post debit note and verify classification | **VERIFIED LOCALLY** |
