@@ -1,7 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-from .write_tokens import BANK_STATEMENT_SYNC_TOKEN
 
 
 class AccountBankStatementLine(models.Model):
@@ -78,14 +77,6 @@ class AccountBankStatementLine(models.Model):
                 _("A bank statement line with a posted entry cannot be deleted. Reverse or correct the entry instead.")
             )
         return super().unlink()
-
-    def _synchronize_to_moves(self, changed_fields):
-        lines = self.with_context(
-            thirdcode_bank_statement_sync_token=BANK_STATEMENT_SYNC_TOKEN
-        )
-        return super(AccountBankStatementLine, lines)._synchronize_to_moves(
-            changed_fields
-        )
 
     @api.depends("is_reconciled")
     def _compute_thirdcode_reconciliation_status(self):

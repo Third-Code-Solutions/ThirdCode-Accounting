@@ -123,6 +123,37 @@ class ResCompany(models.Model):
                     )
                 )
 
+    thirdcode_period_revision = fields.Integer(default=0, readonly=True, copy=False)
+
+    def _thirdcode_lock_period_state(self, exclusive=False):
+        # Posting/draft writers share a lock; close/reopen changes the revision
+        # under an exclusive UPDATE. A writer whose snapshot predates a close
+        # gets PostgreSQL's serialization error and the native RPC retry.
+        for company in self.sorted("id").sudo():
+            if exclusive:
+                company.invalidate_recordset(["thirdcode_period_revision"])
+                company.write({"thirdcode_period_revision": company.thirdcode_period_revision + 1})
+                company.flush_recordset(["thirdcode_period_revision"])
+            else:
+                self.env.cr.execute("SELECT id FROM res_company WHERE id = %s FOR SHARE", [company.id])
+
+    def _thirdcode_approved_sample(self, sample_type):
+        self.ensure_one()
+        # A global checkbox is insufficient evidence of a particular format.
+        revision_field = {
+            "invoice": "thirdcode_invoice_layout_revision", "receipt": "thirdcode_receipt_layout_revision",
+            "financial": "thirdcode_financial_statement_layout_revision", "statement": "thirdcode_statement_layout_revision",
+            "reconciliation": "thirdcode_reconciliation_layout_revision",
+        }.get(sample_type)
+        revision = self[revision_field] if revision_field else False
+        if not revision:
+            return self.env["thirdcode.report.sample"]
+        return self.env["thirdcode.report.sample"].sudo().search([
+            ("company_id", "=", self.id), ("sample_type", "=", sample_type), ("revision", "=", revision),
+            ("state", "=", "approved"), ("approved_by", "!=", False),
+            ("approved_at", "!=", False),
+        ], order="approved_at desc, id desc").filtered(lambda sample: sample.source_file and sample.revision)[:1]
+
     def _thirdcode_receipt_sequence(self):
         """Return the receipt numbering sequence for this company (created if missing)."""
         self.ensure_one()

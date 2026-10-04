@@ -1,3 +1,3 @@
-"""Unforgeable in-process tokens for narrowly scoped accounting writes."""
+"""Unforgeable tokens for narrowly scoped native metadata writes."""
 
-BANK_STATEMENT_SYNC_TOKEN = object()
+RECEIPT_NUMBER_TOKEN = object()

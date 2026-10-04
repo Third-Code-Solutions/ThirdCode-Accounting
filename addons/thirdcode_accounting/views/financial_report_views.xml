@@ -19,6 +19,8 @@
                         <group string="Reporting period" class="tcsi-form-section">
                             <field name="date_from"/>
                             <field name="date_to"/>
+                            <field name="comparison_date_from"/>
+                            <field name="comparison_date_to"/>
                             <field name="report_status" readonly="1"/>
                         </group>
                     </div>

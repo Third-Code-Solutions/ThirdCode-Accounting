@@ -1,5 +1,8 @@
-from odoo import _, api, fields, models
+from odoo import _, SUPERUSER_ID, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
+
+
+_PERIOD_TRANSITION_TOKEN = object()
 
 
 class AccountingPeriod(models.Model):
@@ -75,27 +78,29 @@ class AccountingPeriod(models.Model):
     def action_close(self):
         self._check_close_operator()
         self.check_access("read")
+        self.company_id._thirdcode_lock_period_state(exclusive=True)
         for period in self:
             if period.state != "open":
                 raise UserError(_("Only an open period may be closed."))
-            draft = self.env["account.move"].search(
-                [
-                    ("company_id", "=", period.company_id.id),
-                    ("date", ">=", period.date_start),
-                    ("date", "<=", period.date_end),
-                    ("state", "=", "draft"),
-                ],
-                limit=1,
-            )
-            if draft:
+            domain = [
+                ("company_id", "=", period.company_id.id), ("date", ">=", period.date_start),
+                ("date", "<=", period.date_end), ("state", "=", "draft"),
+            ]
+            # Include both this transaction's own changes and commits that
+            # completed while close waited for shared accounting writers.
+            draft = self.env["account.move"].sudo().search(domain, limit=1)
+            with self.env.registry.cursor() as cursor:
+                latest = api.Environment(cursor, SUPERUSER_ID, {})["account.move"].search(domain, limit=1)
+                latest_draft_name = latest.display_name if latest else False
+            if draft or latest_draft_name:
                 raise UserError(
                     _(
                         "Cannot close %(period)s while draft entry %(move)s remains in the period.",
                         period=period.name,
-                        move=draft.display_name,
+                        move=draft.display_name if draft else latest_draft_name,
                     )
                 )
-            period.sudo().write(
+            period.sudo().with_context(thirdcode_period_transition_token=_PERIOD_TRANSITION_TOKEN).write(
                 {
                     "state": "closed",
                     "closed_by": self.env.user.id,
@@ -109,9 +114,10 @@ class AccountingPeriod(models.Model):
     def action_reopen(self):
         self._check_administrator()
         self.check_access("read")
+        self.company_id._thirdcode_lock_period_state(exclusive=True)
         if any(period.state != "closed" for period in self):
             raise UserError(_("Only a closed period may be reopened."))
-        self.sudo().write(
+        self.sudo().with_context(thirdcode_period_transition_token=_PERIOD_TRANSITION_TOKEN).write(
             {
                 "state": "open",
                 "reopened_by": self.env.user.id,
@@ -120,32 +126,45 @@ class AccountingPeriod(models.Model):
         )
         return True
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        if any(values.get("state", self.env.context.get("default_state", "open")) != "open" for values in vals_list):
+            raise UserError(_("Periods must be created open and closed through the authorized action."))
+        metadata = self._workflow_protected_fields - {"state"}
+        if any(values.get(field, self.env.context.get("default_" + field)) for values in vals_list for field in metadata):
+            raise AccessError(_("Closure history can only be recorded by the authorized action."))
+        return super().create(vals_list)
+
     def write(self, vals):
+        if self._workflow_protected_fields.intersection(vals) and self.env.context.get("thirdcode_period_transition_token") is not _PERIOD_TRANSITION_TOKEN:
+            raise AccessError(_("Period state and closure history require the authorized close/reopen action."))
         period_fields = {"name", "company_id", "date_start", "date_end", "close_note"}
-        if not self.env.su and period_fields.intersection(vals) and any(
+        if period_fields.intersection(vals) and any(
             period.state == "closed" for period in self
         ):
             raise UserError(_("A closed period cannot be changed. Reopen it first."))
         return super().write(vals)
 
+    def unlink(self):
+        if any(period.state == "closed" for period in self):
+            raise UserError(_("A closed period cannot be deleted. Only an Administrator may reopen it."))
+        return super().unlink()
+
+    @api.model
+    def _check_date_allowed(self, company, accounting_date):
+        if not company or not accounting_date:
+            return True
+        company._thirdcode_lock_period_state()
+        period = self.sudo().search([
+            ("company_id", "=", company.id), ("state", "=", "closed"),
+            ("date_start", "<=", accounting_date), ("date_end", ">=", accounting_date),
+        ], limit=1)
+        if period:
+            raise UserError(_("Accounting effects dated in closed period %(period)s are prohibited. Only an Administrator may reopen it.", period=period.name))
+        return True
+
     @api.model
     def _check_move_post_allowed(self, moves):
         for move in moves:
-            period = self.sudo().search(
-                [
-                    ("company_id", "=", move.company_id.id),
-                    ("date_start", "<=", move.date),
-                    ("date_end", ">=", move.date),
-                ],
-                limit=1,
-            )
-            if period and period.state == "closed":
-                raise UserError(
-                    _(
-                        "Entry %(move)s is dated in closed period %(period)s. "
-                        "Only an Administrator may reopen the period.",
-                        move=move.display_name,
-                        period=period.name,
-                    )
-                )
+            self._check_date_allowed(move.company_id, move.date)
         return True
