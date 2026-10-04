@@ -1,0 +1,17 @@
+2026-10-04 21:27:58,244 20 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:27:58,245 20 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:27:58,245 20 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:27:58,245 20 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:27:58,400 20 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:27:58,406 20 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:27:58,514 20 INFO ? odoo.service.server: Initiating shutdown
+2026-10-04 21:27:58,514 20 INFO ? odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:27:58,530 20 INFO tcsi_alignment_phase2_restored odoo.modules.loading: loading 1 modules...
+2026-10-04 21:27:58,535 20 INFO tcsi_alignment_phase2_restored odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:27:58,553 20 INFO tcsi_alignment_phase2_restored odoo.modules.loading: loading 63 modules...
+2026-10-04 21:27:58,986 20 INFO tcsi_alignment_phase2_restored odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:27:59,005 20 INFO tcsi_alignment_phase2_restored odoo.modules.loading: 63 modules loaded in 0.45s, 0 queries (+0 extra)
+2026-10-04 21:27:59,149 20 INFO tcsi_alignment_phase2_restored odoo.modules.loading: Modules loaded.
+2026-10-04 21:27:59,173 20 INFO tcsi_alignment_phase2_restored odoo.modules.registry: Registry loaded in 0.658s
+RESTORED_ARCHIVE {"batch_id": 54, "original_source_sha256": "e737dd37b08d2613f2253999b841e9aea557ec2f457ad49ed664bccb5db57e8f", "retrieved_source_bytes": 70, "queryable_history_rows": 2, "cutover_moves": 5}

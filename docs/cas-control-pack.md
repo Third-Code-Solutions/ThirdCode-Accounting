@@ -34,15 +34,14 @@ owner and evidence before production use.
 
 | Control | Current implementation | Acceptance item |
 | --- | --- | --- |
-| Native document sequences | Odoo sequences remain the source of posted document names | Accountant verifies gap/void policy under failures and concurrency |
+| Native document sequences | Candidate18.0.2.13.0 uses transactional continuous counters per company/journal, per product-owner decision; original posted names preserved | Native failure, fiscal-boundary, reversal and concurrent tests pass; production inventory and statutory document requirements remain open |
 | Official receipts | No-gap local sequence, receipt metadata, amount words, TIN/VAT fields | BIR classification, control value, layout, signatory, and sample pending |
 | Invoice report | Custom guarded template with visible draft marker and control field | Signed sample and accountant/legal review pending |
 | Credit/debit corrections | Native credit/debit notes and reversals preserve source records | Client correction policy pending |
 
 ## 4. Audit and retention
 
-- OCA `auditlog` is installed and an `account.move` rule is enabled in the
-  local database.
+- OCA `auditlog` subscriptions cover accounting documents/lines, reconciliation, master data, users/permissions, attachments, sequences and custom workflows. Candidate18.0.2.13.0 protects required subscriptions and records attachment SHA-256 changes while excluding credentials and binary contents. See [current evidence](prd-alignment-2026-10-05/phase-2/REPORT.md).
 - The custom model override blocks application writes and unlink operations on
   `auditlog.log`.
 - The database backup includes audit records because they are normal database

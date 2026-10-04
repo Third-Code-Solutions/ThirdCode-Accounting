@@ -1,0 +1,71 @@
+{
+  "trial_balance": {
+    "report": "account_financial_report.trial_balance",
+    "bytes": 18155,
+    "sha256": "c40dbeca2623b7ad28a6791d8873781152c6bf84acc8f33ff7c0a5acd5a9bc8c",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "general_ledger": {
+    "report": "account_financial_report.general_ledger",
+    "bytes": 35729,
+    "sha256": "f0877f4572e1bce4061b4a52e32fb30e8dc57b4716002e5100ab6b47d6faca9a",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "journal_listing": {
+    "report": "account_financial_report.journal_ledger",
+    "bytes": 60216,
+    "sha256": "ec4ab3ff0b0a306448f341a785f7fb77344b06440d50a22c0cca99ef8ad38d3f",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "customer_ageing": {
+    "report": "account_financial_report.aged_partner_balance",
+    "bytes": 26832,
+    "sha256": "131219b9a61f89d4611b70163e8bd2514ae344244602933bcbba8ef9bf8b727a",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "supplier_ageing": {
+    "report": "account_financial_report.aged_partner_balance",
+    "bytes": 30709,
+    "sha256": "26a7814d3c781d5636f33610212fd79c1a2a1df78fd2fcf960a1d0dca2a82056",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "unpaid_balances": {
+    "report": "account_financial_report.open_items",
+    "bytes": 59848,
+    "sha256": "b29dc4e3dea923ec122ecb8cbc3ee8761cfdc0f4e3edd7eeccf8f833a9325d89",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "vat_summary": {
+    "report": "account_financial_report.vat_report",
+    "bytes": 11183,
+    "sha256": "f65df1943651dcc92828b3a7361d3710634bfaf9d6ced4c6b5558ff5c4e3fb1f",
+    "scope": "Synthetic rendered output; not accountant-approved Philippine tax computation"
+  },
+  "soa": {
+    "report": "partner_statement.activity_statement",
+    "bytes": 24880,
+    "sha256": "8d13d8cb63efb8b67e9f09d3c1ca7a27e4a97c50c83aeddd26860ca4e98d6441",
+    "opening": 600.0,
+    "closing": 1050.0,
+    "running_balances": [
+      700.0,
+      800.0,
+      900.0,
+      1000.0,
+      1100.0,
+      1200.0,
+      1050.0
+    ],
+    "ageing": {
+      "currency_id": 1,
+      "current": 1050.0,
+      "b_1_30": 0.0,
+      "b_30_60": 0.0,
+      "b_60_90": 0.0,
+      "b_90_120": 0.0,
+      "b_over_120": 0.0,
+      "balance": 1050.0
+    },
+    "scope": "Synthetic customer; provisional layout pending approved client sample"
+  }
+}

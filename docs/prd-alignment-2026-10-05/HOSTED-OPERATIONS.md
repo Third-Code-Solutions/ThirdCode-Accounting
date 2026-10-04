@@ -1,3 +1,5 @@
+> Candidate18.0.2.13.0 adds a richer local rehearsal: [phase2 evidence](phase-2/REPORT.md). The final isolated ZIP restored in8.051seconds and preserved posted balances, audit history and retained cutover archives. This does not verify the hosted schedule, destination, configuration/credential recovery or production volume; the release gates below remain in force.
+
 # Hosted operations and release procedure
 
 The 5 October 2026 user amendment accepts Vercel for the portal/proxy, Railway for Odoo Community, Odoo PostgreSQL as the ledger, the persistent Odoo filestore, and existing Supabase responsibilities. On-premise, client-owned-server and LAN-only mismatch findings are withdrawn. Backup consistency, isolation, retention, permissions and recovery obligations remain. Existing PowerShell compose scripts are local tooling, not evidence of hosted nightly backups.

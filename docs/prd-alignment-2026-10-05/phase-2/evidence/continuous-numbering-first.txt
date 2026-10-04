@@ -1,0 +1,195 @@
+time="2026-10-04T21:00:05Z" level=warning msg="Found orphan containers ([tcsi-alignment-runtime tcsi-source-inspect]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+Running as user 'root' is a security risk.
+2026-10-04 21:00:27,815 1 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:00:27,815 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:00:27,815 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:00:27,815 1 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:00:27,957 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:00:27,963 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:00:28,060 1 INFO ? odoo.service.server: HTTP service (werkzeug) running on fab300a545ee:8069
+2026-10-04 21:00:28,077 1 INFO tcsi_alignment_upgrade odoo.tests.common: Importing test framework
+2026-10-04 21:00:28,101 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 1 modules...
+2026-10-04 21:00:28,106 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:00:28,125 1 INFO tcsi_alignment_upgrade odoo.modules.loading: updating modules list
+2026-10-04 21:00:28,127 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a
+2026-10-04 21:00:28,828 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:00:28,828 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:00:29,513 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a
+2026-10-04 21:00:29,545 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading 63 modules...
+2026-10-04 21:00:30,081 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Loading module thirdcode_accounting (63/63)
+2026-10-04 21:00:30,213 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:00:30,421 1 INFO tcsi_alignment_upgrade odoo.modules.registry: module thirdcode_accounting: creating or updating database tables
+2026-10-04 21:00:30,941 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/ir_sequence_data.xml
+2026-10-04 21:00:30,944 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/ir_cron_data.xml
+2026-10-04 21:00:30,946 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/branding_data.xml
+2026-10-04 21:00:31,039 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/auditlog_rule_data.xml
+2026-10-04 21:00:31,054 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/data/tcsi_security_data.xml
+2026-10-04 21:00:31,059 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/branding_templates.xml
+2026-10-04 21:00:31,101 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/branding_communications.xml
+2026-10-04 21:00:31,303 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/dashboard_views.xml
+2026-10-04 21:00:31,313 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/thirdcode_groups.xml
+2026-10-04 21:00:32,803 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/company_rules.xml
+2026-10-04 21:00:32,871 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/security/ir.model.access.csv
+2026-10-04 21:00:32,949 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/res_company_views.xml
+2026-10-04 21:00:32,964 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_journal_views.xml
+2026-10-04 21:00:32,982 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_move_views.xml
+2026-10-04 21:00:33,011 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/account_payment_views.xml
+2026-10-04 21:00:33,023 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/payment_batch_views.xml
+2026-10-04 21:00:33,037 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/recurring_journal_views.xml
+2026-10-04 21:00:33,051 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/accounting_period_views.xml
+2026-10-04 21:00:33,062 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/migration_views.xml
+2026-10-04 21:00:33,073 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/recurring_invoice_views.xml
+2026-10-04 21:00:33,087 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/report_sample_views.xml
+2026-10-04 21:00:33,096 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/tax_profile_views.xml
+2026-10-04 21:00:33,106 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/bank_reconciliation_views.xml
+2026-10-04 21:00:33,119 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/year_end_close_views.xml
+2026-10-04 21:00:33,129 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/financial_report_views.xml
+2026-10-04 21:00:33,135 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/menu_views.xml
+2026-10-04 21:00:33,201 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/org_user_views.xml
+2026-10-04 21:00:33,232 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/platform_console_views.xml
+2026-10-04 21:00:33,241 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/views/apps_views.xml
+2026-10-04 21:00:33,408 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_reports.xml
+2026-10-04 21:00:33,414 1 INFO tcsi_alignment_upgrade odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_templates.xml
+2026-10-04 21:00:33,448 1 WARNING tcsi_alignment_upgrade odoo.modules.loading: The models ['thirdcode.orvexa.proposal', 'thirdcode.orvexa.event'] have no access rules in module thirdcode_accounting, consider adding some, like:
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+thirdcode_accounting.access_thirdcode_orvexa_proposal,access_thirdcode_orvexa_proposal,thirdcode_accounting.model_thirdcode_orvexa_proposal,base.group_user,1,0,0,0
+thirdcode_accounting.access_thirdcode_orvexa_event,access_thirdcode_orvexa_event,thirdcode_accounting.model_thirdcode_orvexa_event,base.group_user,1,0,0,0
+2026-10-04 21:00:33,553 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Module thirdcode_accounting loaded in 3.47s, 2260 queries (+2260 other)
+2026-10-04 21:00:33,553 1 INFO tcsi_alignment_upgrade odoo.modules.loading: 63 modules loaded in 4.01s, 2260 queries (+2260 extra)
+2026-10-04 21:00:34,500 1 INFO tcsi_alignment_upgrade odoo.modules.loading: Modules loaded.
+2026-10-04 21:00:34,518 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry changed, signaling through the database
+2026-10-04 21:00:34,519 1 INFO tcsi_alignment_upgrade odoo.modules.registry: Registry loaded in 6.458s
+2026-10-04 21:00:34,519 1 INFO tcsi_alignment_upgrade odoo.service.server: Starting post tests
+2026-10-04 21:00:41,520 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_advance_later_allocation_and_customer_refund_reconcile ...
+2026-10-04 21:00:45,009 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_aged_partner_balance_defaults_to_active_company_reconcilable_accounts ...
+2026-10-04 21:00:45,042 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_atomic_import_retry_and_changed_payload ...
+2026-10-04 21:00:46,185 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_bank_reconciliation_rejects_forged_ledger_balance ...
+2026-10-04 21:00:46,323 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_bank_reconciliation_uses_standard_book_to_statement_signs ...
+2026-10-04 21:00:47,762 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_closed_period_blocks_native_post_and_period_deletion ...
+2026-10-04 21:00:48,614 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_closed_period_reconciliation_cannot_be_removed_or_forged ...
+2026-10-04 21:00:50,085 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_company_attachment_metadata_is_hidden_from_other_company_users ...
+2026-10-04 21:00:50,205 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_rule: Access Denied by record rules for operation: read on record ids: [1703], uid: 166, model: ir.attachment
+2026-10-04 21:00:50,215 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_comparative_financial_report_and_cash_flow_reconcile ...
+2026-10-04 21:00:51,285 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_context_defaults_cannot_forge_posting_or_closure_history ...
+2026-10-04 21:00:51,294 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_direct_payment_batch_state_write_is_rejected ...
+2026-10-04 21:00:51,396 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_direct_post_and_forged_tokens_cannot_bypass_policy ...
+2026-10-04 21:00:52,790 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_draft_edits_allowed_but_sudo_cannot_edit_posted_lines ...
+2026-10-04 21:00:53,849 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_employee_reimbursement_and_company_paid_expense_post_to_ledger ...
+2026-10-04 21:00:55,219 1 INFO tcsi_alignment_upgrade odoo.models.unlink: User #168 deleted mail.activity records with IDs: [5]
+2026-10-04 21:00:56,859 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_golden_invoice_and_partial_receipt_tie_to_posted_ledger ...
+2026-10-04 21:00:58,859 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_journal_ledger_defaults_to_active_company_fiscal_year ...
+2026-10-04 21:00:58,877 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_line_audit_captures_actor_old_new_and_cannot_be_changed ...
+2026-10-04 21:01:00,170 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_rule: Access Denied by record rules for operation: read on record ids: [6996], uid: 169, model: auditlog.log
+2026-10-04 21:01:00,180 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_lowered_threshold_requires_approval_before_posting ...
+2026-10-04 21:01:01,098 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_migration_batches_and_rows_are_scoped_to_allowed_companies ...
+2026-10-04 21:01:01,182 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_native_reversal_preserves_original_posted_entry ...
+2026-10-04 21:01:02,838 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_open_items_defaults_to_active_company_reconcilable_accounts ...
+2026-10-04 21:01:02,872 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_open_period_reversal_can_correct_closed_period_original ...
+2026-10-04 21:01:04,327 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_partial_customer_payment_allocates_vat_by_reconciled_amount ...
+2026-10-04 21:01:05,634 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_payment_batch_posts_partial_payment_from_register_result ...
+2026-10-04 21:01:07,104 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_posted_entries_reject_reset_cancel_and_history_erasure ...
+2026-10-04 21:01:08,010 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_posted_line_insert_delete_reparent_and_economic_fields_rejected ...
+2026-10-04 21:01:08,766 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_posted_move_lines_reject_api_reclassification ...
+2026-10-04 21:01:09,467 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_posted_statement_amount_requires_reversal ...
+2026-10-04 21:01:10,218 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_receipt_rollback_retry_and_year_boundary_preserve_series ...
+2026-10-04 21:01:11,845 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_receipt_series_cannot_be_reset_consumed_or_deleted_directly ...
+2026-10-04 21:01:11,897 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_report_wizards_reject_inactive_company_exports ...
+2026-10-04 21:01:11,920 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_ten_trial_companies_cannot_read_each_others_accounting_records ...
+2026-10-04 21:01:21,284 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: ======================================================================
+2026-10-04 21:01:21,284 1 ERROR tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: ERROR: TestFinancialControls.test_ten_trial_companies_cannot_read_each_others_accounting_records
+Traceback (most recent call last):
+  File "/opt/extra-addons/thirdcode_accounting/tests/test_financial_controls.py", line 791, in test_ten_trial_companies_cannot_read_each_others_accounting_records
+    moves.action_post()
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/account_move.py", line 5576, in action_post
+    self._post(soft=False)
+  File "/opt/extra-addons/thirdcode_accounting/models/continuous_numbering.py", line 38, in _post
+    return super()._post(soft=soft)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/extra-addons/thirdcode_accounting/models/account_move.py", line 177, in _post
+    )._post(soft=soft)
+      ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/account_move.py", line 5260, in _post
+    to_post.write({
+  File "/opt/extra-addons/auditlog/models/rule.py", line 461, in write_full
+    result = write_full.origin(self, vals, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/extra-addons/thirdcode_accounting/models/orvexa.py", line 559, in write
+    result = super().write(values)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/extra-addons/thirdcode_accounting/models/account_move.py", line 139, in write
+    result = super().write(vals)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/account_move.py", line 3504, in write
+    self.flush_recordset()  # Ensure that the name is correctly computed
+    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 6798, in flush_recordset
+    self._recompute_recordset(fnames)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7364, in _recompute_recordset
+    self._recompute_field(field, self._ids)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7378, in _recompute_field
+    field.recompute(records)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1469, in recompute
+    apply_except_missing(self.compute_value, recs)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1442, in apply_except_missing
+    func(records)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1491, in compute_value
+    records._compute_field_value(self)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 443, in _compute_field_value
+    return super()._compute_field_value(field)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5315, in _compute_field_value
+    fields.determine(field.compute, self)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 110, in determine
+    return needle(*args)
+           ^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/sequence_mixin.py", line 184, in _compute_split_sequence
+    sequence = record[record._sequence_field] or ''
+               ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 7096, in __getitem__
+    return self._fields[key].__get__(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1242, in __get__
+    self.recompute(record)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1469, in recompute
+    apply_except_missing(self.compute_value, recs)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1442, in apply_except_missing
+    func(records)
+  File "/usr/lib/python3/dist-packages/odoo/fields.py", line 1491, in compute_value
+    records._compute_field_value(self)
+  File "/usr/lib/python3/dist-packages/odoo/addons/mail/models/mail_thread.py", line 443, in _compute_field_value
+    return super()._compute_field_value(field)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 5320, in _compute_field_value
+    self.filtered('id')._validate_fields(fnames)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 1636, in _validate_fields
+    check(self)
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 911, in wrapper
+    return func(self)
+           ^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/addons/account/models/sequence_mixin.py", line 173, in _constrains_date_sequence
+    raise ValidationError(_(
+odoo.exceptions.ValidationError: The Date (10/04/2026) you've entered isn't aligned with the existing sequence number (TI01/C/00000001). Clear the sequence number to proceed.
+To maintain date-based sequences, select entries and use the resequence option from the actions menu, available in developer mode.
+
+2026-10-04 21:01:21,289 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_threshold_batch_requires_administrator_approval_before_posting ...
+2026-10-04 21:01:22,355 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_trial_balance_defaults_to_active_company_fiscal_year ...
+2026-10-04 21:01:22,375 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_validated_migration_snapshot_cannot_be_changed_or_revalidated ...
+2026-10-04 21:01:22,483 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_year_end_transfer_does_not_erase_income_statement ...
+2026-10-04 21:01:24,055 1 INFO tcsi_alignment_upgrade odoo.addons.thirdcode_accounting.tests.test_financial_controls: Starting TestFinancialControls.test_zero_amount_invoice_line_cannot_submit_or_bypass_approval ...
+2026-10-04 21:01:24,748 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_attachment: filestore gc 20 checked, 6 removed
+2026-10-04 21:01:24,748 1 INFO tcsi_alignment_upgrade odoo.service.server: 37 post-tests in 50.23s, 80974 queries
+2026-10-04 21:01:24,748 1 INFO tcsi_alignment_upgrade odoo.tests.stats: thirdcode_accounting: 39 tests 50.22s 80974 queries
+2026-10-04 21:01:24,748 1 ERROR tcsi_alignment_upgrade odoo.tests.result: 0 failed, 1 error(s) of 37 tests when loading database 'tcsi_alignment_upgrade'
+2026-10-04 21:01:24,749 1 INFO tcsi_alignment_upgrade odoo.service.server: Initiating shutdown
+2026-10-04 21:01:24,749 1 INFO tcsi_alignment_upgrade odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:01:24,750 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_http: Generating routing map for key None
+2026-10-04 21:01:24,756 1 INFO tcsi_alignment_upgrade odoo.addons.base.models.ir_http: Generating routing map for key None
+2026-10-04 21:01:24,855 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:01:24] "GET /web/health HTTP/1.1" 200 - 1 0.002 44.251
+2026-10-04 21:01:24,855 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:01:24] "GET /web/health HTTP/1.1" 200 - 1 0.007 1.758
+2026-10-04 21:01:24,856 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:01:24] "GET /web/health HTTP/1.1" 200 - 1 0.004 36.129
+2026-10-04 21:01:24,856 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:01:24] "GET /web/health HTTP/1.1" 200 - 1 0.002 28.004
+2026-10-04 21:01:24,857 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:01:24] "GET /web/health HTTP/1.1" 200 - 1 0.002 14.890
+2026-10-04 21:01:24,857 1 INFO tcsi_alignment_upgrade werkzeug: 127.0.0.1 - - [04/Oct/2026 21:01:24] "GET /web/health HTTP/1.1" 200 - 4 0.007 52.368
+2026-10-04 21:01:25,097 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 6 connections
+2026-10-04 21:01:25,099 1 INFO tcsi_alignment_upgrade odoo.sql_db: ConnectionPool(read-only;used=0/count=0/max=64): Closed 6 connections

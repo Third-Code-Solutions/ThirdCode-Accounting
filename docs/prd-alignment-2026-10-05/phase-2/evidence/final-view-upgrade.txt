@@ -1,0 +1,65 @@
+time="2026-10-04T21:30:32Z" level=warning msg="Found orphan containers ([tcsi-phase2-runtime tcsi-alignment-runtime tcsi-source-inspect]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+Running as user 'root' is a security risk.
+2026-10-04 21:30:57,451 1 INFO ? odoo: Odoo version 18.0-20260908
+2026-10-04 21:30:57,451 1 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf
+2026-10-04 21:30:57,451 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/opt/extra-addons']
+2026-10-04 21:30:57,452 1 INFO ? odoo: database: odoo@db:5432
+Warn: Can't find .pfb for face 'Courier'
+2026-10-04 21:30:57,590 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf
+2026-10-04 21:30:57,595 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage
+2026-10-04 21:30:57,719 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 1 modules...
+2026-10-04 21:30:57,723 1 INFO tcsi_alignment_phase2 odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra)
+2026-10-04 21:30:57,739 1 INFO tcsi_alignment_phase2 odoo.modules.loading: updating modules list
+2026-10-04 21:30:57,741 1 INFO tcsi_alignment_phase2 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a
+2026-10-04 21:30:58,425 1 INFO tcsi_alignment_phase2 odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:30:58,425 1 INFO tcsi_alignment_phase2 odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['TCSI Accounting'] to user __system__ #1 via n/a
+2026-10-04 21:30:58,933 1 INFO tcsi_alignment_phase2 odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a
+2026-10-04 21:30:58,965 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading 63 modules...
+2026-10-04 21:30:59,460 1 INFO tcsi_alignment_phase2 odoo.modules.loading: Loading module thirdcode_accounting (63/63)
+2026-10-04 21:30:59,586 1 INFO tcsi_alignment_phase2 odoo.addons.thirdcode_accounting.models.tcsi_cookie_policy: TCSI: session cookie policy installed on FutureResponse, _Response
+2026-10-04 21:30:59,769 1 INFO tcsi_alignment_phase2 odoo.modules.registry: module thirdcode_accounting: creating or updating database tables
+2026-10-04 21:31:00,297 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/data/ir_sequence_data.xml
+2026-10-04 21:31:00,302 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/data/ir_cron_data.xml
+2026-10-04 21:31:00,304 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/data/branding_data.xml
+2026-10-04 21:31:00,405 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/data/auditlog_rule_data.xml
+2026-10-04 21:31:00,422 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/data/tcsi_security_data.xml
+2026-10-04 21:31:00,427 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/branding_templates.xml
+2026-10-04 21:31:00,460 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/branding_communications.xml
+2026-10-04 21:31:00,657 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/dashboard_views.xml
+2026-10-04 21:31:00,666 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/security/thirdcode_groups.xml
+2026-10-04 21:31:02,183 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/security/company_rules.xml
+2026-10-04 21:31:02,256 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/security/ir.model.access.csv
+2026-10-04 21:31:02,346 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/res_company_views.xml
+2026-10-04 21:31:02,363 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/account_journal_views.xml
+2026-10-04 21:31:02,380 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/account_move_views.xml
+2026-10-04 21:31:02,408 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/account_payment_views.xml
+2026-10-04 21:31:02,421 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/payment_batch_views.xml
+2026-10-04 21:31:02,439 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/recurring_journal_views.xml
+2026-10-04 21:31:02,455 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/accounting_period_views.xml
+2026-10-04 21:31:02,466 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/migration_views.xml
+2026-10-04 21:31:02,483 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/recurring_invoice_views.xml
+2026-10-04 21:31:02,499 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/report_sample_views.xml
+2026-10-04 21:31:02,510 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/tax_profile_views.xml
+2026-10-04 21:31:02,522 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/bank_reconciliation_views.xml
+2026-10-04 21:31:02,536 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/year_end_close_views.xml
+2026-10-04 21:31:02,546 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/financial_report_views.xml
+2026-10-04 21:31:02,554 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/menu_views.xml
+2026-10-04 21:31:02,591 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/completion_views.xml
+2026-10-04 21:31:02,682 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/org_user_views.xml
+2026-10-04 21:31:02,709 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/platform_console_views.xml
+2026-10-04 21:31:02,717 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/views/apps_views.xml
+2026-10-04 21:31:02,899 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_reports.xml
+2026-10-04 21:31:02,906 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/report/thirdcode_templates.xml
+2026-10-04 21:31:02,923 1 INFO tcsi_alignment_phase2 odoo.modules.loading: loading thirdcode_accounting/report/completion_reports.xml
+2026-10-04 21:31:02,968 1 WARNING tcsi_alignment_phase2 odoo.modules.loading: The models ['thirdcode.orvexa.proposal', 'thirdcode.orvexa.event'] have no access rules in module thirdcode_accounting, consider adding some, like:
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+thirdcode_accounting.access_thirdcode_orvexa_proposal,access_thirdcode_orvexa_proposal,thirdcode_accounting.model_thirdcode_orvexa_proposal,base.group_user,1,0,0,0
+thirdcode_accounting.access_thirdcode_orvexa_event,access_thirdcode_orvexa_event,thirdcode_accounting.model_thirdcode_orvexa_event,base.group_user,1,0,0,0
+2026-10-04 21:31:02,977 1 INFO tcsi_alignment_phase2 odoo.modules.loading: Module thirdcode_accounting loaded in 3.52s, 2557 queries (+2557 other)
+2026-10-04 21:31:02,977 1 INFO tcsi_alignment_phase2 odoo.modules.loading: 63 modules loaded in 4.01s, 2557 queries (+2557 extra)
+2026-10-04 21:31:03,895 1 INFO tcsi_alignment_phase2 odoo.modules.loading: Modules loaded.
+2026-10-04 21:31:03,909 1 INFO tcsi_alignment_phase2 odoo.modules.registry: Registry changed, signaling through the database
+2026-10-04 21:31:03,910 1 INFO tcsi_alignment_phase2 odoo.modules.registry: Registry loaded in 6.210s
+2026-10-04 21:31:03,910 1 INFO tcsi_alignment_phase2 odoo.service.server: Initiating shutdown
+2026-10-04 21:31:03,910 1 INFO tcsi_alignment_phase2 odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown.
+2026-10-04 21:31:03,910 1 INFO tcsi_alignment_phase2 odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections

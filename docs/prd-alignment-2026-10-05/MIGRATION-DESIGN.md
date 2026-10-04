@@ -1,3 +1,5 @@
+> Latest implementation and acceptance status: [phase 2 report](phase-2/REPORT.md), module18.0.2.13.0. The material below records phase 1 migration safety design; superseded open engineering items are resolved only where the phase 2 evidence says so.
+
 # Migration accounting policy and remaining gates
 
 The former loader added opening TB, open items and transaction history independently. Distinct source identifiers do not prevent those inputs from containing the same receivable, income, cash or payable balance. The candidate rejects packages containing more than one populated accounting basis. It also rejects an `undeposited_receipts.csv` file rather than silently ignoring it. This is an intentional fail-closed restriction, not completion of DM-02 through DM-05.

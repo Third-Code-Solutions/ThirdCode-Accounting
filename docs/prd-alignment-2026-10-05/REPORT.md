@@ -1,3 +1,5 @@
+> Latest implementation and acceptance status: [phase 2 report](phase-2/REPORT.md), module18.0.2.13.0. The material below records phase 1 historical findings; superseded open engineering items are resolved only where the phase 2 evidence says so.
+
 # PRD alignment candidate — 5 October 2026 (Asia/Manila)
 
 The candidate improves accounting integrity, reporting calculations and migration safety. **It is not deployed and is not accepted for production or client turnover.** The required production-representative upgrade and hosted recovery gates could not be verified through the access available here. Remaining engineering gaps are listed separately from client decisions below. No alignment percentage is claimed.

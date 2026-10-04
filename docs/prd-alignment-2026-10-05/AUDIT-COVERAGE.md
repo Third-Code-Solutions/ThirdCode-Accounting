@@ -1,3 +1,5 @@
+> Latest implementation and acceptance status: [phase 2 report](phase-2/REPORT.md), module18.0.2.13.0. The material below records phase 1 audit coverage; superseded open engineering items are resolved only where the phase 2 evidence says so.
+
 # Audit path inventory
 
 Candidate `18.0.2.12.0`; source rules are in `data/auditlog_rule_data.xml`. Each listed rule subscribes full create/write/unlink capture. Approval/post/reverse actions are evidenced by their native state/metadata writes and created accounting records; OCA does not emit an independent business-action event for every method call. A failed transaction rolls its audit writes back too.

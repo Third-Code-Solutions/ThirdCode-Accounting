@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/workspace/ThirdCode-Accounting/scripts/benchmark.py", line 210, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/workspace/ThirdCode-Accounting/scripts/benchmark.py", line 125, in main
+    income = odoo.call(
+             ^^^^^^^^^^
+IndexError: list index out of range

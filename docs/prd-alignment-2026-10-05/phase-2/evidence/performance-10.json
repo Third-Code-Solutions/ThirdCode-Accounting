@@ -1,0 +1,31 @@
+{
+  "database": "tcsi_alignment_phase2",
+  "iterations": 20,
+  "note": "Synthetic local timing only; not evidence for client hardware, volume, or production concurrency acceptance.",
+  "post": {
+    "count": 20,
+    "max_ms": 2578.31,
+    "min_ms": 648.9,
+    "p50_ms": 1624.67,
+    "p95_ms": 2509.01
+  },
+  "post_enabled": true,
+  "save": {
+    "count": 20,
+    "max_ms": 4581.67,
+    "min_ms": 2328.94,
+    "p50_ms": 4401.1,
+    "p95_ms": 4541.21
+  },
+  "status": "VERIFIED LOCALLY",
+  "synthetic": true,
+  "target_observed": {
+    "post_p95_within_target": false,
+    "save_p95_within_target": false
+  },
+  "targets_ms": {
+    "post": 2000.0,
+    "save": 2000.0
+  },
+  "workers": 10
+}
