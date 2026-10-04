@@ -925,8 +925,18 @@ function renderSidebar(sidebar, menuService) {
     // The native dashboards app ("Insights") is a second entry point to the
     // TCSI finance overview and owns only leftover native menus, so it must not
     // take the workspace navigation over: the finance overview always keeps the
-    // TCSI Accounting navigation, whichever app the web client reports.
-    const selectedApp = currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
+    // TCSI Accounting navigation, whichever app the web client reports. The
+    // workspace home is entered without a menu context, so the web client may
+    // report the first accessible app instead (for example, Messages for some
+    // roles); the home keeps the TCSI navigation for every role as well.
+    const homePath = window.location.pathname.replace(/\/+$/, "");
+    const onWorkspaceHome = [
+        TCSI_WEB_PREFIX,
+        INTERNAL_WEB_PREFIX,
+        `${TCSI_WEB_PREFIX}/action-425`,
+        `${INTERNAL_WEB_PREFIX}/action-425`,
+    ].includes(homePath);
+    const selectedApp = !onWorkspaceHome && currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
     const nav = sidebar.querySelector(".tcsi-sidebar-nav");
     const appSwitcher = sidebar.querySelector(".tcsi-app-switcher-list");
     const currentLabel = sidebar.querySelector(".tcsi-sidebar-app-name");
