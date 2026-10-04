@@ -8,6 +8,12 @@
             <xpath expr="//header" position="inside">
                 <button name="action_print_thirdcode_invoice" type="object" string="Third Code invoice" class="btn-secondary" invisible="state != 'posted' or move_type == 'entry'" groups="account.group_account_invoice"/>
             </xpath>
+            <xpath expr="//button[@name='button_draft']" position="attributes">
+                <attribute name="invisible" add="posted_before or state == 'posted'" separator=" or "/>
+            </xpath>
+            <xpath expr="//button[@name='button_cancel']" position="attributes">
+                <attribute name="invisible" add="posted_before or state == 'posted'" separator=" or "/>
+            </xpath>
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="thirdcode_document_class" string="Document type" readonly="1"/>
             </xpath>

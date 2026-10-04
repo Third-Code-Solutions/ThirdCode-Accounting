@@ -5,3 +5,4 @@ from . import test_financial_controls
 from . import test_trial_mode
 from . import test_completion
 from . import test_trial_balance_sources
+from . import test_role_matrix
