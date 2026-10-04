@@ -933,8 +933,8 @@ function renderSidebar(sidebar, menuService) {
     const onWorkspaceHome = [
         TCSI_WEB_PREFIX,
         INTERNAL_WEB_PREFIX,
-        `${TCSI_WEB_PREFIX}/action-425`,
-        `${INTERNAL_WEB_PREFIX}/action-425`,
+        `${TCSI_WEB_PREFIX}/action-408`,
+        `${INTERNAL_WEB_PREFIX}/action-408`,
     ].includes(homePath);
     const selectedApp = !onWorkspaceHome && currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
     const nav = sidebar.querySelector(".tcsi-sidebar-nav");

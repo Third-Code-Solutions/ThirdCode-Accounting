@@ -232,6 +232,12 @@ class ThirdCodeSetupService(models.AbstractModel):
         elif company_ids:
             target_company_ids = [int(cid) for cid in company_ids]
         platform_owner = "base.group_system" in (extra_group_xmlids or [])
+        home_action = self.env.ref(
+            "thirdcode_accounting.action_thirdcode_platform_console"
+            if platform_owner
+            else "thirdcode_accounting.action_tcsi_dashboard",
+            raise_if_not_found=False,
+        )
         if platform_owner:
             console_group = self.env.ref(
                 "thirdcode_accounting.group_thirdcode_platform_console",
@@ -257,6 +263,10 @@ class ThirdCodeSetupService(models.AbstractModel):
                 updates["groups_id"] = [Command.set(group_ids)]
                 updates["thirdcode_platform_owner"] = platform_owner
             user.write(updates)
+            if home_action and not user.action_id:
+                # Land every workspace account on its finance overview (or the
+                # platform console for owners) instead of the client default.
+                user.write({"action_id": home_action.id})
             action = "updated"
         else:
             if not password:
@@ -270,6 +280,7 @@ class ThirdCodeSetupService(models.AbstractModel):
                     "company_ids": [Command.set(target_company_ids)],
                     "groups_id": [Command.set(group_ids)],
                     "thirdcode_platform_owner": platform_owner,
+                    "action_id": home_action.id if home_action else False,
                 }
             )
             action = "created"
