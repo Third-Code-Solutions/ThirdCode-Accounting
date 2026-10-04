@@ -18,7 +18,7 @@ through a cursor of their own - which is what the next request does in
 production.
 """
 
-import time
+from unittest import mock
 
 from odoo import SUPERUSER_ID, api
 from odoo.exceptions import AccessDenied
@@ -134,12 +134,16 @@ class TestLoginTimingOracle(TransactionCase):
             self.assertTrue(self.users._tcsi_login_exists(self.env.cr.dbname, row[1]))
 
     def test_dummy_hash_costs_a_real_hash(self):
-        started = time.monotonic()
-        self.users._tcsi_burn_password_hash("not-the-password")
-        self.assertGreater(
-            time.monotonic() - started,
-            0.001,
-            "the dummy credential check must do real work, otherwise the oracle stays open",
+        # The oracle closes because the unknown-login branch runs a real
+        # password hash, not because of a wall-clock budget: assert that the
+        # crypt context is invoked, which no runner speed can change.
+        context = mock.MagicMock()
+        with mock.patch.object(type(self.users), "_crypt_context", return_value=context):
+            self.users._tcsi_burn_password_hash("not-the-password")
+        self.assertEqual(
+            [call.args[0] for call in context.hash.call_args_list],
+            ["not-the-password"],
+            "the dummy credential check must hash a real value, otherwise the oracle stays open",
         )
 
 
@@ -182,3 +186,163 @@ class TestHttpHardeningHelpers(TransactionCase):
 
     def test_database_manager_is_denied_by_default(self):
         self.assertFalse(self.env["ir.http"]._tcsi_db_manager_allowed())
+
+
+@tagged("post_install", "-at_install")
+class TestSessionCookiePolicy(TransactionCase):
+    """M3 / H4 - the session cookie leaves with Secure/SameSite, from either
+    of the two places Odoo sets it (``FutureResponse`` and ``_Response``)."""
+
+    def setUp(self):
+        super().setUp()
+        from odoo.addons.thirdcode_accounting.models import tcsi_cookie_policy as policy
+
+        self.policy = policy
+
+    def test_only_the_session_cookie_is_touched(self):
+        self.assertEqual(self.policy._tcsi_cookie_overrides("cids", True), {})
+        self.assertEqual(self.policy._tcsi_cookie_overrides(None, True), {})
+        self.assertEqual(self.policy._tcsi_cookie_overrides("", False), {})
+
+    def test_https_forces_secure_httponly_samesite(self):
+        overrides = self.policy._tcsi_cookie_overrides("session_id", True)
+        self.assertTrue(overrides["secure"])
+        self.assertTrue(overrides["httponly"])
+        self.assertEqual(overrides["samesite"], "Lax")
+
+    def test_plain_http_keeps_the_cookie_usable(self):
+        overrides = self.policy._tcsi_cookie_overrides("session_id", False)
+        self.assertNotIn("secure", overrides)
+        self.assertTrue(overrides["httponly"])
+        self.assertEqual(overrides["samesite"], "Lax")
+
+    def test_both_odoo_cookie_paths_are_patched(self):
+        from odoo import http
+
+        for cls in (http.FutureResponse, http._Response):
+            self.assertTrue(
+                getattr(cls.set_cookie, self.policy.PATCH_FLAG, False),
+                "%s.set_cookie must carry the session cookie policy" % cls.__name__,
+            )
+
+    def test_patching_is_idempotent(self):
+        before = self.policy.patch_set_cookie()
+        after = self.policy.patch_set_cookie()
+        self.assertEqual(before, [])
+        self.assertEqual(after, [])
+
+    def test_wrapper_forces_the_attributes(self):
+        seen = []
+
+        def original(self, key, value="", *args, **kwargs):
+            seen.append((key, value, kwargs))
+
+        wrapper = self.policy._make_wrapper(original)
+        with mock.patch.object(self.policy, "_tcsi_request_is_secure", return_value=True):
+            wrapper(object(), "session_id", "abc")
+            wrapper(object(), "cids", "1-2")
+        self.assertEqual(seen[0][0], "session_id")
+        self.assertTrue(seen[0][2]["secure"])
+        self.assertTrue(seen[0][2]["httponly"])
+        self.assertEqual(seen[0][2]["samesite"], "Lax")
+        self.assertEqual(seen[1][2], {})
+
+    def test_wrapper_defers_to_positional_arguments(self):
+        seen = []
+
+        def original(self, key, value="", *args, **kwargs):
+            seen.append(kwargs)
+
+        wrapper = self.policy._make_wrapper(original)
+        with mock.patch.object(self.policy, "_tcsi_request_is_secure", return_value=True):
+            wrapper(object(), "session_id", "abc", None, None, "/", None, True, True, "Strict")
+        self.assertEqual(seen[0], {})
+
+    def test_request_secure_helper_is_shared_with_ir_http(self):
+        from odoo.addons.thirdcode_accounting.models import ir_http
+
+        with mock.patch.object(self.policy, "_tcsi_request_is_secure", return_value=True) as helper:
+            self.assertTrue(self.env["ir.http"]._tcsi_is_secure())
+        helper.assert_called_once_with()
+
+
+@tagged("post_install", "-at_install")
+class TestJsonErrorSanitizer(TransactionCase):
+    """L6 - a JSON error payload must not hand out a traceback."""
+
+    def setUp(self):
+        super().setUp()
+        self.ir_http = self.env["ir.http"]
+
+    def _error_response(self):
+        import json
+
+        from werkzeug.wrappers import Response
+
+        payload = {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {
+                "code": 404,
+                "message": "404: Not Found",
+                "data": {
+                    "name": "werkzeug.exceptions.NotFound",
+                    "debug": (
+                        "Traceback (most recent call last):\n"
+                        '  File "/usr/lib/python3/dist-packages/odoo/http.py", line 2133,'
+                        " in _serve_ir_http\n    response = self.dispatcher.dispatch(...)\n"
+                    ),
+                    "message": "404: Not Found",
+                    "arguments": [],
+                    "context": {"lang": "en_US"},
+                },
+            },
+        }
+        return Response(json.dumps(payload), status=404, content_type="application/json")
+
+    def _as_anonymous(self):
+        from odoo.addons.thirdcode_accounting.models import ir_http
+
+        return mock.patch.object(ir_http, "request", mock.Mock(session=mock.Mock(uid=0, debug="")))
+
+    def test_debug_is_stripped_for_anonymous_callers(self):
+        import json
+
+        response = self._error_response()
+        with self._as_anonymous():
+            self.ir_http._tcsi_strip_error_debug(response)
+        data = json.loads(response.get_data())["error"]["data"]
+        self.assertNotIn("debug", data)
+        self.assertNotIn("arguments", data)
+        self.assertNotIn("context", data)
+        self.assertEqual(data["name"], "werkzeug.exceptions.NotFound")
+        self.assertEqual(response.status_code, 404)
+
+    def test_debug_is_kept_for_an_authenticated_debug_session(self):
+        import json
+
+        from odoo.addons.thirdcode_accounting.models import ir_http
+
+        response = self._error_response()
+        session = mock.Mock(uid=2, debug="1")
+        with mock.patch.object(ir_http, "request", mock.Mock(session=session)):
+            self.ir_http._tcsi_strip_error_debug(response)
+        self.assertIn("debug", json.loads(response.get_data())["error"]["data"])
+
+    def test_non_json_and_malformed_bodies_are_untouched(self):
+        from werkzeug.wrappers import Response
+
+        html = Response("<html>404</html>", status=404, content_type="text/html")
+        with self._as_anonymous():
+            self.ir_http._tcsi_strip_error_debug(html)
+        self.assertEqual(html.get_data(), b"<html>404</html>")
+
+        broken = Response("{not json", status=500, content_type="application/json")
+        with self._as_anonymous():
+            self.ir_http._tcsi_strip_error_debug(broken)
+        self.assertEqual(broken.get_data(), b"{not json")
+
+        plain = Response('{"result": 1}', status=200, content_type="application/json")
+        with self._as_anonymous():
+            self.ir_http._tcsi_strip_error_debug(plain)
+        self.assertEqual(plain.get_data(), b'{"result": 1}')

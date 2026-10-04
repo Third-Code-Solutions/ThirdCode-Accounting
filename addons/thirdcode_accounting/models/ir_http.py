@@ -14,6 +14,7 @@ Both knobs are System Parameters, so an operator can re-enable the manager for
 a known address without a code change.
 """
 
+import json
 import logging
 
 from odoo import SUPERUSER_ID, models
@@ -58,13 +59,14 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _tcsi_is_secure(cls):
-        try:
-            if request.httprequest.is_secure:
-                return True
-            proto = request.httprequest.environ.get("HTTP_X_FORWARDED_PROTO", "")
-            return proto.split(",")[0].strip().lower() == "https"
-        except Exception:  # noqa: BLE001
-            return False
+        """True when the request arrived over TLS (proxy aware).
+
+        Shared with the session cookie policy, so the header rewrite and the
+        cookie wrapper can never disagree about whether the hop was secure.
+        """
+        from .tcsi_cookie_policy import _tcsi_request_is_secure
+
+        return _tcsi_request_is_secure()
 
     @classmethod
     def _tcsi_db_manager_allowed(cls):
@@ -114,9 +116,61 @@ class IrHttp(models.AbstractModel):
         response = super()._handle_error(exception)
         try:
             if response is not None:
+                cls._tcsi_strip_error_debug(response)
                 cls._tcsi_harden_headers(response)
         except Exception:  # noqa: BLE001 - an error page must still be served
             _logger.exception("TCSI: could not apply security headers to an error response")
+        return response
+
+    # ------------------------------------------------------------------
+    # L6 - JSON-RPC error payloads must not carry a traceback
+    # ------------------------------------------------------------------
+    @classmethod
+    def _tcsi_strip_error_debug(cls, response):
+        """Remove the traceback Odoo serializes into JSON error payloads.
+
+        ``odoo.http.serialize_exception`` unconditionally embeds
+        ``traceback.format_exc()``, the exception arguments and its context in
+        the ``error.data`` member of every JSON-RPC error, including errors
+        raised for anonymous callers (a 404 on a ``type="json"`` route is
+        enough). That discloses absolute file paths, the module layout and
+        source lines to unauthenticated clients, so it is dropped unless the
+        caller is an authenticated session in debug mode.
+        """
+        try:
+            session = request.session
+            if session.uid and (session.debug or "").strip():
+                return response
+        except Exception:  # noqa: BLE001 - never break error handling
+            pass
+
+        try:
+            content_type = (response.headers.get("Content-Type") or "").lower()
+            if "json" not in content_type:
+                return response
+            if response.direct_passthrough:
+                return response
+            raw = response.get_data()
+            if not raw or len(raw) > 1_000_000:
+                return response
+            payload = json.loads(raw.decode("utf-8"))
+            if not isinstance(payload, dict):
+                return response
+            error = payload.get("error")
+            if not isinstance(error, dict):
+                return response
+            data = error.get("data")
+            if not isinstance(data, dict):
+                return response
+            changed = False
+            for key in ("debug", "arguments", "context"):
+                if data.pop(key, None) is not None:
+                    changed = True
+            if not changed:
+                return response
+            response.set_data(json.dumps(payload))
+        except Exception:  # noqa: BLE001 - never break error handling
+            _logger.debug("TCSI: could not sanitize a JSON error payload", exc_info=True)
         return response
 
     @classmethod

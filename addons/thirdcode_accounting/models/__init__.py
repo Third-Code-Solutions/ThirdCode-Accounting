@@ -25,3 +25,4 @@ from . import platform_console
 from . import ir_http
 from . import res_users
 from . import tcsi_auth_throttle
+from . import tcsi_cookie_policy
