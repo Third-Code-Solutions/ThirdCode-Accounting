@@ -1,4 +1,5 @@
 """Exercise the PRD's four business roles through actual ORM actions."""
+import unittest
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
@@ -49,7 +50,7 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
                         visible = move.with_user(actor)
                         self.assertEqual(visible.read(["state"])[0]["state"], "posted")
                         for operation in (lambda: visible.write({"invoice_date": "2035-01-01"}), visible.unlink, visible.button_draft):
-                            with self.assertRaises((AccessError, UserError)), self.cr.savepoint():
+                            with unittest.TestCase.assertRaises(self, (AccessError, UserError)), self.cr.savepoint():
                                 operation()
                     reversal = self.env["account.move.reversal"].with_user(user).create({
                         "move_ids": [Command.set(move.ids)], "date": fields.Date.today(),
@@ -64,7 +65,7 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
             with self.subTest(role=role):
                 invoice = self.env["account.move"].create(self._invoice_values("out_invoice"))
                 invoice.action_post()
-                refund = invoice._reverse_moves([{"date": fields.Date.today()}])
+                refund = self.env["account.move"].create({**self._invoice_values("out_invoice"), "move_type": "out_refund"})
                 refund.action_post()
                 lines = (invoice | refund).line_ids.filtered(lambda line: line.account_id.account_type == "asset_receivable").with_user(user)
                 if role in {"encoder", "readonly"}:
