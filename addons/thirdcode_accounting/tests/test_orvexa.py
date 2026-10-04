@@ -130,3 +130,60 @@ class TestOrvexa(AccountTestInvoicingCommon):
         reader = self.env["thirdcode.orvexa"].with_user(self.reader)
         result = reader.request_task("read everything", self.company.id)
         self.assertEqual(result["status"], "complete")
+
+    def test_slash_commands_parse_deterministically(self):
+        self.assertEqual(parse_command("/help")["tool"], "help")
+        self.assertEqual(parse_command("/summary")["tool"], "read_everything")
+        self.assertEqual(parse_command("/overdue")["tool"], "overdue_invoices")
+        self.assertEqual(parse_command("/activity")["tool"], "activity")
+        self.assertEqual(parse_command('/find "Acme"')["tool"], "find_invoices")
+        draft = parse_command('/draft "Acme" 2 x "Consulting" at 100')
+        self.assertEqual(draft["tool"], "draft_invoice")
+        self.assertEqual(
+            (draft["customer"], draft["quantity"], draft["product"], draft["unit_price"]),
+            ("Acme", 2.0, "Consulting", 100.0),
+        )
+
+    def test_incomplete_or_unknown_input_gets_precise_validation(self):
+        for text in ("/find", "/find Acme", "/draft", '/draft "Acme"', "/nonsense", "/summary now"):
+            self.assertEqual(parse_command(text)["tool"], "invalid", text)
+        self.assertIn("double quotes", parse_command("/find Acme")["message"])
+        self.assertIn("Unknown command", parse_command("/nonsense")["message"])
+        self.assertIn("Usage: /draft", parse_command("/draft")["message"])
+        self.assertEqual(parse_command('draft invoice for "X"')["tool"], "invalid")
+        self.assertEqual(parse_command("find invoices")["tool"], "invalid")
+        self.assertEqual(parse_command("show overdue")["tool"], "invalid")
+
+    def test_invalid_requests_return_validation_and_change_nothing(self):
+        before = self.env["account.move"].search_count([])
+        for text in ("/draft", "/nonsense"):
+            result = self.agent.request_task(text, self.company.id)
+            self.assertEqual(result["status"], "invalid")
+            self.assertTrue(result["message"])
+        self.assertEqual(self.env["account.move"].search_count([]), before)
+
+    def test_help_lists_every_command_with_parameters_and_examples(self):
+        result = self.agent.request_task("/help", self.company.id)
+        self.assertEqual(result["status"], "help")
+        tools = [command["tool"] for command in result["commands"]]
+        for tool in ("help", "read_everything", "overdue_invoices", "find_invoices", "draft_invoice", "activity"):
+            self.assertIn(tool, tools)
+        for command in result["commands"]:
+            self.assertTrue(command["usage"])
+            self.assertTrue(command["example"])
+            self.assertTrue(command["summary"])
+        self.assertIn("cannot", result["boundaries"])
+
+    def test_slash_commands_run_for_readonly_without_writes(self):
+        reader = self.env["thirdcode.orvexa"].with_user(self.reader)
+        self.assertEqual(reader.request_task("/summary", self.company.id)["status"], "complete")
+        result = reader.request_task('/find "ORVEXA"', self.company.id)
+        self.assertEqual(result["status"], "complete")
+        self.assertIn("up to 20", result["message"])
+        self.assertTrue(result["as_of"])
+
+    def test_invoice_results_identify_source_limits_and_timestamps(self):
+        result = self.agent.request_task("show overdue invoices", self.company.id)
+        self.assertIn("up to 20", result["message"])
+        self.assertIn("account.move", result["source"])
+        self.assertTrue(result["as_of"])

@@ -6,12 +6,76 @@ import re
 from odoo import api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+# Deterministic command registry. Every supported request maps to one of these
+# tools with validated arguments; nothing else can run and nothing is inferred.
+COMMANDS = (
+    {"tool": "help", "usage": "/help", "example": "/help",
+     "summary": "List every supported command with its parameters and an example."},
+    {"tool": "read_everything", "usage": "/summary", "example": "/summary",
+     "summary": "Read everything in your dashboard: cash, receivables, payables, invoices, bills, payments, entries, periods and activity memory."},
+    {"tool": "overdue_invoices", "usage": "/overdue", "example": "/overdue",
+     "summary": "List up to 20 posted customer invoices past their due date, from live records."},
+    {"tool": "find_invoices", "usage": '/find "customer or reference"', "example": '/find "Acme"',
+     "summary": "Search customer invoices by customer name or document reference."},
+    {"tool": "draft_invoice", "usage": '/draft "Customer" 2 x "Product" at 100', "example": '/draft "Acme Corp" 2 x "Consulting" at 100',
+     "summary": "Prepare one draft invoice preview for review; nothing is posted, sent or paid."},
+    {"tool": "activity", "usage": "/activity", "example": "/activity",
+     "summary": "Show recent authorized accounting activity and your saved task proposals."},
+)
+
+BOUNDARIES = (
+    "ORVEXA is deterministic: it runs inside this deployment, uses only the commands "
+    "listed here, and never guesses missing customers, products, amounts, dates or "
+    "companies. It cannot access your computer or local files, cannot call external "
+    "AI services, and cannot post, pay, send, delete or execute anything outside its "
+    "registered, audited actions."
+)
+
+
+def _parse_slash(text):
+    match = re.match(r"/([a-z]+)\s*(.*)$", text, re.I | re.S)
+    if not match:
+        return {"tool": "invalid", "message": "Type /help to list the supported commands, their parameters and examples."}
+    name, rest = "/" + match[1].lower(), match[2].strip()
+    if name == "/help":
+        return {"tool": "help"} if not rest else {"tool": "invalid", "message": "Usage: /help takes no parameters."}
+    if name == "/summary":
+        return {"tool": "read_everything"} if not rest else {"tool": "invalid", "message": "Usage: /summary takes no parameters."}
+    if name == "/overdue":
+        return {"tool": "overdue_invoices"} if not rest else {"tool": "invalid", "message": "Usage: /overdue takes no parameters."}
+    if name == "/activity":
+        return {"tool": "activity"} if not rest else {"tool": "invalid", "message": "Usage: /activity takes no parameters."}
+    if name == "/find":
+        quoted = re.fullmatch(r'"([^"\n]{1,100})"', rest)
+        if quoted:
+            return {"tool": "find_invoices", "query": quoted[1]}
+        if rest and '"' not in rest:
+            return {"tool": "invalid", "message": 'Wrap the customer or reference in double quotes, e.g. /find "Acme".'}
+        return {"tool": "invalid", "message": 'Usage: /find "customer or reference". Include a search phrase, e.g. /find "Acme".'}
+    if name == "/draft":
+        full = re.fullmatch(
+            r'"([^"\n]{1,100})"\s+(\d+(?:\.\d{1,4})?)\s+x\s+"([^"\n]{1,100})"\s+at\s+(\d+(?:\.\d{1,4})?)',
+            rest, re.I,
+        )
+        if full:
+            return {"tool": "draft_invoice", "customer": full[1], "quantity": float(full[2]),
+                    "product": full[3], "unit_price": float(full[4])}
+        return {"tool": "invalid", "message": 'Usage: /draft "Customer" 2 x "Product" at 100. Provide the quoted customer, a quantity, the quoted product and a unit price.'}
+    return {"tool": "invalid", "message": f'Unknown command "{name}". Type /help to list the supported commands.'}
+
 
 def parse_command(message):
-    """Local command mode, not an LLM; unsupported requests are never guessed."""
+    """Local command mode, not an LLM; unsupported requests are never guessed.
+
+    Slash commands and the earlier natural phrasing both map onto the same
+    registry. Incomplete or unknown input returns an "invalid" tool with a
+    precise validation message instead of triggering any action.
+    """
     if not isinstance(message, str) or not 1 <= len(message.strip()) <= 2000:
         raise ValidationError("Enter a request between 1 and 2,000 characters.")
     text = message.strip()
+    if text.startswith("/"):
+        return _parse_slash(text)
     if re.fullmatch(r"(?:please )?(?:(?:show|list|find)(?: me)? )?(?:my |our |all )?(?:overdue|unpaid overdue|past due) (?:customer )?invoices[.!?]?", text, re.I):
         return {"tool": "overdue_invoices"}
     match = re.fullmatch(r'(?:find|search)(?: invoice)?\s+"([^"\n]{1,100})"', text, re.I)
@@ -36,6 +100,18 @@ def parse_command(message):
         )
     ):
         return {"tool": "read_everything"}
+    if re.fullmatch(r"(?:show |what is |what's )?(?:the )?(?:recent |latest )?(?:activity|activity feed|organization activity|organisation activity|task history)[.!?]?", text, re.I):
+        return {"tool": "activity"}
+    # Deterministic usage reminders for the common incomplete phrasings. These
+    # never assume data or intent; they only point at the exact accepted form.
+    if re.fullmatch(r"(?:find|search)(?: me)?(?: invoice| invoices)?[.!?]?", text, re.I) or re.fullmatch(
+        r"(?:find|search)(?: me)?(?: invoice| invoices)?\s+[^\"\n]{1,100}", text, re.I
+    ):
+        return {"tool": "invalid", "message": 'Searches need the customer or reference in double quotes, e.g. find "Acme".'}
+    if re.fullmatch(r"(?:create |prepare )?draft invoice.*", text, re.I):
+        return {"tool": "invalid", "message": 'Draft invoices need the full detail: draft invoice for "Customer" with 2 x "Product" at 100.'}
+    if re.fullmatch(r"(?:show |list |find |give )?(?:me )?(?:my |our |the )?overdue[.!?]?", text, re.I):
+        return {"tool": "invalid", "message": "To list overdue invoices, send: show overdue invoices."}
     return {"tool": "help"}
 
 
@@ -67,8 +143,13 @@ class OrvexaService(models.AbstractModel):
             [("company_id", "=", self.env.company.id), ("move_type", "=", "out_invoice")] + domain,
             limit=21, order="invoice_date_due asc, id desc",
         )
-        return {"status": "complete", "message": "Live invoice results (up to 20).",
-                "has_more": len(moves) > 20, "records": [
+        as_of = fields.Datetime.to_string(fields.Datetime.now())
+        overflow = len(moves) > 20
+        message = "Live customer-invoice results from account.move records, scoped to your company and role (up to 20 shown"
+        message += "; more matches exist — narrow your search)." if overflow else ")."
+        return {"status": "complete", "message": f"{message} Snapshot: {as_of} UTC.",
+                "as_of": as_of, "source": "account.move customer invoices (live records, role- and company-scoped)",
+                "has_more": overflow, "records": [
                     {"id": move.id, "name": move.name, "customer": move.partner_id.display_name,
                      "due": str(move.invoice_date_due or ""), "amount_due": move.amount_residual,
                      "currency": move.currency_id.name, "state": move.state,
@@ -89,9 +170,14 @@ class OrvexaService(models.AbstractModel):
     def request_task(self, message, company_id):
         service = self._scoped(company_id)
         command = parse_command(message)
-        if re.fullmatch(r"(?:show |what is |what's )?(?:the )?(?:recent |latest )?(?:activity|activity feed|organization activity|organisation activity|task history)[.!?]?", message.strip(), re.I):
+        tool = command["tool"]
+        if tool == "invalid":
+            return {"status": "invalid", "message": command["message"]}
+        if tool == "help":
+            return service.help()
+        if tool == "activity":
             return service.memory(company_id)
-        if command["tool"] == "overdue_invoices":
+        if tool == "overdue_invoices":
             return service._invoice_rows([("state", "=", "posted"), ("amount_residual", ">", 0),
                                           ("invoice_date_due", "<", fields.Date.context_today(service))])
         if command["tool"] == "find_invoices":
@@ -100,13 +186,22 @@ class OrvexaService(models.AbstractModel):
             return service.read_everything(company_id)
         if command["tool"] == "draft_invoice":
             return service._prepare_invoice(command)
-        return {"status": "help", "message": 'I can read everything in your dashboard, find invoices, list overdue invoices, show recent activity, or prepare one draft invoice with an explicit customer, product, quantity and unit price. Try: read everything in my dashboard; show overdue invoices; find "customer or reference"; or draft invoice for "Customer" with 2 x "Product" at 100. I cannot post, send, pay, delete, or run unsupported tasks.'}
+        return service.help()
+
+    def help(self):
+        """Discoverable command help: usage, parameters and one example each."""
+        return {
+            "status": "help",
+            "message": "Deterministic command help — every supported request is listed below. The earlier natural phrasing keeps working (for example: show overdue invoices).",
+            "commands": [dict(command) for command in COMMANDS],
+            "boundaries": BOUNDARIES,
+        }
 
     def _prepare_invoice(self, command):
         self.env["account.move"].check_access("create")
         quantity, price = command["quantity"], command["unit_price"]
         if not all(math.isfinite(value) for value in (quantity, price)) or not 0 < quantity <= 1000000 or not 0 <= price <= 1000000000:
-            raise ValidationError("Quantity or unit price is outside the supported range.")
+            raise ValidationError("Quantity must be greater than 0 and at most 1,000,000; unit price must be between 0 and 1,000,000,000.")
         company = self.env.company
         company_domain = ["|", ("company_id", "=", False), ("company_id", "=", company.id)]
         partner = self._exact("res.partner", command["customer"], company_domain)
@@ -393,6 +488,7 @@ class OrvexaService(models.AbstractModel):
                 f"as of {now} UTC."
             ),
             "as_of": now,
+            "source": "live workspace records (account.move, account.payment, periods) plus ORVEXA activity memory; role- and company-scoped",
             "sections": sections,
             "links": links,
         }
@@ -420,6 +516,7 @@ class OrvexaService(models.AbstractModel):
             ("user_id", "=", self.env.uid), ("company_id", "=", company_id)], order="id desc", limit=20)
         return {"status": "complete", "message": "Latest authorized accounting activity and your task history.",
                 "as_of": fields.Datetime.to_string(fields.Datetime.now()), "events": visible,
+                "source": "account.move audit events recorded since ORVEXA tracking was enabled, re-checked against your current role; task proposals owned by your account",
                 "tasks": [{"id": row.id, "state": "expired" if row.state == "pending" and row.expires_at < fields.Datetime.now() else row.state,
                            "at": fields.Datetime.to_string(row.create_date)} for row in proposals],
                 "scope": "Invoices, bills and journal entries recorded since ORVEXA activity tracking was enabled. Only records your current role may read are shown."}
