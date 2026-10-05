@@ -40,3 +40,11 @@
 - Remedy: retain exact PostgreSQL option allowlisting, numeric loopback `host` and `hostaddr`, and ambient routing-override rejection; verify libpq's effective client host/hostaddr/port/database/user plus SQL `current_database()`/`current_user()` instead. Close rejected connections before any write.
 - Prevention: `test_connected_client_endpoint_and_database_identity_are_verified` covers accepted loopback routing, endpoint/user/database mismatch, missing/redirected hostaddr and close-on-rejection. Native CI logs the synthetic client/server endpoints for diagnosis without credentials.
 - Scope/evidence: all 12 restore tests passed in native CI `37297823382`; its diagnostic confirmed client `127.0.0.1:5432` and server `172.18.0.2/32:5432`. API contract: [Psycopg ConnectionInfo](https://www.psycopg.org/docs/extensions.html#psycopg2.extensions.ConnectionInfo). This correction does not establish completed recovery or production readiness.
+
+## Comparable cache baselines for audit-history replay — 5 October 2026
+
+- Trigger: diagnostic CI `37300335141` retained two native failures. The first native replay used warm fixture cache (six audit groups/29 details), while savepoint rollback left later replays cold (seven groups/30 details).
+- Cause: comparing different starting cache states confused a replay-fixture difference with candidate audit-history behavior. Header relation batching also showed no query reduction (25 native/25 candidate).
+- Remedy: establish the same cache baseline inside every replay; test cold and explicitly warmed native/candidate paths separately. Remove the ineffective header override and retain the scoped invoice-line relation batching (25 native/22 candidate queries).
+- Prevention: `test_write_and_post_emit_identical_full_audit_history` compares four replays per cache mode and retains complete field/value, actor, company and control assertions. No broad ORM cache or prefetch override is introduced.
+- Scope/evidence: source `096a980` passed all three jobs in CI `37301445442`, including 139 native tests with zero failures/errors. All eight controlled replays produced identical seven-group/30-detail histories. This proves the tested native equality/query boundary, not hosted latency or overall readiness.

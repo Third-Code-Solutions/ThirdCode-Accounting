@@ -13,14 +13,16 @@ The unreleased recovery baseline `474994f` passed all three jobs in
 [CI 37297823382](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37297823382),
 including native monthly-report regressions, the actual Read-only monthly PDF,
 annual synthetic PDFs and all 12 restore tests. These include real PostgreSQL
-18/Odoo restore/conservation and Linux subprocess cleanup checks. Later audit
-snapshot relation batching at `cfdbc80` failed two native tests; diagnostic revision
-`7865707` also finished with two failures in
-[CI 37300335141](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37300335141).
-The correction removes an ineffective header override and normalizes cold/warm
-replay tests; native CI is pending. Latest-head green checks, hosted candidate upgrade rehearsal
-and deployment remain unproven. The [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
-must pass for the exact candidate to be released; production remains on 13.2.
+18/Odoo restore/conservation and Linux subprocess cleanup checks. The earlier audit
+snapshot relation batching failures at `cfdbc80` and diagnostic `7865707` are
+retained in `SWARM-CHECKPOINT.md`. Corrected executable source
+`096a98030dfe26a9181544d1c8791ff708c01677` passed all three jobs in
+[CI 37301445442](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37301445442):
+139 native tests with zero failures/errors, 59 integration checks, 12 restore
+tests and portal/monthly/annual PDF gates. Source CI is green; new hosted latency,
+fresh predeploy backup, candidate upgrade rehearsal, merge and deployment remain
+unproven. Future source changes need their own [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks).
+Production remains on 13.2 at `4038c8d`.
 
 The PRD is a review draft, not an approved client specification. The user is the
 developer/technical owner. Client Owner approval follows the Technical Adviser's
@@ -40,11 +42,13 @@ one authenticated account and loopback RPC on a shared host. It does not establi
 browser/network, cold/warm, multi-role or representative annual-volume acceptance.
 The private summary reference is `tcsi-swarm-candidate-resume-results.json`.
 
-The subsequent audit snapshot relation batching candidate remains under repair.
-`SWARM-CHECKPOINT.md` retains both failed runs and the diagnostic cold/warm replay
-and query-count evidence. The focused correction needs passing exact-candidate
-native assertions. No new hosted latency improvement or NF-02/NF-03 acceptance is
-claimed from these source changes.
+Corrected audit snapshot relation batching passed native CI at `096a980`.
+`SWARM-CHECKPOINT.md` retains the earlier failures and subsequent controlled
+cold/warm replay equality. Header queries remain 25/25 with the ineffective
+override removed; invoice-line queries decreased from 25 to 22. Each of four
+native/candidate replays per cache mode retained identical seven-group/30-detail
+audit history. This source-level result does not establish new hosted latency
+improvement or NF-02/NF-03 acceptance; the hosted benchmark remains a release gate.
 
 `scripts/benchmark.py` now requires an explicit `tcsi_alignment_` database name,
 an identical `--confirm-isolated-database` value, an explicit company and supplied
@@ -192,8 +196,8 @@ compilation, XML parsing and package validation passed, and all nine native test
 passed in CI 37288677011. The separate actual monthly PDF using the Read-only role,
 first added at `db771e5`, passed at `474994f` in
 [CI 37297823382](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37297823382).
-This is distinct from the six annual financial-statement PDFs. The latest audit
-changes still need passing exact-candidate checks. Generic output does not close
+This is distinct from the six annual financial-statement PDFs. Corrected audit
+source `096a980` passed these gates again in CI 37301445442. Generic output does not close
 RP-04 or AC-03 and does not establish client format approval or production release.
 
 RP-01–03, AC-01/02/04, AR-02/05, STD-01–12 and RG-01/04/06/07 need client formats,

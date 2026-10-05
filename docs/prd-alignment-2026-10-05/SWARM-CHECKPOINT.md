@@ -43,20 +43,31 @@ baselines, and Linux timeout/parent-SIGKILL descendant cleanup. The generic full
 restore implementation is therefore native-tested; it is not an active provider
 or monthly operational service.
 
-Later audit snapshot relation batching at `cfdbc80` failed two native tests.
+Earlier audit snapshot relation batching at `cfdbc80` failed two native tests.
 Diagnostic revision `7865707` also finished with two failures in
 [CI 37300335141](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37300335141).
 It exposed different replay cache states: the first warm native replay had six
 audit groups/29 details; native cold replay and candidate cold replay matched
-exactly at seven groups/30 details. Invoice-header query counts were 25/25 with
-no benefit; invoice-line counts were 25 native versus 22 candidate. The correction
-removes the header override and normalizes cold/warm replay tests; its native CI
-is still pending. Retain both failed runs as diagnostic evidence, not release
-proof or a hosted latency improvement. Require
-the latest [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
-and resolve the native failures before hosted candidate rehearsal or deployment.
-Railway console access and the remaining hosted release gates are still open.
-The verified production baseline remains 13.2 at `4038c8d`.
+exactly at seven groups/30 details. Both failed runs remain historical diagnostic
+evidence.
+
+Corrected executable source `096a98030dfe26a9181544d1c8791ff708c01677` passed all
+three jobs in [CI 37301445442](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37301445442):
+139 native tests with zero failures/errors, 59 integration checks, 12 restore
+tests, portal gates and the monthly/annual PDF checks. The header override was
+removed; invoice-header queries remain 25/25, while invoice-line queries are 25
+native versus 22 candidate. Every cold and explicitly warmed native/candidate
+replay matched: four replays per mode, each with seven audit groups/30 details and
+SHA256 `73d5b8d2fc5326b1a709aa265785d8916780a2148fb7b56ded2aea066d44d71b`.
+The test establishes a common cache baseline inside every replay and retains
+full-history equality, actor, company and control assertions.
+
+Source CI is green; no new hosted latency result, fresh predeploy backup,
+candidate upgrade rehearsal, merge or deployment is established by that result.
+Railway console access and those hosted release gates remain open. Future source
+changes require their own [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks).
+Verified production remains 13.2 at `4038c8d`; native query reduction is not a
+hosted performance or client acceptance claim.
 
 Read-only postdeployment checks passed installed-version, portal readiness,
 engine login, both WebSocket upgrade/ping/pong/session-expiry paths, six encoder
@@ -152,8 +163,8 @@ activity, linked statement rows and recorded reconciling totals, shows unresolve
 differences and evidence gaps, and distinguishes current matching state from
 month-end ledger balances. Its nine native tests, including direct HTML rendering
 and non-mutation checks, passed in CI 37288677011. The actual PDF rendered by the
-Read-only role on the isolated clone passed at `474994f` in CI 37297823382. Later
-audit changes still require their own passing latest-head checks.
+Read-only role on the isolated clone passed at `474994f` in CI 37297823382 and
+again with corrected audit source `096a980` in CI 37301445442.
 Generating the report changes no reconciliation state or ledger entries. Its
 format is explicitly provisional; it does not complete the client-specific
 RP-04/AC-03 contract.
