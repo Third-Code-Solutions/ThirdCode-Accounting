@@ -64,7 +64,7 @@
 .showcase-logo strong { font-size: 12px; line-height: 1.2; letter-spacing: .02em; }
 .showcase-logo small { display: block; font-size: 7px; letter-spacing: .16em; color: var(--landing-muted); margin-top: 3px; }
 .showcase-company { display: flex; align-items: center; gap: 8px; border: 1px solid var(--landing-line); border-radius: 7px; padding: 9px; margin-bottom: 24px; font-size: 9px; font-weight: 600; }
-.showcase-company > span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 5px; background: var(--tcsi-accent-soft); color: var(--marketing-accent); font-size: 8px; }
+.showcase-company > .landing-mark { width: 24px; height: 24px; flex-basis: 24px; }
 .showcase-company small { display: block; margin-top: 2px; color: var(--landing-muted); font-size: 8px; font-weight: 400; }
 .showcase-company > svg { margin-left: auto; color: var(--landing-muted); }
 .showcase-sidebar-label { margin: 0 10px 7px; color: var(--landing-muted); font-size: 8px; letter-spacing: .11em; }
