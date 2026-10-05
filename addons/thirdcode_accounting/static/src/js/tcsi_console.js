@@ -8,9 +8,17 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
 const MODEL = "thirdcode.platform.console";
 const EMPTY_PAGE = () => ({ rows: [], total: 0, page: 0, page_size: 25 });
 
+class CreateOrganizationDialog extends Component {
+    static template = "thirdcode_accounting.CreateOrganizationDialog";
+    static components = { Dialog };
+    static props = ["controller", "close"];
+    setup() { this.state = this.props.controller.state; }
+    closeCreate() { this.props.controller.closeCreate(); }
+    createOrganization() { return this.props.controller.createOrganization(); }
+}
+
 class PlatformConsole extends Component {
     static template = "thirdcode_accounting.PlatformConsole";
-    static components = { Dialog };
     static props = ["*"];
 
     setup() {
@@ -118,15 +126,18 @@ class PlatformConsole extends Component {
             this.state.options = await this.orm.call(MODEL,"get_options",[]);
             this.state.org = { ...this.emptyOrg(), request_id: crypto.randomUUID() };
             this.state.formError = ""; this.state.createOpen = true;
+            this.removeCreateDialog = this.dialog.add(CreateOrganizationDialog, { controller: this }, {
+                onClose: () => { this.state.createOpen = false; this.state.org = this.emptyOrg(); },
+            });
         } catch (error) { this.state.error = this.message(error); }
     }
-    closeCreate() { if (!this.state.busy) { this.state.createOpen = false; this.state.org = this.emptyOrg(); } }
+    closeCreate() { if (!this.state.busy) this.removeCreateDialog?.(); }
     async createOrganization() {
         if (this.state.busy) return;
         this.state.busy = true; this.state.formError = "";
         try {
             const result = await this.orm.call(MODEL,"create_organization",[{ ...this.state.org }]);
-            this.state.createOpen = false; this.state.org = this.emptyOrg();
+            this.removeCreateDialog?.();
             this.state.tab = "organizations"; this.state.orgs.page = 0;
             this.notification.add(`${result.name} created. Give its administrator their initial credentials privately.`, { type: "success", sticky: true });
             await this.load();
@@ -143,10 +154,11 @@ class PlatformConsole extends Component {
     }
     incidentState(incident, state) { this.run("set_incident_state",[incident.id,state],"Incident updated."); }
     editPublication(publication) {
+        if (this.busy) return;
         this.state.editorId = publication.id; this.state.revision = publication.revision;
         this.state.draft = Object.fromEntries(Object.keys(this.emptyDraft()).map(key => [key, publication[key] || ""]));
     }
-    newRelease() { this.state.editorId = false; this.state.revision = false; this.state.draft = { ...this.emptyDraft(), kind: "release" }; }
+    newRelease() { if (this.busy) return; this.state.editorId = false; this.state.revision = false; this.state.draft = { ...this.emptyDraft(), kind: "release" }; }
     async publicationPage(delta) {
         if (this.busy) return;
         this.state.publicationPage += delta;
@@ -166,8 +178,16 @@ class PlatformConsole extends Component {
     }
     publish(action) {
         const p = this.selectedPublication;
-        this.confirm("Change public website", `${action === "publish" ? "Publish the saved draft" : action === "revert" ? "Restore the previous public revision" : "Remove this content from public pages"}? Unsaved editor changes are not included.`,
-            "publish_content",[p.id,p.revision,action],"Website publication updated.");
+        this.dialog.add(ConfirmationDialog, {
+            title: "Change public website",
+            body: `${action === "publish" ? "Publish the saved draft" : action === "revert" ? "Restore the previous public revision" : "Remove this content from public pages"}? Unsaved editor changes are not included.`,
+            confirmLabel: "Confirm",
+            confirm: async () => {
+                if (await this.run("publish_content", [p.id, p.revision, action], "Website publication updated.")) {
+                    this.state.revision = this.selectedPublication?.revision || this.state.revision;
+                }
+            },
+        });
     }
 }
 registry.category("actions").add("tcsi_platform_console", PlatformConsole);

@@ -33,7 +33,7 @@ class PlatformCompany(models.Model):
     def create(self, values_list):
         if any(v.get("thirdcode_is_platform", self.env.context.get("default_thirdcode_is_platform")) for v in values_list):
             require_platform_owner(self.env)
-        self.check_access_rights("create")
+        self.check_access("create")
         # Native create links the new company to the acting user before returning.
         # Only an already-authorized owner uses the installer for that native step.
         creator = self.with_user(SUPERUSER_ID) if is_platform_owner(self.env) else self
