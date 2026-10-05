@@ -12,6 +12,12 @@ The corrected profile completed six operations with original isolated records/fi
 
 After the exact candidate run, inspect its retained server logs for native transaction retries before increasing load. Higher concurrency on two workers may include admission delay, database lock contention, native retries or resource throttling. The existing evidence does not separate those causes. Any follow-up sampler must be bounded, restricted to the isolated database and owned workers, and avoid SQL parameters. Do not change production worker allocation as a diagnostic.
 
+## Candidate 13.3 hosted observation
+
+Candidate `40e501c` completed 40 calls per two/ten-session case on the retained isolated copy. Save/post p95 were 2815.54/1438.20 ms and 10831.28/9059.27 ms respectively. All 80 transactions succeeded with zero probe/cleanup errors; both cases remained `TARGET_MISSED`. Upgrade, generic Read-only monthly PDF, original-row/file conservation and final idle/cron/mail guards passed. Retained native server logs have no reported serialization retries or errors. Further request-cost analysis is required before changing worker allocation or claiming queue duration; these observations do not establish hosted browser or client-volume acceptance.
+
+The retained database is now 13.3. Use its new verified configuration below, not the older 13.2 source/configuration directory. Never point an older addon copy at an already upgraded database.
+
 ## Save/post rerun and queue evidence
 
 Use the existing isolated server ownership/watchdog procedure. Record exact source SHA, addon version, PostgreSQL version, worker count, machine allocation, actor/company, existing cardinality and background traffic. Never run synthetic writes against customer books. Credentials use `ODOO_LOGIN`/`ODOO_PASSWORD` in memory; no password argument.
@@ -40,9 +46,13 @@ The PRD supplies no approved annual transaction, line, history or attachment vol
 - Capacity candidate: 3,750 documents with the same settlement interval estimates 10,000 journal lines. This is an engineering proposal, not an approved workload. It is not authorized as an unbounded load on the shared production host. Use dedicated CI/capacity infrastructure after reviewing a small run and its resource cost.
 - Single company and currency, one authenticated native actor, tax-free one-line documents, existing scoped accounts/journals/payment methods. Existing history and attachment counts/bytes are measured; the scenario adds no attachments. It does not cover client tax complexity or attachment-heavy history.
 
-The optional `.github/workflows/annual-capacity.yml` runs the fixed capacity candidate on a dedicated ephemeral GitHub runner with PostgreSQL 18.6. Add `run-capacity-benchmark` to a same-repository PR after review; the label event and subsequent source updates run that scenario. Remove the label when the finite experiment is complete to avoid repeating it on documentation updates. Manual dispatch is also available after the workflow reaches the default branch. The ordinary quality workflow continues to use the 24-document smoke.
+The optional `.github/workflows/annual-capacity.yml` runs the fixed capacity candidate on a dedicated ephemeral GitHub runner with PostgreSQL 18.6. Add `run-capacity-benchmark` to a same-repository PR after review for the full capacity scenario, or `run-capacity-diagnostic` for the fixed 192-document diagnosis. Only those explicit label events trigger the workflow; source pushes do not repeat it automatically. Remove the label after the finite experiment. Manual dispatch is also available after the workflow reaches the default branch and defaults to the smaller diagnostic. The ordinary quality workflow continues to use the 24-document smoke.
 
 The larger scenario requires an explicit engineering-only CI marker and rejects arbitrary volumes and database routing overrides before creating output or connecting. Its budgets are 3,300 seconds for seeding, 3,600 seconds for the driver and 75 minutes for the job. The 30-second PDF target remains unchanged. Independent SQL checks require 1,875 invoices, 1,875 bills, 1,250 settlements, 5,000 new posted moves and 10,000 new lines; debit and credit must each equal 500,000 units across all 12 months. Actual report outputs, source revision, failure logs and container/OOM state are retained without configuration files or filestore contents. An incomplete or failed run remains a failure; even a passing run is unapproved synthetic engineering capacity, not hosted or client-volume acceptance.
+
+The first capacity run, [37304128567](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37304128567), failed during native seeding at its 3,300-second limit. The last checkpoint showed 1,284 documents and 428 payments; the uncommitted scenario rolled back. No final SQL oracle or PDF measurement followed. Cleanup and artifact retention succeeded; the container exited 1 with no OOM flag. Available memory and disk after the run were ample, but those endpoint observations do not exclude transient pressure. Keep the failed artifact as evidence.
+
+The smaller diagnostic creates 192 native documents and 64 settlements (256 moves/512 lines), with a 720-second seed budget and 900-second driver deadline. An independent SQL oracle expects 19,200 document units, 6,400 payment units and debit/credit totals of 25,600. Timestamped 12-document checkpoints retain create/post/payment wall time, Python-process CPU and available native cursor/thread SQL counters, including on failure. No SQL text or parameters are collected; unavailable metrics are null. This diagnostic does not replace the failed 10,000-line capacity requirement. No batch commits, cache changes or weakened audit/accounting controls are introduced.
 
 `scripts/benchmark_annual.py` runs inside the deployed Odoo Python environment. It refuses production names, mismatched config/filter, superuser/sudo, multiple active companies, active cron/mail, incomplete chart/payment configuration and reused evidence directories. No chart, lock date, role, audit or report approval changes are made. Seed failure rolls back the uncommitted scenario. Successful seed commits once; reports run afterward, so a report failure leaves the committed synthetic scenario and explicit `seed_committed` evidence. Re-run measurement with `--seed-documents 0` after inspecting that evidence; do not blindly seed again.
 
@@ -50,7 +60,7 @@ For the retained hosted copy, wrap execution with the established original-row/f
 
 ```sh
 python3 scripts/benchmark_annual.py \
-  --config /var/lib/odoo/tcsi-swarm-20261005/isolated.conf \
+  --config /var/lib/odoo/tcsi-recovery-report-20261005-40e501c/isolated.conf \
   --database tcsi_alignment_hosted_20261005 \
   --confirm-isolated-database tcsi_alignment_hosted_20261005 \
   --company-id 1 --actor-id 2 --year 2025 --seed-documents 24 \

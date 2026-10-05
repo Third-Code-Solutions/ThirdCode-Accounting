@@ -5,6 +5,19 @@ from odoo.exceptions import AccessError
 from odoo.addons.auditlog.models.rule import DictDiffer, FIELDS_BLACKLIST
 
 
+# Native label methods read these stored columns in addition to their declared
+# display_name dependencies. Keep this list local to the journal-item snapshot
+# helper; broader ORM prefetching changes cache-sensitive audit behavior.
+_AUDIT_RELATION_LABEL_FIELDS = {
+    "res.partner": (
+        "name", "company_name", "parent_id", "is_company", "type", "commercial_company_name",
+    ),
+    "account.journal": ("name", "company_id"),
+    "account.move": ("name", "ref"),
+    "account.account": ("name",),
+}
+
+
 def _prefetch_audit_relation_labels(records, field_names, load):
     """Batch label dependencies in OCA's journal-item snapshots.
 
@@ -33,7 +46,7 @@ def _prefetch_audit_relation_labels(records, field_names, load):
         if related:
             relations[related._name] = relations.get(related._name, related.browse()) | related
     for related in relations.values():
-        related.fetch(["display_name"])
+        related.fetch(["display_name", *_AUDIT_RELATION_LABEL_FIELDS.get(related._name, ())])
 
 
 class AccountMoveLineAuditSnapshot(models.Model):

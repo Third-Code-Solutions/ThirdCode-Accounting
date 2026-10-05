@@ -2,7 +2,7 @@
 
 This is an execution checklist, not a new acceptance claim. The 92-row
 `requirements.csv` and `SWARM-CHECKPOINT.md` in this directory record the verified
-release at main `4038c8db86ac7d794ca42fc65fa3a4cc68fae769`, addon `18.0.2.13.2`.
+current production at main `55c58ebee38b875218d8d9351242d4a53502d362`, addon `18.0.2.13.2`, including the separately released PR #11 monetary-input fix.
 Private raw evidence remains in the protected release record. New recovery,
 performance and generic report work is not represented as released here.
 Historical phase-2 results do not supersede the latest hosted latency failure.
@@ -19,10 +19,7 @@ retained in `SWARM-CHECKPOINT.md`. Corrected executable source
 `096a98030dfe26a9181544d1c8791ff708c01677` passed all three jobs in
 [CI 37301445442](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37301445442):
 139 native tests with zero failures/errors, 59 integration checks, 12 restore
-tests and portal/monthly/annual PDF gates. Source CI is green; new hosted latency,
-fresh predeploy backup, candidate upgrade rehearsal, merge and deployment remain
-unproven. Future source changes need their own [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks).
-Production remains on 13.2 at `4038c8d`.
+tests and portal/monthly/annual PDF gates. Merged candidate `40e501c57a1f40ccacf060a45252198f83d03bbb` passed all three jobs in [CI 37306395297](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37306395297). Its isolated 13.2-to-13.3 upgrade took 34.684 seconds; original isolated and production rows/files were preserved. The Read-only monthly PDF rendered in 5.191 seconds with independent ledger equality and unchanged accounting counts. All 80 save/post transactions succeeded without probe or cleanup errors, but both concurrency cases retained latency target failures. Fresh production backup was downloaded, decrypted only locally and all 1,300 manifest files verified; fresh database restore remains pending. PR #10 is not merged or deployed. Future source changes need their own [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks). Production remains 13.2 at `55c58eb`.
 
 The PRD is a review draft, not an approved client specification. The user is the
 developer/technical owner. Client Owner approval follows the Technical Adviser's
@@ -32,6 +29,8 @@ migration approval. The consolidated client checklist below is the single intake
 for those outstanding decisions; continue generic engineering independently.
 
 ## Deployed benchmark safeguards and observed hosted target failures
+
+The unreleased 13.3 candidate `40e501c` repeated the same 40-call, two/ten-session protocol on the retained isolated copy. Save/post p95 were **2815.54/1438.20 ms** at two sessions and **10831.28/9059.27 ms** at ten. Both retained `TARGET_MISSED`; all 80 transactions succeeded with zero probe/cleanup errors. Final isolated cron, mail and other connections were zero. These separate runs do not establish a controlled speedup or browser/client acceptance. Private evidence: `recovery-report-candidate-40e501c/results.json`.
 
 The released candidate completed 40 save/post transactions per case on the
 isolated hosted copy: two concurrent sessions produced save/post p95 of

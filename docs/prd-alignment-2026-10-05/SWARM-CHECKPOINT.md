@@ -2,14 +2,7 @@
 
 ## Verified release and current work
 
-PR #9 is merged and deployed at main
-`4038c8db86ac7d794ca42fc65fa3a4cc68fae769`, addon `18.0.2.13.2`. Railway and Vercel
-serve that revision. The released candidate is
-`24c8d46659b186559cc1edd32d75bde6a73cd1aa`; source is unchanged in the merge.
-This is the verified baseline for continuation on
-`codex/accounting-recovery-performance`. New work on that branch is not yet a
-release or an acceptance result. Unrelated primary-checkout files remain outside
-this workstream.
+PR #9 originally deployed main `4038c8d`, addon `18.0.2.13.2`. The separately released PR #11 monetary-input fix now puts production at `55c58ebee38b875218d8d9351242d4a53502d362`, still 13.2. Current Railway runtime/deployment and public portal health were verified. PR #10 remains unreleased on `codex/accounting-recovery-performance`; merge `40e501c57a1f40ccacf060a45252198f83d03bbb` preserves PR #11. Unrelated primary-checkout files remain outside this workstream.
 
 Candidate CI `37277537109` and main-merge CI `37282043406` passed all jobs:
 125 native Odoo tests, 59 integration checks, 22 recovery tests, 14 benchmark
@@ -62,12 +55,11 @@ SHA256 `73d5b8d2fc5326b1a709aa265785d8916780a2148fb7b56ded2aea066d44d71b`.
 The test establishes a common cache baseline inside every replay and retains
 full-history equality, actor, company and control assertions.
 
-Source CI is green; no new hosted latency result, fresh predeploy backup,
-candidate upgrade rehearsal, merge or deployment is established by that result.
-Railway console access and those hosted release gates remain open. Future source
-changes require their own [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks).
-Verified production remains 13.2 at `4038c8d`; native query reduction is not a
-hosted performance or client acceptance claim.
+Latest candidate `40e501c` passed all three jobs in [CI 37306395297](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37306395297). Fresh manual backup captured in 7.021 seconds including dump validation (10.647 seconds total), encrypted to 66,755,134 bytes, and was downloaded/decrypted only locally. All 1,300 manifest members verified, with archived before/after record, company and original-file conservation. Protected production evidence contained 53 posted documents, 111 lines, 649 audit logs, 13,281 audit details, 837 business attachments and 482 referenced files. Recoverable registry reference/retention and operational recovery remain unverified.
+
+Exact candidate isolated upgrade completed in 34.684 seconds with original isolated and production rows/files preserved. The actual Read-only monthly PDF rendered in 5.191 seconds, matched independent ledger queries and preserved accounting counts. Forty save/post calls each at two and ten sessions all succeeded without probe/cleanup errors. Save/post p95 were 2815.54/1438.20 ms and 10831.28/9059.27 ms respectively; both cases remain `TARGET_MISSED`. Final isolated cron/mail/other connections were zero. Private evidence is `recovery-report-candidate-40e501c/results.json`; the archive SHA256 is `589bb6fafdd3ff6881a2f978630094c67a1ed5679b9f6febe8766c52c07d017a`.
+
+Fresh backup database restore, latency remediation, merge and deployment remain open. The bounded 10,000-line engineering capacity run [37304128567](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37304128567) failed at its 3,300-second native seed budget. Last checkpoint: 1,284 documents and 428 payments; the uncommitted scenario rolled back. No final ledger oracle, report samples or PDFs were produced. Cleanup passed; container exit 1, OOMKilled=false. This is a fixture-construction failure, not a report correctness or latency result. New bounded diagnostics retain per-phase wall/CPU/native SQL counters and timestamped checkpoints before a smaller explicit experiment. Its unintended queued duplicate was cancelled without touching the running test. Provider operations and client acceptance remain separate outstanding gates. Future source changes require their own [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks).
 
 Read-only postdeployment checks passed installed-version, portal readiness,
 engine login, both WebSocket upgrade/ping/pong/session-expiry paths, six encoder

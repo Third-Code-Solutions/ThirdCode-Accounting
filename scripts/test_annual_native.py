@@ -26,6 +26,7 @@ SOURCE = "tcsi_orvexa_ci"
 HTTP_PORT = 18078
 SCRIPTS = Path(__file__).resolve().parent
 CAPACITY_DOCUMENTS = 3750
+DIAGNOSTIC_DOCUMENTS = 192
 
 
 def require(condition, message):
@@ -43,13 +44,16 @@ def validate_ci_environment(environ):
 def scenario_settings(environ):
     """The larger fixed scenario is opt-in; normal CI keeps its 24-document smoke."""
     mode = environ.get("TCSI_ANNUAL_CAPACITY_CI")
-    require(mode in (None, "engineering-only"), "Unknown annual capacity scenario; arbitrary volumes are not accepted")
+    require(mode in (None, "engineering-only", "diagnostic-only"), "Unknown annual capacity scenario; arbitrary volumes are not accepted")
     if mode is None:
         return {"documents": 24, "max_seed_seconds": 180, "benchmark_seconds": 300, "deadline_seconds": 0,
                 "qualification": "Small smoke only"}
     require(environ.get("GITHUB_ACTIONS") == "true", "Capacity scenario requires the dedicated disposable GitHub Actions runner")
     for name in ("PGHOSTADDR", "PGSERVICE", "PGSERVICEFILE", "PGOPTIONS"):
         require(not environ.get(name), f"Capacity scenario rejects connection routing override {name}")
+    if mode == "diagnostic-only":
+        return {"documents": DIAGNOSTIC_DOCUMENTS, "max_seed_seconds": 720, "benchmark_seconds": 840, "deadline_seconds": 900,
+                "qualification": "Bounded synthetic seed diagnosis; not annual capacity, client or hosted performance acceptance"}
     return {"documents": CAPACITY_DOCUMENTS, "max_seed_seconds": 3300, "benchmark_seconds": 3600, "deadline_seconds": 3600,
             "qualification": "Unapproved synthetic engineering capacity; not client or hosted performance acceptance"}
 
@@ -222,7 +226,7 @@ def ready(server, database):
 
 
 def verify_smoke(result, directory, documents=24):
-    require(documents in (24, CAPACITY_DOCUMENTS), "Unsupported native annual scenario")
+    require(documents in (24, DIAGNOSTIC_DOCUMENTS, CAPACITY_DOCUMENTS), "Unsupported native annual scenario")
     payments = documents // 3
     moves = documents + payments
     require(result.get("exit_code") == 0 and result.get("status") == "ENGINEERING_TARGET_OBSERVED", "Native annual target was not observed; retain failure evidence")
@@ -242,11 +246,16 @@ def verify_smoke(result, directory, documents=24):
     require(len(list(directory.glob("*.pdf"))) == 6, "Expected six actual PDFs")
 
 
-def verify_capacity_totals(totals):
+def verify_capacity_totals(totals, documents=CAPACITY_DOCUMENTS):
     """Independent oracle for the fixed 100-unit, untaxed native scenario."""
-    expected = {"documents": 3750, "invoices": 1875, "bills": 1875, "document_amount": 375000,
-                "payments": 1250, "inbound": 625, "outbound": 625, "payment_amount": 125000,
-                "moves": 5000, "lines": 10000, "debit": 500000, "credit": 500000, "months": 12}
+    require(documents in (DIAGNOSTIC_DOCUMENTS, CAPACITY_DOCUMENTS), "Unsupported ledger oracle scenario")
+    expected = ({"documents": 3750, "invoices": 1875, "bills": 1875, "document_amount": 375000,
+                 "payments": 1250, "inbound": 625, "outbound": 625, "payment_amount": 125000,
+                 "moves": 5000, "lines": 10000, "debit": 500000, "credit": 500000, "months": 12}
+                if documents == CAPACITY_DOCUMENTS else
+                {"documents": 192, "invoices": 96, "bills": 96, "document_amount": 19200,
+                 "payments": 64, "inbound": 32, "outbound": 32, "payment_amount": 6400,
+                 "moves": 256, "lines": 512, "debit": 25600, "credit": 25600, "months": 12})
     for key, value in expected.items():
         require(Decimal(str(totals[key])) == value, f"Capacity native ledger {key} differs from fixed synthetic scenario")
     require(totals.get("scope_valid") is True, "Capacity native ledger escaped company, year or posted state")
@@ -477,11 +486,11 @@ def main():
         verify_smoke(result, output, scenario["documents"])
         require(code == 0, "Benchmark process failed despite result evidence")
         summary.update(seeded=result["seeded"], measured_cardinality=result["measured_cardinality"], samples=result["samples"])
-        if scenario["documents"] == CAPACITY_DOCUMENTS:
+        if scenario["documents"] in (DIAGNOSTIC_DOCUMENTS, CAPACITY_DOCUMENTS):
             totals = capacity_ledger_totals(database, result["seeded"])
             summary["native_ledger_totals"] = totals
             save(output / "native-ledger-totals.json", totals)
-            verify_capacity_totals(totals)
+            verify_capacity_totals(totals, scenario["documents"])
         require(server.process.poll() is None and listener_owned(server), "Isolated PDF server no longer owns its listener")
         monthly_output = output / "monthly"
         monthly = OwnedProcess([sys.executable, str(Path(__file__).resolve()), "--monthly-child", str(config), database,

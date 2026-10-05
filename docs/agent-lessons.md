@@ -56,3 +56,19 @@
 - Remedy: establish the same cache baseline inside every replay; test cold and explicitly warmed native/candidate paths separately. Remove the ineffective header override and retain the scoped invoice-line relation batching (25 native/22 candidate queries).
 - Prevention: `test_write_and_post_emit_identical_full_audit_history` compares four replays per cache mode and retains complete field/value, actor, company and control assertions. No broad ORM cache or prefetch override is introduced.
 - Scope/evidence: source `096a980` passed all three jobs in CI `37301445442`, including 139 native tests with zero failures/errors. All eight controlled replays produced identical seven-group/30-detail histories. This proves the tested native equality/query boundary, not hosted latency or overall readiness.
+
+## Railway console message size — 5 October 2026
+
+- Trigger: a 36 KB reviewed helper bundle disconnected the browser terminal with `read limited at 32769 bytes`.
+- Cause: one terminal input message exceeded the console transport limit; the shell never created the candidate input directory.
+- Remedy: reconnect, inspect the intended destination for partial execution, then transfer separate commands below 32,768 bytes. Verify every decoded file against its independently reviewed SHA256 before execution.
+- Prevention: check encoded command length before pasting; use smaller independent payloads with exclusive file creation. Never retry an oversized or possibly executed command unchanged.
+- Scope/evidence: private 40e501c rehearsal helper and support bundle; both smaller transfers matched their hashes and the subsequent isolated upgrade, workload and cleanup completed. No browser permissions changed.
+
+## Native JSON-RPC methods returning None — 5 October 2026
+
+- Trigger: the private read-only production verifier marked session cleanup unconfirmed despite HTTP 200 from `/web/session/destroy`.
+- Cause: native Odoo 18's `Session.destroy()` returns `None`; its JSON-RPC dispatcher can omit the `result` member. The generic decoder required that member.
+- Remedy: accept absent/null result only for the exact empty-parameter destroy call, retaining HTTP 200, JSON-RPC 2.0, exact integer request-ID, no-error and applicable-cookie checks. Authentication and model reads still require their normal result.
+- Prevention: test invalid envelopes, unexpected logout parameters, strict authentication/model decoding, valid session cleanup and the missing-cookie failure. HTTP 200 alone remains insufficient.
+- Scope/evidence: independently reviewed private baseline verifier; fresh 12:19 UTC production read-only check and session cleanup passed. Original incomplete evidence remains retained.

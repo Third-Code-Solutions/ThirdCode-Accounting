@@ -66,10 +66,98 @@ class AnnualBenchmarkTests(unittest.TestCase):
                          (24, 180, 300, 0))
         capacity = native.scenario_settings({"TCSI_ANNUAL_CAPACITY_CI": "engineering-only", "GITHUB_ACTIONS": "true"})
         self.assertEqual((capacity["documents"], capacity["max_seed_seconds"], capacity["deadline_seconds"]), (3750, 3300, 3600))
+        diagnostic = native.scenario_settings({"TCSI_ANNUAL_CAPACITY_CI": "diagnostic-only", "GITHUB_ACTIONS": "true"})
+        self.assertEqual((diagnostic["documents"], diagnostic["max_seed_seconds"], diagnostic["benchmark_seconds"],
+                          diagnostic["deadline_seconds"]), (192, 720, 840, 900))
         for bad in ({"TCSI_ANNUAL_CAPACITY_CI": "3751"}, {"TCSI_ANNUAL_CAPACITY_CI": "engineering-only"},
                     {"TCSI_ANNUAL_CAPACITY_CI": "engineering-only", "GITHUB_ACTIONS": "true", "PGHOSTADDR": "192.0.2.1"}):
             with self.subTest(bad=bad), self.assertRaises(RuntimeError):
                 native.scenario_settings(bad)
+
+    def test_diagnostic_plan_matches_independent_fixed_ledger_oracle(self):
+        plan = annual.plan_documents(2025, 192, 3)
+        self.assertEqual(len(plan), 192)
+        for direction in ("out_invoice", "in_invoice"):
+            self.assertEqual(sum(x["move_type"] == direction for x in plan), 96)
+            self.assertEqual(sum(x["move_type"] == direction and x["settle"] for x in plan), 32)
+        totals = {"documents": 192, "invoices": 96, "bills": 96, "document_amount": 19200,
+                  "payments": 64, "inbound": 32, "outbound": 32, "payment_amount": 6400,
+                  "moves": 256, "lines": 512, "debit": 25600, "credit": 25600, "months": 12, "scope_valid": True}
+        native.verify_capacity_totals(totals, 192)
+        for changed in ({"lines": 510}, {"debit": 25500, "credit": 25500}, {"payments": 63}, {"scope_valid": False}):
+            with self.subTest(changed=changed), self.assertRaises(RuntimeError):
+                native.verify_capacity_totals({**totals, **changed}, 192)
+        with self.assertRaises(RuntimeError):
+            native.verify_capacity_totals(totals, 193)
+
+    def test_seed_phase_counters_keep_exact_timings_and_restore_thread_attributes(self):
+        cursor = SimpleNamespace(sql_log_count=7, query=b"SELECT diagnostic-sensitive-value", params=("private-parameter",))
+        thread = SimpleNamespace()
+        clock = SimpleNamespace(wall=100.0, cpu=10.0)
+        evidence, saved = {}, []
+        with patch.object(annual.threading, "current_thread", return_value=thread), \
+                patch.object(annual.time, "perf_counter", side_effect=lambda: clock.wall), \
+                patch.object(annual.time, "process_time", side_effect=lambda: clock.cpu):
+            with annual.SeedDiagnostics(cursor, evidence, lambda: saved.append(json.loads(json.dumps(evidence)))) as meter:
+                with meter.phase("create"):
+                    cursor.sql_log_count += 3
+                    thread.query_count += 3
+                    thread.query_time += 1.25
+                    clock.wall += 2
+                    clock.cpu += .5
+                evidence["documents_completed"] = 1
+                meter.record("progress")
+                with meter.phase("post"):
+                    clock.wall += .4
+                    clock.cpu += .1
+        self.assertFalse(hasattr(thread, "query_count"))
+        self.assertFalse(hasattr(thread, "query_time"))
+        phase = evidence["phases"]["create"]
+        self.assertEqual((phase["calls"], phase["failed_calls"], phase["sql_count"]), (1, 0, 3))
+        self.assertEqual((phase["wall_seconds"], phase["cpu_seconds"], phase["sql_seconds"]), (2, .5, 1.25))
+        self.assertEqual(saved[1]["checkpoints"][-1]["phases"], {"create": phase}, "Earlier checkpoints must not change after later phases")
+        self.assertEqual(evidence["status"], "SEED_COMPLETE_UNCOMMITTED")
+        self.assertEqual([item["reason"] for item in evidence["checkpoints"]], ["start", "progress", "seed_complete"])
+        self.assertNotIn("diagnostic-sensitive-value", json.dumps(evidence))
+        self.assertNotIn("private-parameter", json.dumps(evidence))
+
+    def test_seed_failure_keeps_partial_phase_evidence_without_committing(self):
+        cursor = SimpleNamespace(sql_log_count=0)
+        thread = SimpleNamespace(query_count=10, query_time=1.0)
+        evidence, saved = {}, []
+        with patch.object(annual.threading, "current_thread", return_value=thread), self.assertRaisesRegex(RuntimeError, "native failure"):
+            with annual.SeedDiagnostics(cursor, evidence, lambda: saved.append(json.loads(json.dumps(evidence)))) as meter:
+                evidence.update(documents_completed=12, payments_completed=4)
+                with meter.phase("payment"):
+                    cursor.sql_log_count += 2
+                    thread.query_count += 2
+                    thread.query_time += .3
+                    raise RuntimeError("native failure")
+        self.assertEqual((thread.query_count, thread.query_time), (12, 1.3), "Existing native counters retain their increments")
+        self.assertEqual(saved[-1]["status"], "FAILED")
+        self.assertEqual(saved[-1]["documents_completed"], 12)
+        self.assertEqual(saved[-1]["payments_completed"], 4)
+        self.assertEqual(saved[-1]["failed_phase"], "payment")
+        self.assertEqual(saved[-1]["phases"]["payment"]["failed_calls"], 1)
+        self.assertEqual(saved[-1]["phases"]["payment"]["sql_count"], 2)
+        self.assertFalse(hasattr(cursor, "commit"))
+
+    def test_sql_metrics_unavailable_are_null_and_counter_setup_always_restores(self):
+        for cursor in (SimpleNamespace(), SimpleNamespace(sql_log_count=0)):
+            thread, evidence = SimpleNamespace(), {}
+            with self.subTest(cursor=cursor), patch.object(annual.threading, "current_thread", return_value=thread):
+                with annual.SeedDiagnostics(cursor, evidence, lambda: None) as meter:
+                    with meter.phase("create"):
+                        if hasattr(cursor, "sql_log_count"):
+                            cursor.sql_log_count += 2  # No native timing counter update.
+                self.assertIsNone(evidence["phases"]["create"]["sql_seconds"])
+                if not hasattr(cursor, "sql_log_count"):
+                    self.assertIsNone(evidence["phases"]["create"]["sql_count"])
+                self.assertFalse(vars(thread))
+        with patch.object(annual.threading, "current_thread", return_value=thread), self.assertRaises(OSError):
+            with annual.SeedDiagnostics(SimpleNamespace(sql_log_count=0), {}, lambda: (_ for _ in ()).throw(OSError("disk full"))):
+                self.fail("Failed checkpoint must prevent entering the native seed")
+        self.assertFalse(vars(thread))
 
     def test_invalid_capacity_fails_before_directory_or_database_access(self):
         environ = {"TCSI_ANNUAL_NATIVE_CI": "disposable-only", "PGHOST": "127.0.0.1", "PGUSER": "odoo",
@@ -233,7 +321,7 @@ class AnnualBenchmarkTests(unittest.TestCase):
                     (output / f"{kind}-{repeat}.pdf").write_bytes(pdf)
                     samples.append({"report": kind, "repeat": repeat, "pdf_bytes": len(pdf),
                                     "pdf_sha256": hashlib.sha256(pdf).hexdigest()})
-            for documents, payments, moves, lines in ((24, 8, 32, 64), (3750, 1250, 5000, 10000)):
+            for documents, payments, moves, lines in ((24, 8, 32, 64), (192, 64, 256, 512), (3750, 1250, 5000, 10000)):
                 result = {"status": "ENGINEERING_TARGET_OBSERVED", "exit_code": 0, "seed_committed": True,
                           "acceptance_claim": False, "approved_client_volume": False,
                           "seeded": {"documents": documents, "payments": payments, "posted_moves": moves,

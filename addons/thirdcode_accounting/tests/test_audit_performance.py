@@ -211,6 +211,22 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
                 self.assertIn("company_id", actual[0])
         self.assertEqual(actual[0]["company_id"][0], self.company.id)
 
+    def test_explicit_label_dependencies_improve_prior_journal_item_batching(self):
+        invoice = self._snapshot_invoice()
+        # Assert against native field metadata in the pinned runtime, not a
+        # mock schema. Only stored columns may join the existing fetch.
+        for model_name, names in accounting_audit._AUDIT_RELATION_LABEL_FIELDS.items():
+            for name in names:
+                field = self.env[model_name]._fields[name]
+                self.assertTrue(field.store and field.column_type, (model_name, name))
+        with patch.dict(accounting_audit._AUDIT_RELATION_LABEL_FIELDS, {}, clear=True):
+            expected, previous_queries = self._snapshot(invoice.line_ids, True)
+        actual, candidate_queries = self._snapshot(invoice.line_ids, True)
+        _logger.info("AUDIT_LABEL_DEPENDENCY_QUERY_COUNTS previous=%s candidate=%s",
+                     previous_queries, candidate_queries)
+        self.assertEqual(actual, expected)
+        self.assertLess(candidate_queries, previous_queries)
+
     def test_snapshot_labels_preserve_language_company_and_display_context(self):
         invoice = self._snapshot_invoice()
         self.env["res.lang"]._activate_lang("fr_FR")
@@ -218,6 +234,11 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
             {"lang": "en_US", "allowed_company_ids": self.company.ids},
             {"lang": "fr_FR", "allowed_company_ids": self.company.ids,
              "show_address": True, "show_vat": True},
+            {"lang": "en_US", "allowed_company_ids": self.company.ids,
+             "show_email": True, "partner_show_db_id": True, "address_inline": True,
+             "input_full_display_name": True},
+            {"lang": "en_US", "allowed_company_ids": self.company.ids,
+             "name_as_amount_total": True},
         ):
             with self.subTest(context=context):
                 for records in (invoice, invoice.line_ids):
@@ -325,6 +346,46 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         self.assertIs(self.env.cache, original_cache)
         self.assertIs(self.env.transaction.tocompute, original_tocompute)
         self.assertEqual(unsaved.ref, "Unsaved caller cache")
+
+    def test_unlink_snapshot_dependencies_preserve_native_history(self):
+        invoice = self._snapshot_invoice()
+        tracked = {"account.move": invoice.ids, "account.move.line": invoice.line_ids.ids}
+
+        class RollbackComparison(Exception):
+            pass
+
+        def history(batch):
+            rows = []
+            native = patch.object(accounting_audit, "_prefetch_audit_relation_labels")
+            with self.assertRaises(RollbackComparison), self.cr.savepoint():
+                self.env.invalidate_all()
+                start_id = self.env["auditlog.log"].sudo().search([], order="id desc", limit=1).id
+                with nullcontext() if batch else native:
+                    invoice.unlink()
+                logs = self.env["auditlog.log"].sudo().search([
+                    ("id", ">", start_id), ("method", "=", "unlink"),
+                ])
+                for log in logs:
+                    if log.res_id not in tracked.get(log.model_model, []):
+                        continue
+                    self.assertTrue(log.create_date)
+                    self.assertEqual(log.user_id, self.actor)
+                    self.assertEqual(log.thirdcode_company_ids, self.company)
+                    details = [{key: value for key, value in detail.items() if key != "id"}
+                               for detail in log.line_ids.read([
+                                   "field_id", "field_name", "field_description", "old_value",
+                                   "old_value_text", "new_value", "new_value_text",
+                               ], load="_classic_write")]
+                    rows.append({"model": log.model_model, "res_id": log.res_id,
+                                 "details": sorted(details, key=lambda row: row["field_name"])})
+                raise RollbackComparison()
+            return sorted(rows, key=lambda row: (row["model"], row["res_id"]))
+
+        expected = history(False)
+        self.assertTrue(expected)
+        self.assertEqual({row["model"] for row in expected}, set(tracked))
+        self.assertEqual(history(True), expected)
+        self.assertEqual(history(False), expected)
 
     def test_snapshot_optimization_does_not_grant_read_or_post_access(self):
         invoice = self._snapshot_invoice()

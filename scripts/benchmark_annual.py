@@ -9,14 +9,16 @@ engineering scenario, not an approved client annual volume or browser benchmark.
 from __future__ import annotations
 
 import argparse
-from datetime import date
+from contextlib import contextmanager
+from copy import deepcopy
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
-import sys
+import threading
 import time
 from urllib.parse import urlsplit
 import uuid
@@ -121,49 +123,150 @@ def fixture(env, args, run_id):
     return accounts, journals, bank, inbound, outbound, partner
 
 
-def seed(env, args, run_id):
-    started = time.perf_counter()
-    accounts, journals, bank, inbound, outbound, partner = fixture(env, args, run_id)
-    move_ids, payment_ids = [], []
-    for item in plan_documents(args.year, args.seed_documents, args.settle_every):
-        require(time.perf_counter() - started < args.max_seed_seconds, "Seed budget exceeded; entire uncommitted scenario will roll back")
-        sale = item["move_type"] == "out_invoice"
-        move = env["account.move"].create({
-            "company_id": args.company_id, "move_type": item["move_type"], "partner_id": partner.id,
-            "journal_id": journals["sale" if sale else "purchase"].id,
-            "invoice_date": item["date"], "date": item["date"], "ref": f"TC-ANNUAL-{run_id}-{item['index']}",
-            "invoice_line_ids": [(0, 0, {"name": "Synthetic annual capacity line", "quantity": 1, "price_unit": 100,
-                "account_id": accounts["income" if sale else "expense"].id, "tax_ids": [(6, 0, [])]})],
-        })
-        move.action_post()
-        require(move.state == "posted" and move.company_id.id == args.company_id, "Native scenario document did not post in scope")
-        require(move.date.isoformat() == item["date"], "Native accounting date shifted outside the planned scenario; review period locks")
-        move_ids.append(move.id)
-        if item["settle"]:
-            register = env["account.payment.register"].with_context(active_model="account.move", active_ids=move.ids).create({
-                "journal_id": bank.id, "payment_date": item["date"], "amount": move.amount_residual,
-                "payment_method_line_id": (inbound if sale else outbound).id,
-            })
-            action = register.action_create_payments()
-            require(isinstance(action, dict) and action.get("res_model") == "account.payment", "Native payment register returned no payment action")
-            if action.get("res_id"):
-                payments = env["account.payment"].browse(action["res_id"]).exists()
-            else:
-                require(action.get("domain"), "Native payment action omitted payment scope")
-                payments = env["account.payment"].search(action["domain"])
-            require(len(payments) == 1, "Expected one native payment per selected scenario document")
-            require(payments and all(p.company_id.id == args.company_id for p in payments), "Native settlement escaped company scope")
-            require(move.currency_id.is_zero(move.amount_residual), "Native settlement left an unexpected open balance")
-            payment_ids.extend(payments.ids)
-        if len(move_ids) % 12 == 0:
-            print(f"ANNUAL_SEED documents={len(move_ids)} payments={len(payment_ids)}", flush=True)
-    require(time.perf_counter() - started <= args.max_seed_seconds, "Seed budget exceeded; scenario will roll back")
-    payments = env["account.payment"].browse(payment_ids)
-    all_moves = env["account.move"].browse(move_ids) | payments.move_id
-    require(all(m.state == "posted" for m in all_moves), "Unposted scenario payment entry")
-    return {"documents": len(move_ids), "payments": len(payment_ids), "posted_moves": len(all_moves),
-            "posted_lines": len(all_moves.line_ids), "months": 12, "partner_id": partner.id,
-            "elapsed_seconds": time.perf_counter() - started, "run_id": run_id}
+class SeedDiagnostics:
+    """Measure native operations without logging SQL, changing caches or committing."""
+    def __init__(self, cursor, evidence, checkpoint):
+        self.cursor, self.evidence, self.checkpoint = cursor, evidence, checkpoint
+        self.thread = threading.current_thread()
+        self.added_thread_attributes = []
+        self.started = time.perf_counter()
+        self.cpu_started = time.process_time()
+        self.native_count = type(getattr(cursor, "sql_log_count", None)) is int
+        evidence.update(status="RUNNING", documents_completed=0, payments_completed=0, phases={}, checkpoints=[],
+                        started_utc=self.utc_now(),
+                        boundary="Native fixture/create/post/payment/validation calls; no commit or report time. CPU is this Python process, not PostgreSQL.",
+                        sql_boundary="Successful statements on the native cursor; SQL seconds use Odoo's current-thread execute counter, including database/network wait. No query text or parameters retained.")
+
+    @staticmethod
+    def utc_now():
+        return datetime.now(timezone.utc).isoformat()
+
+    def __enter__(self):
+        if self.native_count:
+            # Odoo 18 Cursor.execute already computes query duration. These
+            # existing optional counters collect it without installing hooks.
+            for name in ("query_count", "query_time"):
+                if not hasattr(self.thread, name):
+                    setattr(self.thread, name, 0)
+                    self.added_thread_attributes.append(name)
+        try:
+            self.record("start")
+        except BaseException:
+            for name in self.added_thread_attributes:
+                delattr(self.thread, name)
+            raise
+        return self
+
+    def snapshot(self):
+        return (time.perf_counter(), time.process_time(),
+                getattr(self.cursor, "sql_log_count", None) if self.native_count else None,
+                getattr(self.thread, "query_count", None) if self.native_count else None,
+                getattr(self.thread, "query_time", None) if self.native_count else None)
+
+    @contextmanager
+    def phase(self, name):
+        before = self.snapshot()
+        failed = True
+        try:
+            yield
+            failed = False
+        finally:
+            after = self.snapshot()
+            count = after[2] - before[2] if self.native_count else None
+            if count is not None and count < 0:
+                count = None  # A native counter reset is unavailable, not zero work.
+            sql_seconds = None
+            if self.native_count and after[3] >= before[3] and after[4] >= before[4]:
+                # A cursor counter alone does not establish timing support.
+                if after[3] > before[3] or count == 0:
+                    sql_seconds = after[4] - before[4]
+            item = self.evidence["phases"].setdefault(name, {"calls": 0, "failed_calls": 0,
+                "wall_seconds": 0.0, "cpu_seconds": 0.0, "sql_count": 0, "sql_seconds": 0.0})
+            item["calls"] += 1
+            item["failed_calls"] += int(failed)
+            item["wall_seconds"] += after[0] - before[0]
+            item["cpu_seconds"] += after[1] - before[1]
+            for key, value in (("sql_count", count), ("sql_seconds", sql_seconds)):
+                item[key] = item[key] + value if item[key] is not None and value is not None else None
+            if failed:
+                self.evidence["failed_phase"] = name
+
+    def record(self, reason):
+        current = {"utc": self.utc_now(), "elapsed_seconds": time.perf_counter() - self.started,
+                   "cpu_seconds": time.process_time() - self.cpu_started, "reason": reason,
+                   "documents_completed": self.evidence["documents_completed"],
+                   "payments_completed": self.evidence["payments_completed"],
+                   "phases": deepcopy(self.evidence["phases"])}
+        self.evidence["checkpoints"].append(current)
+        self.evidence.update(elapsed_seconds=current["elapsed_seconds"], cpu_seconds=current["cpu_seconds"])
+        self.checkpoint()
+        if reason == "progress":
+            print(f"ANNUAL_SEED utc={current['utc']} elapsed={current['elapsed_seconds']:.3f} "
+                  f"documents={current['documents_completed']} payments={current['payments_completed']}", flush=True)
+
+    def __exit__(self, error_type, _error, _traceback):
+        try:
+            self.evidence["status"] = "FAILED" if error_type else "SEED_COMPLETE_UNCOMMITTED"
+            if error_type:
+                self.evidence["error_type"] = error_type.__name__
+            self.record("failed" if error_type else "seed_complete")
+        finally:
+            for name in self.added_thread_attributes:
+                delattr(self.thread, name)
+
+
+def seed(env, args, run_id, evidence=None, checkpoint=lambda: None):
+    evidence = evidence if evidence is not None else {}
+    with SeedDiagnostics(env.cr, evidence, checkpoint) as diagnostic:
+        with diagnostic.phase("fixture"):
+            accounts, journals, bank, inbound, outbound, partner = fixture(env, args, run_id)
+        move_ids, payment_ids = [], []
+        for item in plan_documents(args.year, args.seed_documents, args.settle_every):
+            require(time.perf_counter() - diagnostic.started < args.max_seed_seconds, "Seed budget exceeded; entire uncommitted scenario will roll back")
+            sale = item["move_type"] == "out_invoice"
+            with diagnostic.phase("create"):
+                move = env["account.move"].create({
+                    "company_id": args.company_id, "move_type": item["move_type"], "partner_id": partner.id,
+                    "journal_id": journals["sale" if sale else "purchase"].id,
+                    "invoice_date": item["date"], "date": item["date"], "ref": f"TC-ANNUAL-{run_id}-{item['index']}",
+                    "invoice_line_ids": [(0, 0, {"name": "Synthetic annual capacity line", "quantity": 1, "price_unit": 100,
+                        "account_id": accounts["income" if sale else "expense"].id, "tax_ids": [(6, 0, [])]})],
+                })
+            with diagnostic.phase("post"):
+                move.action_post()
+                require(move.state == "posted" and move.company_id.id == args.company_id, "Native scenario document did not post in scope")
+                require(move.date.isoformat() == item["date"], "Native accounting date shifted outside the planned scenario; review period locks")
+            move_ids.append(move.id)
+            evidence["documents_completed"] = len(move_ids)
+            if item["settle"]:
+                with diagnostic.phase("payment"):
+                    register = env["account.payment.register"].with_context(active_model="account.move", active_ids=move.ids).create({
+                        "journal_id": bank.id, "payment_date": item["date"], "amount": move.amount_residual,
+                        "payment_method_line_id": (inbound if sale else outbound).id,
+                    })
+                    action = register.action_create_payments()
+                    require(isinstance(action, dict) and action.get("res_model") == "account.payment", "Native payment register returned no payment action")
+                    if action.get("res_id"):
+                        payments = env["account.payment"].browse(action["res_id"]).exists()
+                    else:
+                        require(action.get("domain"), "Native payment action omitted payment scope")
+                        payments = env["account.payment"].search(action["domain"])
+                    require(len(payments) == 1, "Expected one native payment per selected scenario document")
+                    require(payments and all(p.company_id.id == args.company_id for p in payments), "Native settlement escaped company scope")
+                    require(move.currency_id.is_zero(move.amount_residual), "Native settlement left an unexpected open balance")
+                    payment_ids.extend(payments.ids)
+                evidence["payments_completed"] = len(payment_ids)
+            if len(move_ids) % 12 == 0:
+                diagnostic.record("progress")
+        require(time.perf_counter() - diagnostic.started <= args.max_seed_seconds, "Seed budget exceeded; scenario will roll back")
+        with diagnostic.phase("validation"):
+            payments = env["account.payment"].browse(payment_ids)
+            all_moves = env["account.move"].browse(move_ids) | payments.move_id
+            require(all(m.state == "posted" for m in all_moves), "Unposted scenario payment entry")
+            result = {"documents": len(move_ids), "payments": len(payment_ids), "posted_moves": len(all_moves),
+                      "posted_lines": len(all_moves.line_ids), "months": 12, "partner_id": partner.id,
+                      "elapsed_seconds": time.perf_counter() - diagnostic.started, "run_id": run_id}
+        return result
 
 
 def cardinality(env, args):
@@ -242,7 +345,7 @@ def main(argv=None):
               "approved_client_volume": False, "acceptance_claim": False, "target_seconds": args.target_seconds,
               "boundary": "Native statement calculation and optional server PDF rendering, excluding browser/network. PDF rendering recalculates the report; do not add calculation_seconds to pdf_seconds.",
               "cache_boundary": "First and subsequent calls in one process; OS/PostgreSQL caches are not cleared. Not cold-start evidence.",
-              "seeded": None, "samples": [], "status": "FAILED", "exit_code": 1}
+              "seeded": None, "seed_diagnostics": {}, "samples": [], "status": "FAILED", "exit_code": 1}
     secrets = [v for k, v in os.environ.items() if v and any(s in k.upper() for s in ("PASSWORD", "TOKEN", "SECRET", "KEY"))]
     def checkpoint():
         temporary = output / "results.json.tmp"
@@ -266,7 +369,7 @@ def main(argv=None):
             result["company_currency"] = env.company.currency_id.name
             result["before"] = cardinality(env, args)
             if args.seed_documents:
-                result["seeded"] = seed(env, args, uuid.uuid4().hex[:12])
+                result["seeded"] = seed(env, args, uuid.uuid4().hex[:12], result["seed_diagnostics"], checkpoint)
                 cursor.commit()
                 result["seed_committed"] = True
                 checkpoint()

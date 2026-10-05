@@ -3,8 +3,15 @@ name: Optional synthetic annual capacity
 on:
   pull_request:
     branches: [main]
-    types: [labeled, synchronize]
+    types: [labeled]
   workflow_dispatch:
+    inputs:
+      scenario:
+        description: Explicit fixed engineering scenario
+        required: true
+        default: diagnostic
+        type: choice
+        options: [diagnostic, capacity]
 
 permissions:
   contents: read
@@ -18,10 +25,13 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
-       contains(github.event.pull_request.labels.*.name, 'run-capacity-benchmark') &&
-       (github.event.action != 'labeled' || github.event.label.name == 'run-capacity-benchmark'))
+       github.event.action == 'labeled' &&
+       (github.event.label.name == 'run-capacity-benchmark' || github.event.label.name == 'run-capacity-diagnostic'))
     runs-on: ubuntu-latest
     timeout-minutes: 75
+    env:
+      TCSI_ANNUAL_CAPACITY_CI: >-
+        ${{ (inputs.scenario == 'capacity' || github.event.label.name == 'run-capacity-benchmark') && 'engineering-only' || 'diagnostic-only' }}
     services:
       postgres:
         image: postgres:18.6-alpine
@@ -44,8 +54,10 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/tcsi-capacity-evidence/source-revision.txt"
           {
             printf '%s\n' 'Synthetic engineering capacity only; no client or hosted acceptance.' \
-              '3750 native invoices/bills, 1250 settlements, 10000 new lines.' \
-              'Seed budget 3300s; driver deadline 3600s; PDF target remains under 30s.'
+              "Selected fixed scenario: $TCSI_ANNUAL_CAPACITY_CI" \
+              'Capacity: 3750 documents/1250 settlements/10000 lines, 3300s seed/3600s outer.' \
+              'Diagnostic: 192 documents/64 settlements/512 lines, 720s seed/900s outer.' \
+              'PDF target remains under 30s; native accounting and audit controls remain enabled.'
             nproc
             free -m
             df -h
@@ -68,14 +80,14 @@ jobs:
           docker run --rm --user root --entrypoint sh \
             --mount "type=bind,source=$RUNNER_TEMP/tcsi-capacity-evidence,target=/tcsi-evidence" \
             tcsi-annual-capacity-ci -c 'chown odoo:odoo /tcsi-evidence && chmod 700 /tcsi-evidence'
-      - name: Run the fixed native annual capacity scenario
+      - name: Run the selected fixed native annual scenario
         timeout-minutes: 62
         run: >-
           docker run --init --name tcsi-annual-capacity-run --network host --entrypoint python3
           --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
           --env PGPASSWORD=ci-disposable-only --env PGDATABASE=tcsi_orvexa_ci
           --env GITHUB_ACTIONS=true --env TCSI_ANNUAL_NATIVE_CI=disposable-only
-          --env TCSI_ANNUAL_CAPACITY_CI=engineering-only
+          --env TCSI_ANNUAL_CAPACITY_CI
           --env TCSI_ANNUAL_EVIDENCE=/tcsi-evidence/annual
           --mount type=volume,source=tcsi-capacity-ci-data,target=/var/lib/odoo
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
