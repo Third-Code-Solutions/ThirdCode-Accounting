@@ -44,7 +44,7 @@ function declarations(source, opener) {
 }
 
 const portalLight = declarations(portal, ":root {");
-const portalDark = declarations(portal, "@media (prefers-color-scheme: dark) {\n  :root {");
+const portalDark = declarations(portal, 'html[data-portal-theme="dark"] {');
 const addonLight = declarations(tokens, ":root {");
 const addonDark = declarations(tokens, 'html[data-tcsi-theme="dark"] {');
 
@@ -73,7 +73,7 @@ test("the portal exposes every dark token it needs", () => {
     assert.ok(portalDark[`--tcsi-${name}`], `portal dark theme is missing --tcsi-${name}`);
   }
   assert.match(
-    portal.slice(portal.indexOf("@media (prefers-color-scheme: dark)")),
+    portal.slice(portal.indexOf('html[data-portal-theme="dark"]')),
     /color-scheme:\s*dark;/,
     "the portal dark theme must declare color-scheme: dark",
   );
@@ -128,7 +128,7 @@ test("the dashboard reference keeps its documented presentation", () => {
 });
 
 test("dark surfaces never fall back to a light background", () => {
-  const dark = portal.slice(portal.indexOf("@media (prefers-color-scheme: dark)"));
+  const dark = portal.slice(portal.indexOf('html[data-portal-theme="dark"]'));
   for (const leak of ["background: #fff;", "background: white;", "background: #fbfbfd;"]) {
     assert.ok(!dark.includes(leak), `dark theme still sets ${leak}`);
   }

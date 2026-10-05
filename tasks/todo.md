@@ -47,3 +47,13 @@
 - [ ] Supabase migration/RLS verification
 - [ ] Browser checks at 320/768/1024/1440px
 - [ ] Worker idempotency and rollback checks
+
+## Public landing page — 6 October 2026
+
+- Objective: company-focused landing page, complete verified core features, explicit light/dark switch (light default), production deployment.
+- Design contract: `docs/landing-page-design.md`.
+- Base: current production/main `55c58eb`; isolated branch `codex/accounting-landing`. User documents in original checkout preserved.
+- Implemented: outcome-led hero, interactive sample product preview, 12 capability groups, controls, Orvexa, rollout, FAQs, demo CTAs, shared public navigation/footer, cookie-backed server-rendered theme.
+- Verified: lint/typecheck, 62 unit tests, 19 branding/palette tests, initial production build, 10 responsive size/theme checks, preview keyboard navigation, FAQ disclosure, zero axe WCAG A/AA violations in light desktop and dark mobile. Evidence: `docs/landing-page-verification.md`.
+- Next: final build after theme store and mobile sign-in correction; public route checks; release CI; deploy and verify live production.
+- Blockers: none. Vercel connector has project access; local CLI is signed into a different account, so prefer existing Git deployment and connector verification.
