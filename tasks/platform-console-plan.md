@@ -20,12 +20,11 @@ Authenticated tenant RPC, forged context/default values, generic ORM CRUD, compa
 Use existing TCSI light/dark tokens. Prioritize service health, tenant activity and actionable incidents, with compact charts and tables. Organization creation is the main action. Use measured data and explicit unavailable/empty states; no fabricated revenue, uptime or traffic. Charts include labels/counts. Filtered tables scroll within their panel on narrow screens. Publishing has draft preview and explicit publish controls.
 
 ## Checkpoint
-- Base now includes origin/main 4ce5ba0 and supplied TCSI logo changes; worktree codex/platform-operations, PR #14.
+- PR #14 merged and deployed as 67d3bf8; live module 18.0.2.14.0.
 - Original checkout and user documents preserved.
-- Implemented slices 1–5; native rendered UI and live owner migration remain pending release.
-- Web lint/types/60 tests/build and production dependency audit pass. Six deferred-controller regression tests pass.
-- Hosted HTTP CI passed actual company/baseline/admin creation, owner/tenant boundaries, public snapshot isolation and incident capture after rollback.
-- First native install found unsupported false-domain syntax; corrected to id=0. Full suite then found SQL/ORM flush defects plus outdated trusted-operator test fixtures; corrections verified by CI 37381190163: 138 native tests and 59 integration checks, zero failures/errors.
-- Independent security and UI review findings addressed. PR remains draft pending recovery gate and live checks.
-- Railway CLI unauthenticated; authorized browser console is experiencing an automation connection failure. Latest production 4ce5ba0; console release not deployed.
-- Next: verify merged head in CI, fresh paired recovery capture, merge/release, verify owner scope and all console tabs with native browser rendering.
+- Final-head CI 37383374265 passed all three jobs. Native 138 tests and 59 accounting integration checks passed; web lint/types/60 tests/build, package validation, production dependency audit and six deferred-controller tests passed.
+- Paired encrypted production backup downloaded and verified off-host. Isolated restore, candidate upgrade, original financial/audit/attachment conservation and owner isolation passed. Detailed evidence is in docs/platform-console-evidence/README.md; secrets and raw capture remain private.
+- Live owner sign-in and eight console APIs passed. Owner has only private platform home. Tenant administrator denied all eight APIs with forged setup context.
+- All six native console sections rendered; creation dialogs and unsaved SEO preview checked without creating production test companies or publishing content. Public /updates returns 200.
+- Mobile native tables retain first-cell bounds and scroll internally without page overflow.
+- Follow-up: scoped h1/h2 dark-mode contrast correction reviewed; deploy and confirm actual native CSS, then restore original light theme and viewport.
