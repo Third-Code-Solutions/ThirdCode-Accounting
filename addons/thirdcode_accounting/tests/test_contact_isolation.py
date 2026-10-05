@@ -13,7 +13,7 @@ class TestContactIsolation(TransactionCase):
         group = cls.env.ref("thirdcode_accounting.group_thirdcode_accountant")
         cls.ua, cls.ub, cls.multi = cls.env["res.users"].create([
             {"name": name, "login": name, "company_id": company.id,
-             "company_ids": [Command.set(companies.ids)], "groups_id": [Command.set(group.ids)]}
+             "company_ids": [Command.set(companies.ids)], "groups_id": [Command.set((group | cls.env.ref("base.group_allow_export")).ids)]}
             for name, company, companies in [("contact-a", cls.a, cls.a), ("contact-b", cls.b, cls.b),
                                              ("contact-multi", cls.a, cls.a | cls.b)]
         ])

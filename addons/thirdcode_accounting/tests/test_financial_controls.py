@@ -4,8 +4,8 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tools import date_utils
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
-from odoo.addons.hr_expense.tests.common import TestExpenseCommon
+from .common import AccountTestInvoicingCommon
+from .common import TestExpenseCommon
 
 
 @tagged("post_install", "-at_install")

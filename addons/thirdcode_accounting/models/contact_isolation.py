@@ -170,23 +170,22 @@ def check_partner_reference(records, values):
         return
     names = [name for name, field in records._fields.items()
              if field.type == "many2one" and field.comodel_name in {"res.partner", "res.partner.bank"}]
-    if records and not ({"company_id"} | set(names)).intersection(values):
+    scope_fields = {"company_id", "journal_id", "move_id"}
+    if records and not (scope_fields | set(names)).intersection(values):
         return
     for record in records or [records]:
         company_id = values.get("company_id")
-        if not company_id and record:
-            company_id = record.company_id.id
-        if not company_id:
-            company_id = records.env.context.get("default_company_id")
         if not company_id and values.get("move_id") and "move_id" in records._fields:
             company_id = records.env["account.move"].browse(values["move_id"]).company_id.id
         if not company_id and values.get("journal_id"):
             company_id = records.env["account.journal"].browse(values["journal_id"]).company_id.id
-        company_id = company_id or records.env.company.id
+        if not company_id and record:
+            company_id = record.company_id.id
+        company_id = company_id or records.env.context.get("default_company_id") or records.env.company.id
         for name in names:
             target_id = values.get(name)
             if name not in values:
-                if record and "company_id" in values:
+                if record and scope_fields.intersection(values) and records._fields[name].store:
                     target_id = record[name].id
                 elif not record:
                     target_id = records.env.context.get("default_" + name)

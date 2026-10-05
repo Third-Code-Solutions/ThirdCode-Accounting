@@ -2,7 +2,7 @@ from datetime import timedelta
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 from ..models.orvexa import parse_command
 
 

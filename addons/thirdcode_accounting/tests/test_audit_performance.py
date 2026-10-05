@@ -6,7 +6,7 @@ from unittest.mock import patch
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 from odoo.addons.auditlog.models.log import AuditlogLogLine as NativeAuditLogLine
 from odoo.addons.auditlog.models.rule import AuditlogRule as NativeAuditLogRule
 

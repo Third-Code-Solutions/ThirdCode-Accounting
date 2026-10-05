@@ -6,7 +6,7 @@ from lxml import html
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 
 
 @tagged("post_install", "-at_install")
