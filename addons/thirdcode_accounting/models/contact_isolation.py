@@ -45,6 +45,12 @@ class ContactScopeUser(models.Model):
             domains = [owned, own_profile]
             if bank:
                 domains.append([(prefix + "thirdcode_company_identity_ids", "in", companies)])
+            elif self.has_group("base.group_system"):
+                # res.users delegates access checks to res.partner even for
+                # group-only writes. Preserve authorized Settings administration
+                # within active companies; owner identities have no tenant scope.
+                domains.append([(prefix + "thirdcode_is_identity", "=", True),
+                                (prefix + "thirdcode_identity_company_ids", "in", companies)])
             return expression.OR(domains)
         identities = [(prefix + "thirdcode_is_identity", "=", True),
                       (prefix + "thirdcode_identity_company_ids", "in", companies)]
@@ -207,7 +213,8 @@ def check_partner_reference(records, values):
         for name in names:
             target_id = values.get(name)
             if name not in values:
-                if record and scope_fields.intersection(values) and records._fields[name].store:
+                if (record and scope_fields.intersection(values) and records._fields[name].store
+                        and not records._fields[name].compute):
                     target_id = record[name].id
                 elif not record:
                     target_id = records.env.context.get("default_" + name)
@@ -215,6 +222,18 @@ def check_partner_reference(records, values):
                 records.env[records._fields[name].comodel_name].with_context(
                     allowed_company_ids=[company_id]
                 ).browse(target_id).check_access("read")
+
+
+def validate_final_partner_references(records):
+    if records.env.su or is_platform_owner(records.env):
+        return
+    names = [name for name, field in records._fields.items()
+             if field.store and field.type == "many2one"
+             and field.comodel_name in {"res.partner", "res.partner.bank"}]
+    for record in records:
+        values = {name: record[name].id for name in names}
+        values["company_id"] = record.company_id.id
+        check_partner_reference(record, values)
 
 
 class ContactScopedMove(models.Model):
@@ -225,11 +244,16 @@ class ContactScopedMove(models.Model):
         values_list = normalize_partner_defaults(self, values_list)
         for values in values_list:
             check_partner_reference(self, values)
-        return super().create(values_list)
+        records = super().create(values_list)
+        validate_final_partner_references(records)
+        return records
 
     def write(self, values):
         check_partner_reference(self, values)
-        return super().write(values)
+        result = super().write(values)
+        if {"company_id", "journal_id", "move_id", "partner_id", "partner_shipping_id", "partner_bank_id", "commercial_partner_id"}.intersection(values):
+            validate_final_partner_references(self)
+        return result
 
 
 class ContactScopedMoveLine(models.Model):
@@ -240,11 +264,16 @@ class ContactScopedMoveLine(models.Model):
         values_list = normalize_partner_defaults(self, values_list)
         for values in values_list:
             check_partner_reference(self, values)
-        return super().create(values_list)
+        records = super().create(values_list)
+        validate_final_partner_references(records)
+        return records
 
     def write(self, values):
         check_partner_reference(self, values)
-        return super().write(values)
+        result = super().write(values)
+        if {"company_id", "journal_id", "move_id", "partner_id", "partner_shipping_id", "partner_bank_id", "commercial_partner_id"}.intersection(values):
+            validate_final_partner_references(self)
+        return result
 
 
 class ContactScopedPayment(models.Model):
@@ -255,11 +284,16 @@ class ContactScopedPayment(models.Model):
         values_list = normalize_partner_defaults(self, values_list)
         for values in values_list:
             check_partner_reference(self, values)
-        return super().create(values_list)
+        records = super().create(values_list)
+        validate_final_partner_references(records)
+        return records
 
     def write(self, values):
         check_partner_reference(self, values)
-        return super().write(values)
+        result = super().write(values)
+        if {"company_id", "journal_id", "move_id", "partner_id", "partner_shipping_id", "partner_bank_id", "commercial_partner_id"}.intersection(values):
+            validate_final_partner_references(self)
+        return result
 
 
 class ContactScopedBank(models.Model):

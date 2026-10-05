@@ -229,9 +229,13 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
         user.company_ids = companies
         shared = self.partner_a.with_user(SUPERUSER_ID).copy({"name": "Switch shared", "company_id": False,
             "thirdcode_shared_company_ids": [Command.set(self.env.company.ids)]})
+        banks = self.env["res.partner.bank"].with_user(SUPERUSER_ID)
+        bank_a = banks.create({"partner_id": self.env.company.partner_id.id, "acc_number": "SWITCH-A-BANK"})
+        bank_b = banks.create({"partner_id": company_b.partner_id.id, "acc_number": "SWITCH-B-BANK"})
         moves = self.env["account.move"].with_user(user).with_context(allowed_company_ids=companies.ids)
         move = moves.create({"company_id": self.env.company.id, "move_type": "out_invoice",
             "journal_id": self.company_data["default_journal_sale"].id, "partner_id": shared.id})
+        self.assertEqual(move.partner_bank_id, bank_a)
         with self.assertRaises(AccessError), self.cr.savepoint():
             move.write({"journal_id": other["default_journal_sale"].id})
         with self.assertRaises(AccessError), self.cr.savepoint():
@@ -246,3 +250,4 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
         move.write({"journal_id": other["default_journal_sale"].id})
         self.assertEqual(move.company_id, company_b)
         self.assertEqual(move.partner_id, shared)
+        self.assertEqual(move.partner_bank_id, bank_b)
