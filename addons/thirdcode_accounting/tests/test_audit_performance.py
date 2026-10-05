@@ -98,8 +98,9 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         batch_queries = self.cr.sql_log_count - before
         columns = ["field_id", "field_name", "field_description", "old_value",
                    "new_value", "old_value_text", "new_value_text", "log_id"]
-        normalize = lambda rows: [{key: value for key, value in row.items() if key != "id"}
-                                  for row in rows.read(columns, load="_classic_write")]
+        def normalize(rows):
+            return [{key: value for key, value in row.items() if key != "id"}
+                    for row in rows.read(columns, load="_classic_write")]
         self.assertEqual(normalize(actual), normalize(expected))
         self.assertLessEqual(batch_queries, native_queries - len(metadata) + 1)
         with self.assertRaises(UserError), self.cr.savepoint():

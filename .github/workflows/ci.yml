@@ -78,6 +78,14 @@ jobs:
           --env PORT=18069
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
           tcsi-hosted-ci /tcsi-tests/test_hosted_http.py
+      - name: Verify coordinated recovery against disposable PostgreSQL
+        run: >-
+          docker run --rm --network host --entrypoint python3
+          --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
+          --env PGPASSWORD=ci-disposable-only
+          --env TCSI_RECOVERY_TEST_PG=disposable-only
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          tcsi-hosted-ci /tcsi-tests/test_hosted_backup.py
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -105,6 +113,9 @@ jobs:
 
       - name: Verify hosted runtime supervision
         run: python scripts/test_hosted_runtime.py
+
+      - name: Verify isolated performance benchmark safeguards
+        run: python scripts/test_benchmark.py
 
       - name: Verify branding regression
         run: |
