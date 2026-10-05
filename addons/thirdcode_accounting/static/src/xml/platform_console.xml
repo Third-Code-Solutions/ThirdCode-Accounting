@@ -1,147 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
-    <t t-name="thirdcode_accounting.PlatformConsole">
-        <main class="tcsi-console" aria-labelledby="tcsi-console-title">
-            <header class="tcsi-console-head">
-                <div>
-                    <p class="tcsi-console-kicker">Third Code Solutions Inc. — system owner</p>
-                    <h1 id="tcsi-console-title">Platform console</h1>
-                    <p class="tcsi-console-sub">Every organisation, trial window, activity and risk in one place.</p>
-                </div>
-                <div class="tcsi-console-meta" t-if="state.data">
-                    <span t-esc="state.data.generated_at"/>
-                    <button type="button" class="btn btn-secondary" t-att-disabled="busy" t-on-click="load">Refresh</button>
-                </div>
-            </header>
-
-            <div t-if="state.error" class="tcsi-console-error" role="alert">
-                <p t-esc="state.error"/>
-                <button type="button" class="btn btn-secondary" t-on-click="load">Retry</button>
+<t t-name="thirdcode_accounting.PlatformConsole">
+<main class="tcsi-console tcsi-operations" aria-labelledby="tcsi-console-title">
+  <div class="tcsi-console-shell">
+    <aside class="tcsi-console-nav" aria-label="Platform navigation">
+      <div class="tcsi-console-brand"><span class="tcsi-console-mark">TC</span><div><strong>Platform</strong><small>OWNER OPERATIONS</small></div></div>
+      <nav><button t-foreach="tabs" t-as="tab" t-key="tab[0]" type="button" t-att-class="state.tab === tab[0] ? 'is-selected' : ''" t-att-aria-current="state.tab === tab[0] ? 'page' : undefined" t-on-click="() => this.selectTab(tab[0])" t-att-disabled="busy"><i t-att-class="'fa ' + tab[2]" aria-hidden="true"/><t t-esc="tab[1]"/></button></nav>
+      <div class="tcsi-console-owner-note"><i class="fa fa-lock" aria-hidden="true"/><strong>Private owner workspace</strong><p>System oversight. Separate from every customer organization.</p></div>
+    </aside>
+    <div class="tcsi-console-content">
+      <header class="tcsi-console-head">
+        <div><p class="tcsi-console-kicker">TCSI ACCOUNTING / PLATFORM OPERATIONS</p><h1 id="tcsi-console-title" t-esc="currentTitle"/><p class="tcsi-console-sub">Understand activity. Resolve issues. Keep every organization moving.</p></div>
+        <div class="tcsi-console-head-actions"><button class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="busy"><i class="fa fa-refresh" aria-hidden="true"/> Refresh</button><button class="btn btn-primary" t-on-click="newOrganization" t-att-disabled="busy">Create organization</button></div>
+      </header>
+      <div t-if="state.error" class="tcsi-console-error" role="alert"><p t-esc="state.error"/><button class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="busy">Retry</button></div>
+      <p t-if="state.loading and !state.data" role="status">Loading platform data…</p>
+      <t t-if="state.data">
+        <div class="tcsi-console-freshness"><span><i class="fa fa-clock-o" aria-hidden="true"/> Updated <t t-esc="state.data.generated_at"/> UTC</span><span>Auto-refresh every minute · customer data only</span></div>
+        <t t-if="state.tab === 'overview' and state.analytics">
+          <p class="tcsi-console-muted" t-esc="state.data.coverage"/><div class="tcsi-console-kpis"><article t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.key" class="tcsi-console-kpi"><p class="tcsi-console-kpi-label" t-esc="kpi.label"/><strong class="tcsi-console-kpi-value" t-esc="kpi.value"/><p class="tcsi-console-kpi-sub" t-esc="kpi.sub"/></article></div>
+          <section class="tcsi-console-panel"><div class="tcsi-console-section-head"><div><h2>Accounting activity</h2><p>Documents created across customer organizations. Counts, not combined financial balances.</p></div><label>Window<select t-model="state.days" t-on-change="() => this.load()"><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option></select></label></div>
+            <div class="tcsi-console-chart-summary"><strong t-esc="state.analytics.total"/><span>documents in this window</span><span t-foreach="state.analytics.states" t-as="item" t-key="item.label"><t t-esc="item.count"/> <t t-esc="item.label"/></span></div>
+            <div class="tcsi-console-bars" role="img" t-att-aria-label="state.analytics.total + ' documents created over ' + state.analytics.days + ' days'"><div t-foreach="state.analytics.points" t-as="point" t-key="point.date" class="tcsi-console-bar" t-att-title="point.date + ': ' + point.count + ' documents'"><div class="tcsi-console-bar-track"><div class="tcsi-console-bar-fill" t-att-style="'height:' + point.height + '%'"/></div><span t-if="point_index % (state.days > 30 ? 14 : 7) === 0" t-esc="point.date.slice(5)"/><span t-else="">·</span></div></div>
+            <details class="tcsi-console-chart-data"><summary>View daily counts</summary><div class="tcsi-console-data-grid"><span t-foreach="state.analytics.points" t-as="point" t-key="point.date"><t t-esc="point.date"/>: <strong t-esc="point.count"/></span></div></details>
+          </section>
+          <section class="tcsi-console-cols"><div class="tcsi-console-panel"><h2>Needs attention <span class="tcsi-console-count" t-esc="state.data.alerts.length"/></h2><p t-if="!state.data.alerts.length" class="tcsi-console-empty">No current organization alerts.</p><div class="tcsi-console-alert-list"><article t-foreach="state.data.alerts" t-as="alert" t-key="alert_index" t-att-class="'tcsi-console-alert is-' + alert.level"><p class="tcsi-console-alert-title"><span class="tcsi-console-badge" t-esc="alert.level"/> <t t-esc="alert.title"/></p><p class="tcsi-console-muted"><t t-esc="alert.company"/> · <t t-esc="alert.detail"/></p></article></div></div><div class="tcsi-console-panel"><h2>Recent documents</h2><ul class="tcsi-console-list"><li t-foreach="state.data.activity.documents" t-as="doc" t-key="doc.id"><p><strong t-esc="doc.ref"/> <span class="tcsi-console-badge" t-esc="doc.state"/></p><p class="tcsi-console-muted"><t t-esc="doc.company"/> · <t t-esc="doc.kind"/></p><small><t t-esc="doc.when"/> · <t t-esc="doc.user"/></small></li></ul><p t-if="!state.data.activity.documents.length" class="tcsi-console-empty">No documents recorded.</p></div></section>
+        </t>
+        <t t-if="state.tab === 'organizations'">
+          <form class="tcsi-console-toolbar" t-on-submit.prevent="filter"><label>Search organizations<input type="search" t-model="state.query" placeholder="Company name" maxlength="100"/></label><label>Status<select t-model="state.status"><option value="">All statuses</option><option value="trial">Trial</option><option value="active">Active</option><option value="suspended">Suspended</option></select></label><button class="btn btn-secondary" t-att-disabled="busy">Apply filters</button><span><t t-esc="state.orgs.total"/> organizations</span></form>
+          <div class="tcsi-console-table-wrap"><table class="tcsi-console-table"><thead><tr><th>Organization</th><th>Status &amp; trial</th><th>People</th><th>Accounting</th><th>Last activity</th><th>Manage</th></tr></thead><tbody><tr t-foreach="state.orgs.rows" t-as="org" t-key="org.id"><td><strong t-esc="org.name"/><p class="tcsi-console-muted">#<t t-esc="org.id"/></p></td><td><span t-att-class="'tcsi-console-badge is-' + org.status" t-esc="org.status_label"/><p t-if="org.trial_end and org.status === 'trial'">Ends <t t-esc="org.trial_end"/></p></td><td><button class="btn btn-link" t-on-click="() => this.showPeople(org)"><t t-esc="org.users"/> employees</button><p><t t-esc="org.users_week"/> signed in this week</p></td><td><strong><t t-esc="org.docs"/> posted</strong><p><t t-esc="org.accounts"/> accounts · <t t-esc="org.journals"/> journals</p><p><t t-esc="org.open_periods"/> open periods</p></td><td><t t-esc="org.last_document || 'No posted documents'"/><p class="tcsi-console-muted" t-esc="org.last_document_ref"/></td><td class="tcsi-console-actions"><button t-if="org.status === 'trial'" class="btn btn-link" t-on-click="() => this.lifecycle(org, 'extend')" t-att-disabled="busy">+30 days</button><button t-if="org.status === 'trial'" class="btn btn-link" t-on-click="() => this.lifecycle(org, 'convert')" t-att-disabled="busy">Activate</button><button t-if="org.status === 'active'" class="btn btn-link" t-on-click="() => this.lifecycle(org, 'trial')" t-att-disabled="busy">Start trial</button><button t-if="org.status !== 'suspended'" class="btn btn-link" t-on-click="() => this.lifecycle(org, 'suspend')" t-att-disabled="busy">Suspend</button><button t-else="" class="btn btn-link" t-on-click="() => this.lifecycle(org, 'resume')" t-att-disabled="busy">Resume</button><button t-if="!org.baseline_ready" class="btn btn-link" t-on-click="() => this.lifecycle(org, 'baseline')" t-att-disabled="busy">Prepare baseline</button></td></tr><tr t-if="!state.orgs.rows.length"><td colspan="6">No organizations match these filters.</td></tr></tbody></table></div>
+          <div class="tcsi-console-pagination"><button class="btn btn-secondary" t-att-disabled="busy || state.orgs.page === 0" t-on-click="() => this.page('orgs', -1)">Previous</button><span>Page <t t-esc="state.orgs.page + 1"/></span><button class="btn btn-secondary" t-att-disabled="busy || (state.orgs.page + 1) * 25 >= state.orgs.total" t-on-click="() => this.page('orgs', 1)">Next</button></div>
+        </t>
+        <t t-if="state.tab === 'people' or state.tab === 'audit'">
+          <form class="tcsi-console-toolbar" t-on-submit.prevent="filter"><label>Organization<select t-model="state.companyId"><option value="">All customer organizations</option><option t-foreach="state.data.organizations" t-as="org" t-key="org.id" t-att-value="org.id" t-esc="org.name"/></select></label><label><t t-esc="state.tab === 'people' ? 'Name or login' : 'Action / target / model'"/><input type="search" t-model="state.query" maxlength="100"/></label><label t-if="state.tab === 'audit'">Source<select t-model="state.auditSource"><option value="platform">Platform operations</option><option value="accounting">Accounting audit history</option></select></label><button class="btn btn-secondary" t-att-disabled="busy">Apply filters</button><button t-if="state.tab === 'people'" type="button" class="btn btn-primary" t-att-disabled="busy || !state.companyId" t-on-click="createPerson">Create employee</button></form>
+        </t>
+        <t t-if="state.tab === 'people'">
+          <p class="tcsi-console-muted">Customer employees only. Platform owner identities are excluded.</p><div class="tcsi-console-table-wrap"><table class="tcsi-console-table"><thead><tr><th>Employee</th><th>Organization</th><th>Role</th><th>Last sign-in</th><th>Access</th></tr></thead><tbody><tr t-foreach="state.people.rows" t-as="person" t-key="person.id"><td><strong t-esc="person.name"/><p class="tcsi-console-muted" t-esc="person.login"/></td><td t-esc="person.company"/><td><select t-att-aria-label="'Role for ' + person.name" t-att-disabled="busy || person.protected" t-on-change="(event) => this.personAction(person, 'role', event.target.value)"><option t-if="person.role === 'custom'" selected="selected" value="custom">Custom / protected</option><option t-foreach="['administrator','accountant','encoder','readonly']" t-as="role" t-key="role" t-att-value="role" t-att-selected="person.role === role" t-esc="role"/></select></td><td t-esc="person.last_login || 'Never signed in'"/><td><span t-att-class="'tcsi-console-badge is-' + (person.active ? 'active' : 'suspended')" t-esc="person.active ? 'Enabled' : 'Disabled'"/><button class="btn btn-link" t-att-disabled="busy || person.protected" t-on-click="() => this.personAction(person, person.active ? 'disable' : 'enable')" t-esc="person.active ? 'Disable' : 'Enable'"/></td></tr><tr t-if="!state.people.rows.length"><td colspan="5">No employees match these filters.</td></tr></tbody></table></div><div class="tcsi-console-pagination"><button class="btn btn-secondary" t-att-disabled="busy || state.people.page === 0" t-on-click="() => this.page('people', -1)">Previous</button><span><t t-esc="state.people.total"/> employees · Page <t t-esc="state.people.page + 1"/></span><button class="btn btn-secondary" t-att-disabled="busy || (state.people.page + 1) * 25 >= state.people.total" t-on-click="() => this.page('people', 1)">Next</button></div>
+        </t>
+        <t t-if="state.tab === 'sentry' and state.monitoring">
+          <section class="tcsi-console-panel"><div class="tcsi-console-section-head"><div><p class="tcsi-console-kicker">FIRST-PARTY MONITORING</p><h2>TCSI Sentry</h2><p t-esc="state.monitoring.coverage"/></div><div><strong t-esc="state.monitoring.open_count"/> open incident groups · <strong t-esc="state.monitoring.active_lockouts"/> active sign-in lockouts</div></div><div class="tcsi-console-table-wrap"><table class="tcsi-console-table"><thead><tr><th>Incident</th><th>Count</th><th>First / last seen UTC</th><th>Status</th><th>Workflow</th></tr></thead><tbody><tr t-foreach="state.monitoring.incidents" t-as="incident" t-key="incident.id"><td><strong t-esc="incident.kind"/><p t-esc="incident.route"/></td><td t-esc="incident.occurrences"/><td><t t-esc="incident.first_seen"/><p t-esc="incident.last_seen"/></td><td t-esc="incident.state"/><td><button class="btn btn-link" t-if="incident.state === 'open'" t-att-disabled="busy" t-on-click="() => this.incidentState(incident, 'acknowledged')">Acknowledge</button><button class="btn btn-link" t-if="incident.state !== 'resolved'" t-att-disabled="busy" t-on-click="() => this.incidentState(incident, 'resolved')">Resolve</button><button class="btn btn-link" t-if="incident.state === 'resolved'" t-att-disabled="busy" t-on-click="() => this.incidentState(incident, 'open')">Reopen</button></td></tr><tr t-if="!state.monitoring.incidents.length"><td colspan="5">No server incidents captured. Monitoring begins with this release.</td></tr></tbody></table></div><p class="tcsi-console-muted">Showing latest 100 of <t t-esc="state.monitoring.total_groups"/> groups. A new failure reopens a resolved incident. Telemetry retained for 90 days.</p></section>
+          <section class="tcsi-console-panel"><h2>Scheduled jobs</h2><div class="tcsi-console-table-wrap"><table class="tcsi-console-table"><thead><tr><th>Job</th><th>Enabled</th><th>Last run UTC</th><th>Next run UTC</th></tr></thead><tbody><tr t-foreach="state.monitoring.jobs" t-as="job" t-key="job.id"><td t-esc="job.name"/><td t-esc="job.active ? 'Yes' : 'No'"/><td t-esc="job.lastcall || 'Not recorded'"/><td t-esc="job.nextcall || 'Not scheduled'"/></tr></tbody></table></div></section>
+          <section class="tcsi-console-panel tcsi-console-system"><h2>Runtime inventory</h2><dl><t t-foreach="state.data.system" t-as="item" t-key="item.label"><div><dt t-esc="item.label"/><dd t-esc="item.value"/></div></t></dl></section>
+        </t>
+        <t t-if="state.tab === 'audit'">
+          <p class="tcsi-console-muted">Immutable evidence. Search platform operations by action/target; accounting history by model name.</p><div class="tcsi-console-table-wrap"><table class="tcsi-console-table"><thead><tr><th>Time UTC</th><th>Actor</th><th>Action</th><th>Target</th><th>Organization</th></tr></thead><tbody><tr t-foreach="state.audit.rows" t-as="row" t-key="row.id"><td t-esc="row.when"/><td t-esc="row.actor"/><td t-esc="row.action"/><td t-esc="row.target"/><td t-esc="row.company"/></tr><tr t-if="!state.audit.rows.length"><td colspan="5">No matching audit events.</td></tr></tbody></table></div><div class="tcsi-console-pagination"><button class="btn btn-secondary" t-att-disabled="busy || state.audit.page === 0" t-on-click="() => this.page('audit', -1)">Previous</button><span><t t-esc="state.audit.total"/> events · Page <t t-esc="state.audit.page + 1"/></span><button class="btn btn-secondary" t-att-disabled="busy || (state.audit.page + 1) * 30 >= state.audit.total" t-on-click="() => this.page('audit', 1)">Next</button></div>
+        </t>
+        <t t-if="state.tab === 'website'">
+          <section class="tcsi-console-publishing"><aside class="tcsi-console-panel"><div class="tcsi-console-section-head"><h2>Publications</h2><button class="btn btn-secondary" t-on-click="newRelease">New update</button></div><p>Draft changes stay private until published. Homepage SEO stays available on every page.</p><button class="tcsi-publication-item" t-foreach="state.publications" t-as="publication" t-key="publication.id" t-on-click="() => this.editPublication(publication)"><strong t-esc="publication.title"/><small><t t-esc="publication.kind === 'seo' ? 'Homepage SEO' : publication.version || 'Product update'"/> · <t t-esc="publication.archived ? 'Archived' : publication.published_json ? 'Published + editable draft' : 'Draft'"/></small></button><p t-if="!state.publications.length" class="tcsi-console-empty">Start with homepage SEO or create a product update.</p><div class="tcsi-console-pagination"><button class="btn btn-secondary" t-att-disabled="busy || state.publicationPage === 0" t-on-click="() => this.publicationPage(-1)">Previous</button><span>Updates page <t t-esc="state.publicationPage + 1"/></span><button class="btn btn-secondary" t-att-disabled="busy || (state.publicationPage + 1) * 25 >= state.publicationTotal" t-on-click="() => this.publicationPage(1)">Next</button></div></aside>
+            <div><form class="tcsi-console-panel tcsi-console-form" t-on-submit.prevent="saveDraft"><h2 t-esc="state.draft.kind === 'seo' ? 'Homepage search appearance' : 'Product update'"/><label>Type<select t-model="state.draft.kind" t-att-disabled="state.editorId"><option value="seo">Homepage SEO</option><option value="release">Product update</option></select></label><label>Title<input t-model="state.draft.title" t-att-maxlength="state.draft.kind === 'seo' ? 70 : 120" required="required"/></label><label t-esc="state.draft.kind === 'seo' ? 'Search description' : 'Update details'" for="platform-description"/><textarea id="platform-description" t-model="state.draft.description" t-att-maxlength="state.draft.kind === 'seo' ? 200 : 12000" rows="7" required="required"/><div t-if="state.draft.kind === 'release'" class="tcsi-console-form-row"><label>Version<input t-model="state.draft.version" maxlength="40" placeholder="e.g. 2.14.0"/></label><label>Category<select t-model="state.draft.category"><option value="feature">New feature</option><option value="improvement">Improvement</option><option value="fix">Fix</option><option value="security">Security</option></select></label></div><button class="btn btn-primary" t-att-disabled="busy">Save draft</button><p class="tcsi-console-muted">Plain text only. SEO updates title, description and social preview. Canonical URL stays fixed. Published updates appear at /updates.</p></form>
+              <section class="tcsi-console-panel"><h2>Draft preview</h2><div class="tcsi-console-preview"><small t-esc="state.draft.kind === 'seo' ? 'TCSI Accounting · Homepage' : state.draft.version"/><h3 t-esc="state.draft.title || 'Your title'"/><p t-esc="state.draft.description || 'Your description'"/></div><div t-if="selectedPublication" class="tcsi-console-head-actions"><button class="btn btn-primary" t-att-disabled="busy" t-on-click="() => this.publish('publish')">Publish saved draft</button><button t-if="selectedPublication.published_json" class="btn btn-secondary" t-att-disabled="busy" t-on-click="() => this.publish('archive')">Unpublish</button><button t-if="selectedPublication.published_json" class="btn btn-secondary" t-att-disabled="busy" t-on-click="() => this.publish('revert')">Restore previous</button></div><details t-if="publishedPreview"><summary>Currently published version</summary><h3 t-esc="publishedPreview.title"/><p class="tcsi-console-preview-text" t-esc="publishedPreview.description"/></details></section>
             </div>
-            <p t-if="state.loading" class="tcsi-console-loading" role="status">Loading the platform picture…</p>
-
-            <t t-if="state.data">
-                <section class="tcsi-console-kpis" aria-label="Key indicators">
-                    <article t-foreach="state.data.kpis" t-as="kpi" t-key="kpi.key" class="tcsi-console-kpi">
-                        <p class="tcsi-console-kpi-label" t-esc="kpi.label"/>
-                        <p class="tcsi-console-kpi-value" t-esc="kpi.value"/>
-                        <p class="tcsi-console-kpi-sub" t-esc="kpi.sub"/>
-                    </article>
-                </section>
-
-                <section class="tcsi-console-trend" aria-label="Documents created, last 14 days">
-                    <h2>Documents created · last 14 days</h2>
-                    <div class="tcsi-console-bars">
-                        <div t-foreach="state.data.trend" t-as="point" t-key="point.date" class="tcsi-console-bar">
-                            <div class="tcsi-console-bar-track"><div class="tcsi-console-bar-fill" t-att-style="'height:' + point.height + '%'" t-att-title="point.label + ' — ' + point.count + ' document(s)'"/></div>
-                            <span t-esc="point.label"/>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="tcsi-console-alerts" aria-label="Attention items">
-                    <h2>Attention list</h2>
-                    <p t-if="!state.data.alerts.length" class="tcsi-console-empty">No attention items — every organisation looks healthy.</p>
-                    <article t-foreach="state.data.alerts" t-as="alert" t-key="alert_index" t-att-class="'tcsi-console-alert is-' + alert.level">
-                        <p class="tcsi-console-alert-title"><t t-esc="alert.title"/><span t-if="alert.company" class="tcsi-console-alert-org" t-esc="' · ' + alert.company"/></p>
-                        <p class="tcsi-console-alert-detail" t-esc="alert.detail"/>
-                    </article>
-                </section>
-
-                <section class="tcsi-console-orgs" aria-label="Organisations">
-                    <h2>Organisations</h2>
-                    <div class="tcsi-console-table-wrap">
-                        <table class="tcsi-console-table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Organisation</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Trial window</th>
-                                    <th scope="col">Users</th>
-                                    <th scope="col">Documents</th>
-                                    <th scope="col">Last activity</th>
-                                    <th scope="col">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="state.data.organizations" t-as="org" t-key="org.id">
-                                    <td>
-                                        <p class="tcsi-console-org-name" t-esc="org.name"/>
-                                        <p t-if="!org.baseline_ready" class="tcsi-console-org-warn">baseline incomplete — <t t-esc="org.accounts"/> accounts, <t t-esc="org.journals"/> journals</p>
-                                    </td>
-                                    <td><span t-att-class="'tcsi-console-badge is-' + org.status" t-esc="org.status_label"/></td>
-                                    <td>
-                                        <t t-if="org.trial_end">
-                                            <p t-esc="org.trial_start + ' → ' + org.trial_end"/>
-                                            <p t-if="org.status === 'trial' and org.days_left !== null" t-att-class="'tcsi-console-days' + (org.days_left &lt; 0 ? ' is-over' : (org.days_left &lt;= 7 ? ' is-soon' : ''))">
-                                                <t t-if="org.days_left &lt; 0"><t t-esc="-org.days_left"/> day(s) overdue</t>
-                                                <t t-else=""><t t-esc="org.days_left"/> day(s) left</t>
-                                            </p>
-                                        </t>
-                                        <p t-else="" class="tcsi-console-muted">no window set</p>
-                                    </td>
-                                    <td>
-                                        <p><t t-esc="org.users"/> active</p>
-                                        <p class="tcsi-console-muted"><t t-esc="org.users_week"/> in this week</p>
-                                    </td>
-                                    <td>
-                                        <p><t t-esc="org.docs"/> posted</p>
-                                        <p class="tcsi-console-muted"><t t-esc="org.docs_week"/> this week</p>
-                                    </td>
-                                    <td>
-                                        <p t-if="org.last_document" t-esc="org.last_document"/>
-                                        <p t-else="" class="tcsi-console-muted">no documents</p>
-                                        <p t-if="org.last_login" class="tcsi-console-muted">login <t t-esc="org.last_login"/></p>
-                                    </td>
-                                    <td class="tcsi-console-actions">
-                                        <button t-if="org.status === 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.extend(org, 7)">+7d</button>
-                                        <button t-if="org.status === 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.extend(org, 30)">+30d</button>
-                                        <button t-if="org.status === 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.convert(org)">Convert</button>
-                                        <button t-if="org.status !== 'trial'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.markTrial(org)">Start trial</button>
-                                        <button t-if="org.status !== 'suspended'" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.suspend(org)">Suspend</button>
-                                        <button t-else="" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.resume(org)">Resume</button>
-                                        <button t-if="!org.baseline_ready" type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.baseline(org)">Baseline</button>
-                                        <button type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.openOrg(org)">Enter</button>
-                                        <button type="button" class="btn btn-link" t-att-disabled="busy" t-on-click="() => this.openUsers(org)">Users</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <section class="tcsi-console-cols">
-                    <div class="tcsi-console-col">
-                        <h2>Recent documents</h2>
-                        <p t-if="!state.data.activity.documents.length" class="tcsi-console-empty">Nothing posted yet.</p>
-                        <ul class="tcsi-console-list">
-                            <li t-foreach="state.data.activity.documents" t-as="doc" t-key="doc.id">
-                                <p><strong t-esc="doc.ref"/> · <t t-esc="doc.kind"/> · <span class="tcsi-console-muted" t-esc="doc.state"/></p>
-                                <p class="tcsi-console-muted"><t t-esc="doc.company"/> · <t t-esc="doc.user"/> · <t t-esc="doc.when"/><t t-if="doc.amount"> · <t t-esc="doc.currency"/> <t t-esc="doc.amount.toLocaleString()"/></t></p>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="tcsi-console-col">
-                        <h2>Latest sign-ins</h2>
-                        <p t-if="!state.data.activity.signins.length" class="tcsi-console-empty">No sign-ins recorded yet.</p>
-                        <ul class="tcsi-console-list">
-                            <li t-foreach="state.data.activity.signins" t-as="signin" t-key="signin_index">
-                                <p><t t-esc="signin.name"/> <span class="tcsi-console-muted" t-esc="'(' + signin.login + ')'"/></p>
-                                <p class="tcsi-console-muted"><t t-esc="signin.company"/> · <t t-esc="signin.when"/></p>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-
-                <footer class="tcsi-console-system" aria-label="System">
-                    <dl>
-                        <div t-foreach="state.data.system" t-as="item" t-key="item.label">
-                            <dt t-esc="item.label"/>
-                            <dd t-esc="item.value"/>
-                        </div>
-                    </dl>
-                </footer>
-            </t>
-        </main>
-    </t>
+          </section>
+        </t>
+      </t>
+    </div>
+  </div>
+  <Dialog t-if="state.createOpen" title="'Create organization'" size="'lg'" close="() => this.closeCreate()">
+    <div class="tcsi-console-form"><p>Create a separate accounting workspace and its first Administrator. Your platform owner account remains outside it.</p><div t-if="state.formError" role="alert" class="alert alert-danger" t-esc="state.formError"/><label>Legal company name<input t-model="state.org.name" maxlength="160" required="required"/></label><div class="tcsi-console-form-row"><label>Country<select t-model="state.org.country"><option value="PH">Philippines</option></select></label><label>Currency<select t-model="state.org.currency"><option t-foreach="state.options.currencies" t-as="currency" t-key="currency.id" t-att-value="currency.name" t-esc="currency.name"/></select></label></div><p class="tcsi-console-muted">Automatic setup uses the Philippine chart, creates missing journals and opens the current annual accounting period. Accountant review is required before live use.</p><label>Administrator full name<input t-model="state.org.admin_name" maxlength="160" required="required"/></label><label>Administrator work email<input type="email" t-model="state.org.admin_login" maxlength="160" autocomplete="off" required="required"/></label><label>Initial password<input type="password" t-model="state.org.admin_password" minlength="12" maxlength="256" autocomplete="new-password" required="required"/></label><p class="tcsi-console-muted">12–256 characters. Give these credentials privately; this flow does not send email. Organization starts with a 30-day trial.</p></div>
+    <t t-set-slot="footer"><button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="createOrganization" t-esc="state.busy ? 'Creating…' : 'Create organization &amp; administrator'"/><button class="btn btn-secondary" t-att-disabled="state.busy" t-on-click="closeCreate">Cancel</button></t>
+  </Dialog>
+</main>
+</t>
 </templates>

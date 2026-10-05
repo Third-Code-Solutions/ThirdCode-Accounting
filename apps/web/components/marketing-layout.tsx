@@ -56,7 +56,7 @@ export function MarketingFooter() {
           </Link>
           <p>A clearer view of your business.<br />A better way to work with your numbers.</p>
         </div>
-        <nav aria-label="Product links"><strong>Product</strong><Link href="/#platform">Capabilities</Link><Link href="/controls">Accounting controls</Link><Link href="/web/login">Sign in to workspace</Link></nav>
+        <nav aria-label="Product links"><strong>Product</strong><Link href="/#platform">Capabilities</Link><Link href="/controls">Accounting controls</Link><Link href="/updates">Product updates</Link><Link href="/web/login">Sign in to workspace</Link></nav>
         <nav aria-label="Company links"><strong>Let’s talk</strong><Link href="/contact">Request a demo</Link><Link href="/pilot">Rollout & access</Link><a href="https://www.thirdcodesolutions.com" target="_blank" rel="noreferrer">Third Code Solutions <ArrowIcon /></a></nav>
       </div>
       <div className="marketing-footer-bottom"><span>© {new Date().getFullYear()} Third Code Solutions Inc.</span><span>Built for the people behind the numbers.</span></div>

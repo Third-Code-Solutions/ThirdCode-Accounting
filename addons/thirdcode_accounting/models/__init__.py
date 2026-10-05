@@ -34,3 +34,9 @@ from . import cutover
 from . import report_completion
 from . import migration_archive
 from . import trial_balance
+
+from . import platform_access
+from . import platform_event
+from . import platform_operations
+from . import platform_incident
+from . import platform_publication

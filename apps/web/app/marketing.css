@@ -389,3 +389,11 @@
 @media (prefers-reduced-motion: reduce) {
   .landing *, .landing *::before, .landing *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }
+
+.updates-heading { padding: 64px 0 32px; max-width: 760px; }
+.updates-heading h1 { font-size: clamp(32px, 5vw, 56px); line-height: 1.1; margin: 16px 0; }
+.updates-list { max-width: 900px; padding-bottom: 80px; }
+.updates-entry { border-top: 1px solid var(--landing-line); padding: 32px 0; }
+.updates-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; text-transform: capitalize; }
+.updates-entry h2 { font-size: 24px; margin: 12px 0; }
+.updates-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }

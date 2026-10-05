@@ -2,6 +2,7 @@ import logging
 
 from odoo import Command, _, fields, models
 from odoo.exceptions import AccessError, UserError
+from .platform_access import require_platform_owner
 
 _logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class ThirdCodeSetupService(models.AbstractModel):
     # dispatch
     # ------------------------------------------------------------------
     def dispatch(self, action, payload=None):
+        require_platform_owner(self.env)
         if self.env.context.get("tcsi_setup_token_ok") is not True:
             raise AccessError(
                 _(
@@ -176,7 +178,7 @@ class ThirdCodeSetupService(models.AbstractModel):
         }
 
     def _action_create_user(self, payload):
-        return self.provision_user(
+        return self._provision_user(
             login=payload.get("login"),
             name=payload.get("name"),
             password=payload.get("password"),
@@ -188,7 +190,7 @@ class ThirdCodeSetupService(models.AbstractModel):
             regroup=bool(payload.get("regroup")),
         )
 
-    def provision_user(
+    def _provision_user(
         self,
         login,
         name=None,
@@ -239,6 +241,9 @@ class ThirdCodeSetupService(models.AbstractModel):
             raise_if_not_found=False,
         )
         if platform_owner:
+            company = self.env.ref("thirdcode_accounting.company_platform", raise_if_not_found=False) or company
+            target_company_ids = company.ids
+            group_ids = [base_group.id, self.env.ref("base.group_system").id]
             console_group = self.env.ref(
                 "thirdcode_accounting.group_thirdcode_platform_console",
                 raise_if_not_found=False,
