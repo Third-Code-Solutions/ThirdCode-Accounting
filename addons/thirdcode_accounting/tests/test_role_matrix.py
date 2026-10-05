@@ -1,4 +1,5 @@
 """Exercise the PRD's four business roles through actual ORM actions."""
+import json
 import unittest
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -129,6 +130,34 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
                             "name": "Forbidden", "login": "forbidden-matrix-" + role,
                             "role": "administrator", "password": "Disposable-test-password-only",
                         })
+
+    def test_direct_report_rendering_rechecks_role_and_company(self):
+        reader = self.roles["readonly"]
+        encoder = self.roles["encoder"]
+        other = self.env["res.company"].create({"name": "Unselected report scope"})
+        context = {"allowed_company_ids": self.env.company.ids, "active_ids": self.partner_a.ids}
+        for model in ("trial.balance.report.wizard", "general.ledger.report.wizard", "activity.statement.wizard"):
+            wizard = self.env[model].with_user(reader).with_context(**context).create({"company_id": self.env.company.id})
+            for method, renderer in (("button_export_html", "_render_qweb_html"), ("button_export_xlsx", "_render_xlsx")):
+                with self.subTest(model=model, renderer=renderer):
+                    action = getattr(wizard, method)()
+                    data = json.loads(json.dumps(action["data"], default=str))
+                    reports = self.env["ir.actions.report"].with_user(reader).with_context(**context)
+                    output, _format = getattr(reports, renderer)(action["report_name"], [], data=data)
+                    self.assertTrue(output)
+                    if renderer == "_render_xlsx":
+                        self.assertTrue(output.startswith(b"PK"), "Expected an actual XLSX archive")
+                    for actor, options in ((reader, {**data, "company_id": other.id}), (encoder, data)):
+                        with self.assertRaises(AccessError):
+                            getattr(reports.with_user(actor), renderer)(action["report_name"], [], data=options)
+
+    def test_statement_export_rechecks_changed_company(self):
+        wizard = self.env["activity.statement.wizard"].with_context(active_ids=self.partner_a.ids).create({"company_id": self.env.company.id})
+        wizard.company_id = self.env["res.company"].create({"name": "Unselected statement scope"})
+        wizard = wizard.with_context(allowed_company_ids=self.env.company.ids)
+        for method in (wizard.button_export_html, wizard.button_export_pdf, wizard.button_export_xlsx):
+            with self.assertRaises(AccessError):
+                method()
 
     def test_close_reopen_matrix(self):
         period = self.env["thirdcode.accounting.period"].with_user(self.roles["administrator"]).create({

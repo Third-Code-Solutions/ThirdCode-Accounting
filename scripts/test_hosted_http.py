@@ -49,6 +49,24 @@ def main():
         assert "Secure" in cookie and "HttpOnly" in cookie and "SameSite=Lax" in cookie
         assert response.getheader("Strict-Transport-Security")
         http.close()
+        # The evented worker starts separately from prefork HTTP workers.
+        # Wait for its protocol validation response, never accept a proxy error.
+        evented_deadline = time.monotonic() + 30
+        while True:
+            http = HTTPConnection("127.0.0.1", port, timeout=5)
+            try:
+                http.request("GET", "/websocket")
+                response = http.getresponse()
+                response.read()
+                if response.status == 400:
+                    assert response.getheader("X-Content-Type-Options") == "nosniff"
+                    break
+                assert response.status in (502, 503), response.status
+            finally:
+                http.close()
+            if time.monotonic() > evented_deadline:
+                raise AssertionError("Evented worker did not become ready")
+            time.sleep(0.2)
         version = WebsocketConnectionHandler._VERSION
         for protocol, expected in (("999", 426), ("13", 101)):
             with socket.create_connection(("127.0.0.1", port), timeout=20) as connection:

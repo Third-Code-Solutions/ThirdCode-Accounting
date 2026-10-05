@@ -172,3 +172,30 @@ class VatReportWizard(models.TransientModel):
 class ActivityStatementWizard(models.TransientModel):
     _name = "activity.statement.wizard"
     _inherit = ["activity.statement.wizard", "thirdcode.report.access.mixin"]
+
+    def _export(self, report_type):
+        self._thirdcode_check_report_access()
+        return super()._export(report_type)
+
+
+class AccountingReportRenderAccess(models.Model):
+    _inherit = "ir.actions.report"
+
+    def _thirdcode_check_render_scope(self, report, data):
+        # Report options also arrive directly from HTTP clients. Wizard checks
+        # cannot authorize those requests, including OCA's SQL-backed outputs.
+        if not report.report_name.startswith(("account_financial_report.", "a_f_r.", "partner_statement.", "p_s.")):
+            return
+        self.env["thirdcode.report.access.mixin"]._thirdcode_check_report_access()
+        company_id = (data or {}).get("company_id")
+        if company_id not in self.env.companies.ids:
+            raise AccessError(_("You may only run reports for active companies."))
+
+    def _get_rendering_context(self, report, docids, data):
+        self._thirdcode_check_render_scope(report, data)
+        return super()._get_rendering_context(report, docids, data)
+
+    @api.model
+    def _render_xlsx(self, report_ref, docids, data=None):
+        self._thirdcode_check_render_scope(self._get_report(report_ref), data)
+        return super()._render_xlsx(report_ref, docids, data=data)
