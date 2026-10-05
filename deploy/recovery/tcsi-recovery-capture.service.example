@@ -1,0 +1,21 @@
+# Install on a separately monitored controller, never as a second Odoo writer.
+# The approved transport must execute capture inside the existing engine as odoo.
+[Unit]
+Description=TCSI supervised engine recovery capture
+Wants=network-online.target
+After=network-online.target
+OnFailure=tcsi-recovery-failed.service
+
+[Service]
+Type=oneshot
+User=tcsi-recovery
+UMask=0077
+ExecStartPre=/usr/bin/test -x /usr/local/libexec/tcsi-capture-in-engine
+ExecStart=/usr/local/libexec/tcsi-capture-in-engine
+TimeoutStartSec=1200
+TimeoutStopSec=30
+KillMode=control-group
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Intentionally no Install section. Review transport, policy and failure drill first.

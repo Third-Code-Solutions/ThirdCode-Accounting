@@ -1,6 +1,6 @@
 # Hosted recovery capture and monitoring
 
-`scripts/hosted_backup.py` implements an operator capture command, a failed/missed-run monitor, and decrypted-bundle hash verification. It is **not enabled in production**. A verified one-off backup does not close NF-08–10 or AC-09. Destination, alert recipient, retention, schedule, named operator/deputy and agreed RPO/RTO still require explicit decisions.
+`scripts/hosted_backup.py` implements an operator capture command, a failed/missed-run monitor, and decrypted-bundle hash verification. It is **not enabled in production**. A verified one-off backup does not close NF-08–10 or AC-09. Provider adapters and disabled scheduler templates now exist in [RECOVERY-PROVIDER-INTEGRATION.md](RECOVERY-PROVIDER-INTEGRATION.md). Proposed engineering defaults do not establish client approval; real destination access, recipients, named operator/deputy, deployment integration and accepted recovery policy still require recorded evidence.
 
 ## Implemented boundary
 
@@ -58,7 +58,7 @@ Adapters are explicit executable paths, launched without a shell and with only a
 Delivery receives this JSON on stdin:
 
 ```json
-{"artifact":"/private/staging/recovery.p7m","sha256":"<encrypted artifact hash>","destination":"<approved alias>","run_id":"<UUID>"}
+{"artifact":"/private/staging/recovery.p7m","sha256":"<encrypted artifact hash>","destination":"<approved alias>","run_id":"<UUID>","captured_at":"<manifest UTC capture timestamp>"}
 ```
 
 The adapter must upload outside the live database/volume failure domain, enforce the approved encryption/access/retention policy, verify the remote object's digest, and return:
@@ -67,7 +67,7 @@ The adapter must upload outside the live database/volume failure domain, enforce
 {"durable":true,"sha256":"<same hash>","destination":"<same alias>","receipt_id":"<provider receipt>"}
 ```
 
-An exit code alone is insufficient. The adapter owns provider-specific verification and safe idempotent retry using `run_id`. A timeout has an unknown remote outcome; inspect that run ID at the destination before retrying a side effect. A new capture uses a new run ID. The staging artifact is removed when its synchronous adapter finishes or fails; the adapter must not acknowledge queued/asynchronous upload. Application status preserves the digest, run ID, approved destination alias and opaque receipt ID. Receipt IDs permit only 1–256 alphanumeric or `_.:/-` characters, never signed URLs, query tokens or credentials. Keep complete provider verification evidence in protected operator logs indexed by those identifiers.
+An exit code alone is insufficient. The adapter owns provider-specific verification and safe idempotent retry using `run_id`. `captured_at` is the same conservative capture-start timestamp stored in the encrypted manifest; local last-success age and provider freshness use capture time, so delayed delivery cannot make an older snapshot fresh. Provider adapters must preserve that timestamp. A timeout has an unknown remote outcome; inspect that run ID at the destination before retrying a side effect. A new capture uses a new run ID. The staging artifact is removed when its synchronous adapter finishes or fails; the adapter must not acknowledge queued/asynchronous upload. Application status preserves the digest, run ID, approved destination alias and opaque receipt ID. Receipt IDs permit only 1–256 alphanumeric or `_.:/-` characters, never signed URLs, query tokens or credentials. Keep complete provider verification evidence in protected operator logs indexed by those identifiers.
 
 The alert adapter receives `{"event":"backup_attention","status":"failed or missed","run_id":"UUID or null","at":"UTC timestamp"}` on stdin and must return `{"accepted":true}` only after the agreed notification channel accepts it. It must deduplicate repeated monitor observations as appropriate. Recipient configuration remains outside application source. State-storage failure does not skip the alert attempt. Failure to alert remains a failing command; capture status also records `alert_failed` when its storage remains writable.
 
@@ -104,4 +104,4 @@ Automated production restore is deliberately absent: restoring bytes cannot appr
 
 `python3 scripts/test_hosted_backup.py` tests private policy validation, explicit prerequisites, manifest tampering/missing/extra files, filestore links/deadlines, certificate failure before pause, actual public-certificate encryption/decryption, durable delivery acknowledgment, redacted failures, missed/corrupt status and cleanup. Linux-only tests use disposable processes to prove normal failure, timeout and killed-parent resume. An opt-in `TCSI_RECOVERY_TEST_PG=disposable-only` fixture requires loopback PostgreSQL and creates/drops only its UUID-prefixed databases; it verifies real dump/restore, matching filestore/hashes and refusal of an open transaction. Set PGHOST=127.0.0.1, PGPORT, PGUSER and PGPASSWORD in the disposable CI environment.
 
-Remaining: actual provider adapter, approved policy/recipients, immutable deployed-image retention, external scheduler and independent monitor IDs, protected destination receipt verification, native Odoo representative rehearsal, operator/deputy handover and failure/restore drill. None is represented by invented approvals, policy placeholders or a passing unit test.
+Remaining: actual provider activation with verified delivery/alert evidence, approved policy/recipients, immutable deployed-image retention, external scheduler and independent monitor IDs, protected destination receipt verification, native Odoo representative rehearsal, operator/deputy handover and failure/restore drill. None is represented by invented approvals, policy placeholders or a passing unit test.

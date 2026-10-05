@@ -1,0 +1,23 @@
+# Separate isolated recovery host only; private key never belongs on Railway.
+[Unit]
+Description=TCSI proposed monthly isolated full restore drill
+Wants=network-online.target
+After=network-online.target
+OnFailure=tcsi-recovery-failed.service
+
+[Service]
+Type=oneshot
+User=tcsi-recovery
+UMask=0077
+ExecStartPre=/usr/bin/test -r /etc/tcsi/recovery-restore.json
+ExecStart=/opt/tcsi-recovery/venv/bin/python /opt/tcsi-recovery/scripts/hosted_recovery_drill.py --config /etc/tcsi/recovery-provider.json --run-id latest --output-root /private/tcsi-recovery/drills --private-key /private/keys/recovery.key --public-certificate /private/keys/recovery.crt --confirm-offhost-recovery --full-restore --restore-config /etc/tcsi/recovery-restore.json --restore-python /usr/bin/python3
+TimeoutStartSec=15420
+TimeoutStopSec=30
+KillMode=control-group
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Disabled example: provision matching pinned Odoo/Python and local PostgreSQL,
+# set actual private policies and enforce egress isolation before activation.
+# This command creates unique isolated targets; old drill targets are never reused
+# or deleted. Record whole recovery RTO and operator handover separately.

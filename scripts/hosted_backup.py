@@ -370,6 +370,11 @@ def capture_snapshot(policy, directory):
                 finally:
                     pgpass.unlink(missing_ok=True)
                 copy_tree(Path(policy["data_dir"]) / "filestore" / policy["database"], directory / "filestore", deadline)
+                # Same paused writers, table locks and deadline as the dump/copy.
+                # Store hashes only; never export raw accounting rows into logs.
+                from recovery_fingerprint import fingerprint
+                atomic_json(directory / "accounting-baseline.json",
+                            fingerprint(connection, directory / "filestore", deadline))
                 (directory / "odoo.conf").write_bytes(config_bytes)
                 atomic_json(directory / "recovery-environment.json", environment)
                 idle(cursor, policy["database"])
@@ -480,11 +485,12 @@ def capture(policy, snapshot=capture_snapshot):
             encrypt(directory, artifact, policy["public_certificate"])
             checksum = digest(artifact)
             receipt = adapter(policy["delivery_command"], {"artifact": str(artifact), "sha256": checksum,
-                              "destination": policy["destination"], "run_id": state["run_id"]}, policy["adapter_timeout_seconds"])
+                              "destination": policy["destination"], "run_id": state["run_id"],
+                              "captured_at": state["started_at"]}, policy["adapter_timeout_seconds"])
             receipt_id = receipt.get("receipt_id")
             if receipt.get("durable") is not True or receipt.get("sha256") != checksum or receipt.get("destination") != policy["destination"] or not isinstance(receipt_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:/-]{0,255}", receipt_id):
                 raise BackupError("delivery_not_verified")
-            state.update(status="success", finished_at=now(), last_success={"at": now(), "sha256": checksum,
+            state.update(status="success", finished_at=now(), last_success={"at": state["started_at"], "sha256": checksum,
                          "run_id": state["run_id"], "destination": policy["destination"], "receipt_id": receipt_id})
             atomic_json(state_path, state)
     except BaseException as error:

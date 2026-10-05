@@ -34,7 +34,8 @@ jobs:
           "import sass; from pathlib import Path; sass.compile(string=Path('/opt/extra-addons/thirdcode_accounting/static/src/scss/tcsi_apps.scss').read_text())"
       - name: Install accounting and run Third Code tests in a disposable database
         run: >-
-          docker run --rm --network host --env PYTHONPATH=/opt/tcsi-test-deps --entrypoint odoo tcsi-orvexa-ci
+          docker run --rm --network host --env PYTHONPATH=/opt/tcsi-test-deps --entrypoint odoo
+          --mount type=volume,source=tcsi-native-ci-data,target=/var/lib/odoo tcsi-orvexa-ci
           --db_host=127.0.0.1 --db_user=odoo --db_password=ci-disposable-only
           -d tcsi_orvexa_ci --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
           -i thirdcode_accounting --without-demo=all --test-enable --test-tags /thirdcode_accounting --stop-after-init --no-http --max-cron-threads=0
@@ -42,11 +43,51 @@ jobs:
         run: >-
           docker run --rm --network host --entrypoint python3
           --env PYTHONPATH=/opt/tcsi-test-deps
+          --mount type=volume,source=tcsi-native-ci-data,target=/var/lib/odoo
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
           tcsi-orvexa-ci /tcsi-tests/test_orvexa_integration.py
           --db_host=127.0.0.1 --db_user=odoo --db_password=ci-disposable-only
           -d tcsi_orvexa_ci --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
           --no-http --max-cron-threads=0
+      - name: Prepare private annual smoke evidence directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/tcsi-annual-evidence"
+          # Set only this disposable artifact directory to the runtime owner.
+          docker run --rm --user root --entrypoint sh \
+            --mount "type=bind,source=$RUNNER_TEMP/tcsi-annual-evidence,target=/tcsi-evidence" \
+            tcsi-orvexa-ci -c 'chown odoo:odoo /tcsi-evidence && chmod 700 /tcsi-evidence'
+        shell: bash
+      - name: Verify annual accounting operations and native PDFs on an isolated clone
+        run: >-
+          docker run --rm --network host --entrypoint python3
+          --env PYTHONPATH=/opt/tcsi-test-deps
+          --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
+          --env PGPASSWORD=ci-disposable-only --env PGDATABASE=tcsi_orvexa_ci
+          --env TCSI_ANNUAL_NATIVE_CI=disposable-only
+          --env TCSI_ANNUAL_EVIDENCE=/tcsi-evidence/annual
+          --mount type=volume,source=tcsi-native-ci-data,target=/var/lib/odoo
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          --mount "type=bind,source=$RUNNER_TEMP/tcsi-annual-evidence,target=/tcsi-evidence"
+          tcsi-orvexa-ci /tcsi-tests/test_annual_native.py
+      - name: Return private evidence ownership to the CI runner
+        if: always()
+        run: |
+          if [ -d "$RUNNER_TEMP/tcsi-annual-evidence" ]; then
+            docker run --rm --user root --entrypoint chown \
+              --mount "type=bind,source=$RUNNER_TEMP/tcsi-annual-evidence,target=/tcsi-evidence" \
+              tcsi-orvexa-ci -R "$(id -u):$(id -g)" /tcsi-evidence
+          fi
+      - name: Retain synthetic annual smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: annual-native-smoke
+          path: |
+            ${{ runner.temp }}/tcsi-annual-evidence/annual/summary.json
+            ${{ runner.temp }}/tcsi-annual-evidence/annual/*.log
+            ${{ runner.temp }}/tcsi-annual-evidence/annual/annual-results/
+          if-no-files-found: warn
+          retention-days: 14
 
   hosted-runtime:
     runs-on: ubuntu-latest
@@ -78,6 +119,7 @@ jobs:
           --env TCSI_ADMIN_PASSWORD=ci-disposable-password-never-use-in-production
           --env TCSI_MASTER_PASSWORD=ci-disposable-master-never-use-in-production
           --env PORT=18069
+          --mount type=volume,source=tcsi-hosted-ci-data,target=/var/lib/odoo
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
           tcsi-hosted-ci /tcsi-tests/test_hosted_http.py
       - name: Verify coordinated recovery against disposable PostgreSQL
@@ -88,6 +130,15 @@ jobs:
           --env TCSI_RECOVERY_TEST_PG=disposable-only
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
           tcsi-hosted-ci /tcsi-tests/test_hosted_backup.py
+      - name: Verify full isolated recovery with native PostgreSQL and Odoo
+        run: >-
+          docker run --rm --network host --entrypoint python3
+          --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
+          --env PGPASSWORD=ci-disposable-only --env PGDATABASE=tcsi_orvexa_hosted_ci
+          --env TCSI_RECOVERY_RESTORE_TEST_PG=disposable-only
+          --mount type=volume,source=tcsi-hosted-ci-data,target=/var/lib/odoo
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          tcsi-hosted-ci /tcsi-tests/test_hosted_recovery_restore.py
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -118,6 +169,15 @@ jobs:
 
       - name: Verify isolated performance benchmark safeguards
         run: python scripts/test_benchmark.py
+
+      - name: Verify annual performance scenario safeguards
+        run: python scripts/test_benchmark_annual.py
+
+      - name: Install pinned recovery provider test dependencies
+        run: python -m pip install --require-hashes -r scripts/recovery-provider-requirements.txt
+
+      - name: Verify recovery provider contracts and restore preparation
+        run: python scripts/test_hosted_recovery_provider.py
 
       - name: Verify branding regression
         run: |

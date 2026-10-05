@@ -127,6 +127,24 @@ class BenchmarkSafetyTests(unittest.TestCase):
         self.assertIn("Posting denied", probe["error"])
         self.assertTrue(client.closed)
         self.assertTrue(any(method == "unlink" for _, method, _, _ in client.calls))
+        self.assertEqual([x["phase"] for x in probe["rpc_intervals"]], ["create", "post"])
+        self.assertEqual([x["succeeded"] for x in probe["rpc_intervals"]], [True, False])
+        self.assertIsNone(probe["post_ms"])
+
+    def test_rpc_overlap_counts_simultaneous_calls_without_calling_it_server_queue(self):
+        intervals = [
+            {"rpc_intervals": [{"start_s": 1, "end_s": 3}, {"start_s": 3, "end_s": 4}]},
+            {"rpc_intervals": [{"start_s": 2, "end_s": 3}, {"start_s": 5, "end_s": 5}]},
+        ]
+        self.assertEqual(benchmark.peak_rpc_overlap(intervals), 2)
+        self.assertEqual(benchmark.peak_rpc_overlap([intervals[0]]), 1)
+        probe = {"create_ms": 10, "post_ms": None, "error": None, "cleanup_errors": [],
+                 "client_executor_wait_ms": 900, **intervals[0]}
+        report = benchmark.build_report(arguments(), [probe], [])
+        self.assertEqual(report["save"]["p95_ms"], 10)
+        self.assertEqual(report["client_executor_wait"]["p95_ms"], 900)
+        self.assertIsNone(report["server_queue_measurement"])
+        self.assertEqual(report["samples"], [probe])
 
     def test_session_cleanup_failure_remains_visible(self):
         client = FakeOdoo()
@@ -183,6 +201,9 @@ class BenchmarkSafetyTests(unittest.TestCase):
         self.assertEqual(result["actor_uid"], 11)
         self.assertEqual(len(clients), 21)
         self.assertTrue(all(client.closed for client in clients))
+        self.assertEqual(len(result["samples"]), 20)
+        self.assertTrue(all(item["client_executor_wait_ms"] >= 0 for item in result["samples"]))
+        self.assertTrue(all(len(item["rpc_intervals"]) == 2 for item in result["samples"]))
 
     def test_threshold_equality_fails_and_insufficient_sample_is_distinct(self):
         args = arguments("--iterations", "20")

@@ -31,3 +31,44 @@
 - Remedy: keep resuming the original pidfd-bound workers after deadline until the parent's pipe closes; run each adapter in an owned process group and terminate that group on interruption/timeout. Failure alerts must also run when writing local status fails.
 - Prevention: retain late-stop, parent-death, descendant-timeout and status-storage-failure regressions in `scripts/test_hosted_backup.py`. Local POSIX timeout and storage-failure tests passed; Linux pidfd tests require CI and must not be described as passed on macOS.
 - Scope: single-supervisor hosted recovery tooling. This does not establish actual off-host delivery, a nightly schedule or client recovery acceptance.
+
+
+## Recovery provider clocks and Object Lock wire precision — 5 October 2026
+
+- Trigger: principal review found a recently uploaded old snapshot could pass freshness, while valid S3 Object Lock replies could fail first delivery.
+- Cause: upload time is not capture time; botocore serializes retention dates to whole seconds even when a mocked response preserves microseconds.
+- Remedy: pass the manifest capture timestamp through delivery/receipts and use it for freshness; round requested lock deadlines upward to whole seconds before PUT and compare the exact returned version's lock. Keep lock duration anchored to provider creation time on retries.
+- Prevention: retain recent-upload/stale-capture, retry timestamp conflict, shortened-lock and actual SDK serializer roundtrip tests in `scripts/test_hosted_recovery_provider.py`. Compare the decrypted manifest's timestamp with its receipt during drill preparation.
+- Scope/evidence: pinned SDK provider suite 21/21 passed locally; these tests do not establish real destination access, active schedules, full database restore or client acceptance.
+
+## Recovery connection identity across local container ports — 5 October 2026
+
+- Trigger: native CI `37296882814` rejected the full restore at `create_database` with `postgres_endpoint_mismatch`; no target database was created.
+- Cause: the guard compared `inet_server_addr()`/`inet_server_port()` with the explicitly selected client loopback endpoint. Those SQL functions describe the server's interface, which can differ behind container port mapping.
+- Remedy: retain exact PostgreSQL option allowlisting, numeric loopback `host` and `hostaddr`, and ambient routing-override rejection; verify libpq's effective client host/hostaddr/port/database/user plus SQL `current_database()`/`current_user()` instead. Close rejected connections before any write.
+- Prevention: `test_connected_client_endpoint_and_database_identity_are_verified` covers accepted loopback routing, endpoint/user/database mismatch, missing/redirected hostaddr and close-on-rejection. Native CI logs the synthetic client/server endpoints for diagnosis without credentials.
+- Scope/evidence: all 12 restore tests passed in native CI `37297823382`; its diagnostic confirmed client `127.0.0.1:5432` and server `172.18.0.2/32:5432`. API contract: [Psycopg ConnectionInfo](https://www.psycopg.org/docs/extensions.html#psycopg2.extensions.ConnectionInfo). This correction does not establish completed recovery or production readiness.
+
+## Comparable cache baselines for audit-history replay — 5 October 2026
+
+- Trigger: diagnostic CI `37300335141` retained two native failures. The first native replay used warm fixture cache (six audit groups/29 details), while savepoint rollback left later replays cold (seven groups/30 details).
+- Cause: comparing different starting cache states confused a replay-fixture difference with candidate audit-history behavior. Header relation batching also showed no query reduction (25 native/25 candidate).
+- Remedy: establish the same cache baseline inside every replay; test cold and explicitly warmed native/candidate paths separately. Remove the ineffective header override and retain the scoped invoice-line relation batching (25 native/22 candidate queries).
+- Prevention: `test_write_and_post_emit_identical_full_audit_history` compares four replays per cache mode and retains complete field/value, actor, company and control assertions. No broad ORM cache or prefetch override is introduced.
+- Scope/evidence: source `096a980` passed all three jobs in CI `37301445442`, including 139 native tests with zero failures/errors. All eight controlled replays produced identical seven-group/30-detail histories. This proves the tested native equality/query boundary, not hosted latency or overall readiness.
+
+## Railway console message size — 5 October 2026
+
+- Trigger: a 36 KB reviewed helper bundle disconnected the browser terminal with `read limited at 32769 bytes`.
+- Cause: one terminal input message exceeded the console transport limit; the shell never created the candidate input directory.
+- Remedy: reconnect, inspect the intended destination for partial execution, then transfer separate commands below 32,768 bytes. Verify every decoded file against its independently reviewed SHA256 before execution.
+- Prevention: check encoded command length before pasting; use smaller independent payloads with exclusive file creation. Never retry an oversized or possibly executed command unchanged.
+- Scope/evidence: private 40e501c rehearsal helper and support bundle; both smaller transfers matched their hashes and the subsequent isolated upgrade, workload and cleanup completed. No browser permissions changed.
+
+## Native JSON-RPC methods returning None — 5 October 2026
+
+- Trigger: the private read-only production verifier marked session cleanup unconfirmed despite HTTP 200 from `/web/session/destroy`.
+- Cause: native Odoo 18's `Session.destroy()` returns `None`; its JSON-RPC dispatcher can omit the `result` member. The generic decoder required that member.
+- Remedy: accept absent/null result only for the exact empty-parameter destroy call, retaining HTTP 200, JSON-RPC 2.0, exact integer request-ID, no-error and applicable-cookie checks. Authentication and model reads still require their normal result.
+- Prevention: test invalid envelopes, unexpected logout parameters, strict authentication/model decoding, valid session cleanup and the missing-cookie failure. HTTP 200 alone remains insufficient.
+- Scope/evidence: independently reviewed private baseline verifier; fresh 12:19 UTC production read-only check and session cleanup passed. Original incomplete evidence remains retained.

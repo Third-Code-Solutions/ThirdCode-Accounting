@@ -5,6 +5,58 @@ from odoo.exceptions import AccessError
 from odoo.addons.auditlog.models.rule import DictDiffer, FIELDS_BLACKLIST
 
 
+# Native label methods read these stored columns in addition to their declared
+# display_name dependencies. Keep this list local to the journal-item snapshot
+# helper; broader ORM prefetching changes cache-sensitive audit behavior.
+_AUDIT_RELATION_LABEL_FIELDS = {
+    "res.partner": (
+        "name", "company_name", "parent_id", "is_company", "type", "commercial_company_name",
+    ),
+    "account.journal": ("name", "company_id"),
+    "account.move": ("name", "ref"),
+    "account.account": ("name",),
+}
+
+
+def _prefetch_audit_relation_labels(records, field_names, load):
+    """Batch label dependencies in OCA's journal-item snapshots.
+
+    Keep the snapshot context and native formatter. In particular, do not turn
+    general prefetching back on: that fetches unrelated columns on every model.
+    ``fetch`` loads only stored dependencies; native conversion still computes
+    each display name, including its language/company context and missing-row
+    handling. Keep the caller's cache semantics: create/write use OCA's
+    disposable cache, while unlink reads use the existing environment cache.
+    """
+    if not (
+        load == "_classic_read"
+        and records.env.su
+        and records.env.context.get("auditlog_disabled")
+        and records.env.context.get("prefetch_fields") is False
+    ):
+        return
+    relations = {}
+    # Native formatting omits source records deleted since read() fetched them.
+    existing = records.exists()
+    for name in field_names:
+        field = records._fields[name]
+        if field.type != "many2one" or not field.store:
+            continue
+        related = existing.mapped(name).sudo()
+        if related:
+            relations[related._name] = relations.get(related._name, related.browse()) | related
+    for related in relations.values():
+        related.fetch(["display_name", *_AUDIT_RELATION_LABEL_FIELDS.get(related._name, ())])
+
+
+class AccountMoveLineAuditSnapshot(models.Model):
+    _inherit = "account.move.line"
+
+    def _read_format(self, fnames, load="_classic_read"):
+        _prefetch_audit_relation_labels(self, fnames, load)
+        return super()._read_format(fnames, load=load)
+
+
 class AuditLog(models.Model):
     _inherit = "auditlog.log"
 
