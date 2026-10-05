@@ -1,0 +1,66 @@
+# Isolated performance evidence
+
+This protocol measures the deployed native accounting paths. It does not close NF-02/NF-03/NF-04, client report approval, multi-role coverage or Windows/browser acceptance by itself. Keep raw results and financial PDFs in protected storage outside Git.
+
+## Baseline and diagnostic
+
+The 13.2 hosted baseline used two Odoo workers and one actor across independent loopback HTTP sessions. At 40 transactions per run, save/post p95 were 3011.16/1476.87 ms for two sessions and 11930.36/11294.73 ms for ten sessions. All 80 transactions succeeded; both runs missed targets. An earlier profile predates audit metadata batching and cannot identify the remaining 13.2 bottleneck. The global ORM prefetch experiment did not improve latency and remains excluded.
+
+The private one-use 13.2 profiler performs three native save/post pairs with SQL call counts, SQL execution time, table/callsite groups and cProfile. It guards the fixed isolated database, source version, company-owned synthetic fixture, disabled cron/mail and idle database. It compares original isolated rows/files and fresh read-only production fingerprints, retaining failure evidence. Profile instrumentation adds overhead: these are diagnostic service-cost samples, not acceptance timings. Its first call follows registry and fixture loading; neither database nor filesystem caches are cleared.
+
+## Save/post rerun and queue evidence
+
+Use the existing isolated server ownership/watchdog procedure. Record exact source SHA, addon version, PostgreSQL version, worker count, machine allocation, actor/company, existing cardinality and background traffic. Never run synthetic writes against customer books. Credentials use `ODOO_LOGIN`/`ODOO_PASSWORD` in memory; no password argument.
+
+Run separately for two and ten client workers, preserving each result even on exit 2:
+
+```sh
+python3 scripts/benchmark.py --url http://127.0.0.1:18068 \
+  --database tcsi_alignment_hosted_20261005 \
+  --confirm-isolated-database tcsi_alignment_hosted_20261005 \
+  --company-id 1 --iterations 40 --workers 2 --min-samples 40 --post \
+  --output /private/new-run-two.json
+```
+
+Repeat with `--workers 10` and another output path. A target equality fails; errors, insufficient samples and target misses have distinct nonzero exits. Results now retain every sample, per-RPC monotonic interval, authentication/scope time, cleanup time and local executor wait. Intervals show actual overlapping save/post requests. **Client executor wait is not Odoo queue time.** Authentication and cleanup still contribute server load outside the save/post timers.
+
+The two-versus-ten difference suggests contention but does not prove queueing. For direct evidence, correlate an instrumented isolated server's request receipt, handler-entry and completion timestamps using unique request IDs; record bounded PostgreSQL activity/wait snapshots and CPU alongside them. Separate socket/server admission wait from service execution. No server queue depth or queue duration is currently claimed by this harness. Do not infer queue time by subtracting separately profiled runs.
+
+For cache boundaries, restart only the owned isolated server, capture its first measured call separately, then run a documented warm-up and a steady-state sample. Preserve all samples rather than mixing first calls into a claimed warm p95. A process restart does not flush PostgreSQL or OS caches. Run a second session through the actual hosted browser/network path and measure UI action through successful saved/posted state; API timings cannot establish that boundary. Test current Chrome and Edge on an actual Windows machine before recording Windows acceptance.
+
+## Annual engineering scenario
+
+The PRD supplies no approved annual transaction, line, history or attachment volumes. Use the following explicit synthetic scenario pending client volume approval; never present it as client data:
+
+- Small smoke: 24 documents across 12 calendar months, one customer invoice and supplier bill each month; settle every third document through the native payment wizard. Expected 32 posted moves/64 journal lines with a simple chart; always report actual counts.
+- Capacity candidate: 3,750 documents with the same settlement interval estimates 10,000 journal lines. This is an engineering proposal, not an approved workload. It is not authorized as an unbounded load on the shared production host. Use dedicated CI/capacity infrastructure after reviewing a small run and its resource cost.
+- Single company and currency, one authenticated native actor, tax-free one-line documents, existing scoped accounts/journals/payment methods. Existing history and attachment counts/bytes are measured; the scenario adds no attachments. It does not cover client tax complexity or attachment-heavy history.
+
+`scripts/benchmark_annual.py` runs inside the deployed Odoo Python environment. It refuses production names, mismatched config/filter, superuser/sudo, multiple active companies, active cron/mail, incomplete chart/payment configuration and reused evidence directories. No chart, lock date, role, audit or report approval changes are made. Seed failure rolls back the uncommitted scenario. Successful seed commits once; reports run afterward, so a report failure leaves the committed synthetic scenario and explicit `seed_committed` evidence. Re-run measurement with `--seed-documents 0` after inspecting that evidence; do not blindly seed again.
+
+For the retained hosted copy, wrap execution with the established original-row/file conservation and read-only production fingerprint checks. Keep an outer process deadline. The seed budget is checked between native operations and cannot interrupt a single blocked SQL call. Use the guarded owned server for PDF assets, verify it serves the isolated database, and set `report.url` on that isolated database only. The harness checks the exact supplied loopback URL but does not prove process ownership itself.
+
+```sh
+python3 scripts/benchmark_annual.py \
+  --config /var/lib/odoo/tcsi-swarm-20261005/isolated.conf \
+  --database tcsi_alignment_hosted_20261005 \
+  --confirm-isolated-database tcsi_alignment_hosted_20261005 \
+  --company-id 1 --actor-id 2 --year 2025 --seed-documents 24 \
+  --settle-every 3 --max-seed-seconds 180 --repeats 2 \
+  --render-pdf --report-url http://127.0.0.1:18068 \
+  --output-directory /private/new-annual-smoke
+```
+
+Use an open accounting year; a native date shift or period lock must fail rather than bypass controls. Balance-sheet equality, cash-flow reconciliation and repeated calculation equality are asserted. Actual full-year/all-history moves and lines, attachment counts/bytes, oldest/newest date, native addon version and currency are recorded. PDFs stay private; JSON retains hashes/size and timings.
+
+Calculation and native PDF generation are timed separately. PDF rendering calculates the report again, so do not add the two durations. Missing PDF measurement returns exit 3 (`CALCULATION_ONLY`); a rendered sample at or above 30 seconds returns exit 2. Below-target small smoke results are smoke observations only. `acceptance_claim` and `approved_client_volume` remain false. First/subsequent report calls are labelled honestly; no cold-cache claim or browser/network timing follows.
+
+Local checks:
+
+```sh
+python3 scripts/test_benchmark.py
+python3 scripts/test_benchmark_annual.py
+python3 -m py_compile scripts/benchmark.py scripts/benchmark_annual.py
+```
+
+Mocked safety/evidence checks do not replace native invoice/bill/settlement/PDF execution. Capture that smoke before treating this harness as runtime-verified.

@@ -23,3 +23,12 @@
 - Remedy: keep resuming the original pidfd-bound workers after deadline until the parent's pipe closes; run each adapter in an owned process group and terminate that group on interruption/timeout. Failure alerts must also run when writing local status fails.
 - Prevention: retain late-stop, parent-death, descendant-timeout and status-storage-failure regressions in `scripts/test_hosted_backup.py`. Local POSIX timeout and storage-failure tests passed; Linux pidfd tests require CI and must not be described as passed on macOS.
 - Scope: single-supervisor hosted recovery tooling. This does not establish actual off-host delivery, a nightly schedule or client recovery acceptance.
+
+
+## Recovery provider clocks and Object Lock wire precision — 5 October 2026
+
+- Trigger: principal review found a recently uploaded old snapshot could pass freshness, while valid S3 Object Lock replies could fail first delivery.
+- Cause: upload time is not capture time; botocore serializes retention dates to whole seconds even when a mocked response preserves microseconds.
+- Remedy: pass the manifest capture timestamp through delivery/receipts and use it for freshness; round requested lock deadlines upward to whole seconds before PUT and compare the exact returned version's lock. Keep lock duration anchored to provider creation time on retries.
+- Prevention: retain recent-upload/stale-capture, retry timestamp conflict, shortened-lock and actual SDK serializer roundtrip tests in `scripts/test_hosted_recovery_provider.py`. Compare the decrypted manifest's timestamp with its receipt during drill preparation.
+- Scope/evidence: pinned SDK provider suite 21/21 passed locally; these tests do not establish real destination access, active schedules, full database restore or client acceptance.

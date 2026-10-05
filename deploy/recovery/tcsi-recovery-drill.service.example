@@ -1,0 +1,21 @@
+# Separate isolated recovery host only; private key never belongs on Railway.
+[Unit]
+Description=TCSI proposed monthly isolated full restore drill
+Wants=network-online.target
+After=network-online.target
+OnFailure=tcsi-recovery-failed.service
+
+[Service]
+Type=oneshot
+User=tcsi-recovery
+UMask=0077
+ExecStartPre=/usr/bin/test -x /usr/local/libexec/tcsi-isolated-restore-drill
+ExecStart=/usr/local/libexec/tcsi-isolated-restore-drill
+TimeoutStartSec=14400
+TimeoutStopSec=30
+KillMode=control-group
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Operator-supplied wrapper must enforce isolated DB and ledger/attachment comparison.
+# hosted_recovery_drill.py alone prepares bytes and cannot satisfy this contract.

@@ -158,12 +158,15 @@ class BackupTests(unittest.TestCase):
     def test_success_requires_matching_durable_receipt(self):
         policy = backup.load_policy(self.policy_file())
         def delivery(_command, payload, _timeout):
+            self.assertIn("captured_at", payload)
+            self.assertEqual(payload["captured_at"], json.loads((Path(payload["artifact"]).parent / "bundle" / "manifest.json").read_text())["metadata"]["captured_at"])
             return {"durable": True, "sha256": payload["sha256"],
                     "destination": payload["destination"], "receipt_id": "test-receipt"}
         with patch.object(backup, "validate_certificate"), patch.object(backup, "encrypt", self.fake_encrypt), patch.object(backup, "adapter", side_effect=delivery):
             state = backup.capture(policy, self.fake_snapshot)
         self.assertEqual(state["status"], "success")
         self.assertIsNotNone(state["last_success"])
+        self.assertEqual(state["last_success"]["at"], state["started_at"])
         self.assertEqual(state["last_success"]["receipt_id"], "test-receipt")
         self.assertEqual(state["last_success"]["run_id"], state["run_id"])
         self.assertEqual(list(Path(policy["state_dir"]).glob("capture-*")), [])
