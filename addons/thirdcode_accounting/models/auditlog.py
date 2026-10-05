@@ -2,6 +2,7 @@ import hashlib
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.addons.auditlog.models.rule import DictDiffer, FIELDS_BLACKLIST
 
 
 class AuditLog(models.Model):
@@ -19,6 +20,18 @@ class AuditLog(models.Model):
 class AuditLogLine(models.Model):
     _inherit = "auditlog.log.line"
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # OCA reads these two labels separately for every field. Prime the
+        # existing environment cache in one batch, then retain native creation
+        # and validation (including its sudo and language semantics).
+        field_ids = {values["field_id"] for values in vals_list if values.get("field_id")}
+        if field_ids:
+            self.env["ir.model.fields"].sudo().browse(sorted(field_ids)).fetch(
+                ["name", "field_description"]
+            )
+        return super().create(vals_list)
+
     def write(self, vals):
         raise AccessError(_("Audit field history is immutable."))
 
@@ -28,6 +41,32 @@ class AuditLogLine(models.Model):
 
 class AuditLogRule(models.Model):
     _inherit = "auditlog.rule"
+
+    def _thirdcode_prefetch_audit_fields(self, res_model, field_names):
+        """Batch native metadata misses without introducing another cache."""
+        cache = self.pool._auditlog_field_cache.setdefault(res_model, {})
+        missing = set(field_names).difference(cache, FIELDS_BLACKLIST)
+        if not missing:
+            return
+        model = self.env["ir.model"].sudo().browse(self.pool._auditlog_model_cache[res_model])
+        all_model_ids = [model.id, *model.inherited_model_ids.ids]
+        metadata = self.env["ir.model.fields"].sudo().search_fetch(
+            [("model_id", "in", all_model_ids), ("name", "in", sorted(missing))],
+            ["name"],
+        )
+        by_name = {}
+        for field in metadata:
+            by_name.setdefault(field.name, []).append(field.id)
+        # Native _get_field selects the first matching inherited field. Its
+        # order has no tie-breaker, so leave ambiguous names to that method.
+        unique_ids = [ids[0] for ids in by_name.values() if len(ids) == 1]
+        loaded = self.env["ir.model.fields"].sudo().browse(unique_ids).read(load="_classic_write")
+        values = {name: False for name in missing if name not in by_name}
+        values.update({field["name"]: field for field in loaded})
+        # Publish only after the complete native read succeeds. Keep existing
+        # entries if another request populated them while this batch loaded.
+        for name, value in values.items():
+            cache.setdefault(name, value)
 
     @api.model
     def get_auditlog_fields(self, model):
@@ -68,6 +107,18 @@ class AuditLogRule(models.Model):
 
     def create_logs(self, uid, res_model, res_ids, method, old_values=None,
                     new_values=None, additional_log_values=None):
+        field_names = set()
+        for res_id in res_ids:
+            before = (old_values or {}).get(res_id, {})
+            after = (new_values or {}).get(res_id, {})
+            if method == "create":
+                field_names.update(DictDiffer(after, before).added())
+            elif method == "write":
+                field_names.update(DictDiffer(after, before).changed())
+            elif method in ("read", "unlink"):
+                field_names.update(before)
+        if field_names:
+            self._thirdcode_prefetch_audit_fields(res_model, field_names)
         # Snapshot company scope before a source record can disappear/change
         # company. Unknown historical scope stays visible to platform staff only.
         for res_id in res_ids:
