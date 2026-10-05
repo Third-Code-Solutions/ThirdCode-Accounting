@@ -3,6 +3,83 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { test } from "node:test";
 
+const errorSource = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/tcsi_error_branding.js", import.meta.url), "utf8");
+
+function errorDialogHarness() {
+    class ErrorDialog {
+        constructor(props) { this.props = props; }
+        showTooltip() { this.copied = true; }
+    }
+    class RPCErrorDialog extends ErrorDialog {}
+    class ClientErrorDialog extends ErrorDialog {}
+    class NetworkErrorDialog extends ErrorDialog {}
+    class WarningDialog {}
+    class RedirectWarningDialog {}
+    let clipboard;
+    const context = {
+        ErrorDialog, RPCErrorDialog, ClientErrorDialog, NetworkErrorDialog,
+        WarningDialog, RedirectWarningDialog,
+        _t: (text) => text,
+        browser: { navigator: { clipboard: { writeText: (text) => { clipboard = text; } } } },
+        patch: (target, extension) => Object.defineProperties(target, Object.getOwnPropertyDescriptors(extension)),
+    };
+    runInNewContext(errorSource.replace(/^import[\s\S]*?from\s+"[^"]+";\s*/gm, ""), context);
+    return { ...context, get clipboard() { return clipboard; } };
+}
+
+test("server error display brands the message and diagnostic heading without changing exception identifiers", () => {
+    const { RPCErrorDialog } = errorDialogHarness();
+    const props = Object.freeze({
+        message: "Odoo Server Error",
+        traceback: "RPC_ERROR: Odoo Server Error\n  at /odoo/addons/web/file.js:42\nodoo.exceptions.ValidationError: Invalid entry",
+    });
+    const dialog = new RPCErrorDialog(props);
+    dialog.title = "TCSI Server Error";
+    assert.equal(dialog.tcsiTitle, "TCSI Server Error");
+    assert.equal(dialog.tcsiMessage, "TCSI Server Error");
+    assert.equal(dialog.tcsiTraceback, props.traceback.replace("Odoo Server Error", "TCSI Server Error"));
+    assert.equal(props.message, "Odoo Server Error", "original diagnostic payload stays intact");
+});
+
+test("client and network errors use branded static titles and preserve actionable messages", () => {
+    const { ClientErrorDialog, NetworkErrorDialog } = errorDialogHarness();
+    for (const [Dialog, title] of [[ClientErrorDialog, "TCSI Client Error"], [NetworkErrorDialog, "TCSI Network Error"]]) {
+        const dialog = new Dialog({ message: "Connection lost. Check your connection." });
+        assert.equal(dialog.tcsiTitle, title);
+        assert.equal(dialog.tcsiMessage, "Connection lost. Check your connection.");
+        assert.equal(dialog.tcsiTraceback, undefined);
+    }
+});
+
+test("raw client diagnostics retain runtime identifiers and paths in display and copied reports", () => {
+    const harness = errorDialogHarness();
+    for (const message of ["odoo is not defined", "Cannot read properties of undefined (reading 'odoo')", "Failed at /odoo/addons/web/file.js:42"]) {
+        const dialog = new harness.ClientErrorDialog({ message });
+        assert.equal(dialog.tcsiMessage, message);
+        dialog.onClickClipboard();
+        assert.ok(harness.clipboard.includes(message));
+    }
+});
+
+test("copied base and RPC reports use branded headings and retain the complete combined traceback", () => {
+    const harness = errorDialogHarness();
+    for (const Dialog of [harness.ErrorDialog, harness.RPCErrorDialog]) {
+        const dialog = new Dialog({ name: "RPC_ERROR", message: "Odoo Server Error", traceback: "client stack" });
+        dialog.contextDetails = "Occurred on model account.move";
+        dialog.traceback = "odoo.exceptions.ValidationError: Keep this reason\nRPC_ERROR: Odoo Server Error\nclient stack";
+        dialog.onClickClipboard();
+        assert.equal(harness.clipboard, "RPC_ERROR\n\nTCSI Server Error\n\nOccurred on model account.move\n\nodoo.exceptions.ValidationError: Keep this reason\nRPC_ERROR: TCSI Server Error\nclient stack");
+        assert.equal(dialog.copied, true);
+    }
+});
+
+test("warning fallback keeps the real validation reason when arguments are missing", () => {
+    const harness = errorDialogHarness();
+    const dialog = { message: "Odoo Server Error", props: { data: { arguments: null, message: "Posted accounting entries cannot be deleted." } } };
+    harness.liftRealMessage(dialog);
+    assert.equal(dialog.message, "Posted accounting entries cannot be deleted.");
+});
+
 const source = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/tcsi_brand.js", import.meta.url), "utf8");
 
 test("workspace router brands root, query, fragment and record links", () => {

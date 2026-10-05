@@ -310,7 +310,7 @@ class PlatformConsole(models.TransientModel):
         mail_servers = self.env["ir.mail_server"].sudo().search_count([])
         return [
             {"label": _("TCSI module version"), "value": module.installed_version or module.latest_version or "n/a"},
-            {"label": _("Odoo version"), "value": odoo.release.version},
+            {"label": _("Accounting engine version"), "value": odoo.release.version},
             {"label": _("Server mode"), "value": server_mode},
             {"label": _("Database"), "value": self.env.cr.dbname},
             {"label": _("Outgoing email"), "value": _("configured (%s server(s))") % mail_servers if mail_servers else _("not configured — hand over passwords manually")},
