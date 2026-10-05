@@ -183,7 +183,7 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
 
     def test_shared_contact_accounting_and_company_bank_setup(self):
         from odoo import SUPERUSER_ID
-        shared = self.partner_a.copy({"name": "Approved shared business", "company_id": False})
+        shared = self.partner_a.with_user(SUPERUSER_ID).copy({"name": "Approved shared business", "company_id": False})
         shared.with_user(SUPERUSER_ID).write({"thirdcode_shared_company_ids": [Command.set(self.env.company.ids)]})
         accountant = self.roles["accountant"]
         for kind in ["out_invoice", "in_invoice"]:
@@ -202,9 +202,9 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
     def test_historical_shared_backfill_preserves_ownership_and_is_one_time(self):
         from odoo import SUPERUSER_ID
         partners = self.env["res.partner"].with_user(SUPERUSER_ID)
-        shared = self.partner_a.copy({"name": "Legacy shared business", "company_id": False})
+        shared = self.partner_a.with_user(SUPERUSER_ID).copy({"name": "Legacy shared business", "company_id": False})
         shipping = partners.create({"name": "Legacy shipping", "company_id": False})
-        move = self.env["account.move"].create({**self._invoice_values("out_invoice"), "partner_id": shared.id, "partner_shipping_id": shipping.id})
+        move = self.env["account.move"].with_user(SUPERUSER_ID).create({**self._invoice_values("out_invoice"), "partner_id": shared.id, "partner_shipping_id": shipping.id})
         marker = self.env["ir.config_parameter"].sudo()
         marker.set_param("thirdcode.contact_scope_backfill_v1", False)
         partners._install_contact_isolation()
@@ -212,7 +212,29 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
             self.assertFalse(partner.company_id)
             self.assertEqual(partner.thirdcode_shared_company_ids, self.env.company)
         self.assertEqual(move.partner_id, shared)
+        shared.with_user(SUPERUSER_ID).write({"thirdcode_shared_company_ids": [Command.clear()]})
+        partners._install_contact_isolation()
+        self.assertFalse(shared.thirdcode_shared_company_ids)
         later = partners.create({"name": "Unreviewed later", "company_id": False})
-        self.env["account.move"].create({**self._invoice_values("out_invoice"), "partner_id": later.id})
+        self.env["account.move"].with_user(SUPERUSER_ID).create({**self._invoice_values("out_invoice"), "partner_id": later.id})
         partners._install_contact_isolation()
         self.assertFalse(later.thirdcode_shared_company_ids)
+
+    def test_multicompany_journal_switch_checks_effective_company(self):
+        from odoo import SUPERUSER_ID
+        other = self.setup_other_company(name="Contact switch company")
+        company_b = other["company"]
+        companies = self.env.company | company_b
+        user = self.roles["administrator"]
+        user.company_ids = companies
+        shared = self.partner_a.with_user(SUPERUSER_ID).copy({"name": "Switch shared", "company_id": False,
+            "thirdcode_shared_company_ids": [Command.set(self.env.company.ids)]})
+        moves = self.env["account.move"].with_user(user).with_context(allowed_company_ids=companies.ids)
+        move = moves.create({"company_id": self.env.company.id, "move_type": "out_invoice",
+            "journal_id": self.company_data["default_journal_sale"].id, "partner_id": shared.id})
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            move.write({"journal_id": other["default_journal_sale"].id})
+        shared.with_user(SUPERUSER_ID).write({"thirdcode_shared_company_ids": [Command.set(companies.ids)]})
+        move.write({"journal_id": other["default_journal_sale"].id})
+        self.assertEqual(move.company_id, company_b)
+        self.assertEqual(move.partner_id, shared)
