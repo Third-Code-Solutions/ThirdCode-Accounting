@@ -36,6 +36,9 @@ body.tcsi-shell-active {
 
     .o_content { max-width: none; }
 
+    // Native heading colors are explicit; inherited console ink cannot override them.
+    .tcsi-console :is(h1, h2) { color: var(--tcsi-route-ink); }
+
     // Navigation retains its established palette and dimensions.
     .tcsi-workspace-sidebar, .o_main_navbar {
         background: var(--tcsi-route-surface);
