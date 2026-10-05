@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 
 import { portalThemeCookie, resolvePortalTheme } from "../lib/portal-theme";
 import { ThemeToggle } from "./theme-toggle";
+import { TCSIMark } from "./tcsi-mark";
 
 function ArrowIcon() {
   return (
@@ -10,10 +11,6 @@ function ArrowIcon() {
       <path d="M2.5 8h10.2M8.8 3.8 13 8l-4.2 4.2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" />
     </svg>
   );
-}
-
-function TCSIMark({ compact = false }: { compact?: boolean }) {
-  return <span className={`landing-mark${compact ? " landing-mark--compact" : ""}`} aria-hidden="true">TC</span>;
 }
 
 export async function MarketingHeader({ active }: { active?: string }) {
