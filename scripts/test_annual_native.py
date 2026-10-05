@@ -223,6 +223,135 @@ def verify_smoke(result, directory):
     require(len(list(directory.glob("*.pdf"))) == 6, "Expected six actual PDFs")
 
 
+def verify_monthly_smoke(result, directory):
+    require(result.get("status") == "PASSED" and result.get("acceptance_claim") is False,
+            "Monthly smoke failed or incorrectly claimed client acceptance")
+    require(result.get("company_id") == 1 and result.get("render_role") == "readonly" and
+            result.get("render_actor_id", 0) > 1 and result.get("sudo") is False,
+            "Monthly PDF was not rendered with the expected native role/company scope")
+    require(result.get("report") == "thirdcode_accounting.action_report_monthly_bank_reconciliation",
+            "Monthly smoke rendered an unexpected report")
+    require(result.get("ledger_closing") == 100 and result.get("statement_closing") == 100 and
+            result.get("difference") == 0 and result.get("unmatched_count") == 1,
+            "Monthly smoke accounting evidence differs from its native statement fixture")
+    require(result.get("render_preserved_accounting") is True, "Monthly PDF changed accounting evidence")
+    body = (directory / "monthly-reconciliation.pdf").read_bytes()
+    require(body.startswith(b"%PDF") and len(body) == result.get("pdf_bytes") and len(body) > 5 and
+            hashlib.sha256(body).hexdigest() == result.get("pdf_sha256"),
+            "Monthly rendered PDF evidence is missing or mismatched")
+
+
+def monthly_child(config_path, database, directory):
+    """Native Read-only PDF smoke; the parent owns the isolated asset server."""
+    import base64
+    validate_ci_environment(os.environ)
+    require(database.startswith("tcsi_alignment_annual_ci_"), "Unexpected monthly smoke database")
+    config = configparser.ConfigParser(interpolation=None)
+    require(config.read(config_path) == [config_path], "Monthly isolated configuration missing")
+    require(config["options"].get("db_name") == database and config["options"].get("dbfilter") == f"^{database}$",
+            "Monthly isolated configuration identity mismatch")
+    options = config["options"]
+    require(options.get("db_host") == os.environ["PGHOST"] and options.get("db_user") == "odoo" and
+            options.get("db_port") == os.environ.get("PGPORT", "5432") and
+            options.get("db_password") == os.environ["PGPASSWORD"], "Monthly config does not use the guarded disposable connection")
+    os.umask(0o077)
+    output = Path(directory)
+    output.mkdir(mode=0o700)
+    report = "thirdcode_accounting.action_report_monthly_bank_reconciliation"
+    result = {"status": "FAILED", "database": database, "company_id": 1, "report": report,
+              "period": ["2025-01-01", "2025-01-31"], "acceptance_claim": False,
+              "scope": "Synthetic January review and real PDF; client-specific format and approval remain pending"}
+    try:
+        import odoo
+        from odoo import api
+        odoo.tools.config.parse_config(["-c", config_path, "-d", database, "--no-http", "--max-cron-threads", "0"])
+        registry = odoo.registry(database)
+        with registry.cursor() as cursor:
+            require(cursor.dbname == database, "Monthly native cursor identity mismatch")
+            env = api.Environment(cursor, 2, {"allowed_company_ids": [1]})
+            require(not env.su and env.company.id == 1 and env.companies.ids == [1], "Monthly fixture actor escaped company scope")
+            require(env.user.has_group("thirdcode_accounting.group_thirdcode_administrator"), "Native administrator fixture role missing")
+            require(not env["ir.cron"].search_count([("active", "=", True)]) and
+                    not env["ir.mail_server"].search_count([("active", "=", True)]), "Monthly clone cron or outbound mail is active")
+            require(env["ir.config_parameter"].get_param("report.url") == f"http://127.0.0.1:{HTTP_PORT}", "Monthly report assets escaped owned loopback server")
+            suspense = env["account.account"].create({"name": "Synthetic monthly PDF suspense", "code": "MPCSUSP",
+                "account_type": "asset_current", "company_ids": [(6, 0, [1])], "reconcile": True})
+            bank = env["account.journal"].create({"name": "Synthetic monthly PDF bank", "code": "MPC",
+                "type": "bank", "company_id": 1, "suspense_account_id": suspense.id})
+            record = env["thirdcode.bank.reconciliation"].create({
+                "name": "Synthetic January 2025 PDF review", "company_id": 1, "journal_id": bank.id,
+                "statement_reference": "SYNTHETIC-MONTHLY-PDF-2025-01", "date_start": "2025-01-01", "date_end": "2025-01-31",
+                "opening_balance": 0, "closing_balance": 100,
+                "evidence_file": base64.b64encode(b"Synthetic January statement: opening 0, receipt 100, closing 100. Not client evidence."),
+                "evidence_filename": "synthetic-monthly-statement.txt",
+            })
+            statement = env["account.bank.statement.line"].create({
+                "journal_id": bank.id, "date": "2025-01-10", "amount": 100,
+                "payment_ref": "Synthetic monthly PDF receipt", "thirdcode_reconciliation_id": record.id,
+            })
+            require(statement.move_id.state == "posted" and str(statement.date) == "2025-01-10",
+                    "Monthly native statement did not post in the expected period")
+            record.action_compute_ledger_balance()
+            reader = env["res.users"].with_context(no_reset_password=True).create({
+                "name": "Synthetic monthly PDF reader", "login": "tcsi-monthly-pdf-reader-ci",
+                "company_id": 1, "company_ids": [(6, 0, [1])],
+                "groups_id": [(6, 0, env.ref("thirdcode_accounting.group_thirdcode_readonly").ids)],
+            })
+            cursor.commit()
+            result.update(fixture_committed=True, record_id=record.id, render_actor_id=reader.id, render_role="readonly", sudo=False)
+            save(output / "results.json", result)
+            visible = record.with_user(reader).with_context(allowed_company_ids=[1])
+            require(not visible.env.su and visible.env.companies.ids == [1] and
+                    visible.env.user.has_group("thirdcode_accounting.group_thirdcode_readonly") and
+                    not any(visible.env.user.has_group("thirdcode_accounting.group_thirdcode_" + role)
+                            for role in ("accountant", "administrator", "encoder")), "Monthly PDF reader role is not Read-only")
+
+            def accounting_snapshot():
+                env.flush_all()
+                fields = ["state", "ledger_balance", "opening_balance", "closing_balance", "difference", "reconciled_by", "reconciled_at", "write_date"]
+                return {
+                    "record": record.read(fields),
+                    "posted_lines": env["account.move.line"].search([
+                        ("company_id", "=", 1), ("parent_state", "=", "posted")], order="id").read([
+                            "move_id", "account_id", "debit", "credit", "balance", "amount_residual"]),
+                    "counts": {name: env[name].search_count([]) for name in (
+                        "account.move", "account.move.line", "account.partial.reconcile", "account.full.reconcile", "auditlog.log", "auditlog.log.line")},
+                }
+
+            before = accounting_snapshot()
+            data = visible.get_monthly_report_data()
+            require(data["ledger"]["opening"] == 0 and data["ledger"]["closing"] == 100 and
+                    data["statement"]["calculated_closing"] == 100 and data["difference"] == 0,
+                    "Monthly native ledger/statement arithmetic differs from the fixture")
+            require(data["statement"]["unmatched_count"] == 1 and any("remain unmatched" in warning for warning in data["warnings"]),
+                    "Monthly report omitted the unmatched statement warning")
+            require(record.state == "draft" and not record.reconciled_by and not record.reconciled_at,
+                    "Monthly smoke must not create an accounting sign-off")
+            action = visible.action_print_monthly_report()
+            require(action.get("report_name") == "thirdcode_accounting.report_monthly_bank_reconciliation", "Unexpected native print action")
+            started = time.perf_counter()
+            pdf, _ = env["ir.actions.report"].with_user(reader).with_context(allowed_company_ids=[1])._render_qweb_pdf(report, record.ids)
+            result["pdf_seconds"] = time.perf_counter() - started
+            require(pdf.startswith(b"%PDF") and len(pdf) > 5, "Monthly renderer returned no PDF")
+            (output / "monthly-reconciliation.pdf").write_bytes(pdf)
+            after = accounting_snapshot()
+            require(before == after, "Monthly PDF rendering changed ledger, audit, settlement or review state")
+            result.update(ledger_closing=data["ledger"]["closing"],
+                          statement_closing=data["statement"]["calculated_closing"], difference=data["difference"],
+                          unmatched_count=data["statement"]["unmatched_count"], render_preserved_accounting=True,
+                          accounting_snapshot_sha256=hashlib.sha256(json.dumps(before, sort_keys=True, default=str).encode()).hexdigest(),
+                          pdf_bytes=len(pdf), pdf_sha256=hashlib.sha256(pdf).hexdigest())
+            cursor.rollback()
+        result["status"] = "PASSED"
+    except BaseException as exc:
+        result["status"] = "FAILED"
+        result["error"] = f"{type(exc).__name__}: {exc}".replace(os.environ["PGPASSWORD"], "[redacted]")
+    finally:
+        save(output / "results.json", result)
+    print("MONTHLY_NATIVE", json.dumps(result, sort_keys=True), flush=True)
+    return 0 if result["status"] == "PASSED" else 1
+
+
 def main():
     validate_ci_environment(os.environ)  # No directory, subprocess or DB access before guard.
     require(sys.platform == "linux", "Native CI process ownership requires Linux /proc")
@@ -265,7 +394,19 @@ def main():
         result = json.loads((output / "results.json").read_text())
         verify_smoke(result, output)
         require(code == 0, "Benchmark process failed despite result evidence")
-        summary.update(status="PASSED", seeded=result["seeded"], measured_cardinality=result["measured_cardinality"], samples=result["samples"])
+        summary.update(seeded=result["seeded"], measured_cardinality=result["measured_cardinality"], samples=result["samples"])
+        require(server.process.poll() is None and listener_owned(server), "Isolated PDF server no longer owns its listener")
+        monthly_output = output / "monthly"
+        monthly = OwnedProcess([sys.executable, str(Path(__file__).resolve()), "--monthly-child", str(config), database,
+                                str(monthly_output)], root / "monthly.log")
+        processes.append(monthly)
+        monthly_code = monthly.wait(150)
+        summary["monthly_exit"] = monthly_code
+        require((monthly_output / "results.json").is_file(), "Monthly smoke did not preserve results.json")
+        monthly_result = json.loads((monthly_output / "results.json").read_text())
+        verify_monthly_smoke(monthly_result, monthly_output)
+        require(monthly_code == 0, "Monthly process failed despite result evidence")
+        summary.update(status="PASSED", monthly=monthly_result)
     except BaseException as exc:
         message = f"{type(exc).__name__}: {exc}"
         summary["error"] = message.replace(os.environ["PGPASSWORD"], "[redacted]")
@@ -284,4 +425,7 @@ def main():
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--monthly-child"]:
+        require(len(sys.argv) == 5, "Expected config, isolated database and new monthly output directory")
+        raise SystemExit(monthly_child(*sys.argv[2:]))
     raise SystemExit(main())

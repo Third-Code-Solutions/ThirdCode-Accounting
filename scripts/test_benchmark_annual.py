@@ -1,14 +1,16 @@
 """Scope, workload and evidence regressions; native smoke remains a separate gate."""
 import contextlib
+import hashlib
 import io
 import json
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import benchmark_annual as annual
+import test_annual_native as native
 
 
 def arguments(*extra):
@@ -102,6 +104,74 @@ class AnnualBenchmarkTests(unittest.TestCase):
             self.assertIsNone(result["seeded"])
             with patch.object(annual, "parse_args", return_value=args), self.assertRaises(FileExistsError):
                 annual.main([])
+
+    def test_monthly_pdf_evidence_requires_real_bytes_and_native_readonly_scope(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            pdf = b"%PDF-1.4\nSynthetic verifier fixture"
+            (output / "monthly-reconciliation.pdf").write_bytes(pdf)
+            result = {"status": "PASSED", "acceptance_claim": False, "company_id": 1,
+                      "render_role": "readonly", "render_actor_id": 20, "sudo": False,
+                      "report": "thirdcode_accounting.action_report_monthly_bank_reconciliation",
+                      "ledger_closing": 100, "statement_closing": 100, "difference": 0,
+                      "unmatched_count": 1, "render_preserved_accounting": True,
+                      "pdf_bytes": len(pdf), "pdf_sha256": hashlib.sha256(pdf).hexdigest()}
+            native.verify_monthly_smoke(result, output)
+            for changed in ({"sudo": True}, {"company_id": 2}, {"acceptance_claim": True},
+                            {"render_preserved_accounting": False}, {"difference": 1}):
+                with self.subTest(changed=changed), self.assertRaises(RuntimeError):
+                    native.verify_monthly_smoke({**result, **changed}, output)
+            (output / "monthly-reconciliation.pdf").write_bytes(b"corrupt")
+            with self.assertRaisesRegex(RuntimeError, "PDF evidence"):
+                native.verify_monthly_smoke(result, output)
+
+    def test_monthly_child_cannot_start_without_disposable_ci_guard(self):
+        with patch.dict("os.environ", {}, clear=True), tempfile.TemporaryDirectory() as folder:
+            output = Path(folder) / "new-monthly"
+            with self.assertRaisesRegex(RuntimeError, "disposable CI marker"):
+                native.monthly_child("/irrelevant.conf", "tcsi_alignment_annual_ci_test", str(output))
+            self.assertFalse(output.exists())
+
+    def test_monthly_child_rejects_config_that_overrides_guarded_loopback_connection(self):
+        environ = {"TCSI_ANNUAL_NATIVE_CI": "disposable-only", "PGHOST": "127.0.0.1", "PGUSER": "odoo", "PGPASSWORD": "ci-only"}
+        with patch.dict("os.environ", environ, clear=True), tempfile.TemporaryDirectory() as folder:
+            database = "tcsi_alignment_annual_ci_test"
+            config = Path(folder) / "isolated.conf"
+            output = Path(folder) / "new-monthly"
+            config.write_text(f"[options]\ndb_name={database}\ndbfilter=^{database}$\ndb_host=remote.example\ndb_user=odoo\ndb_port=5432\ndb_password=ci-only\n")
+            with self.assertRaisesRegex(RuntimeError, "guarded disposable connection"):
+                native.monthly_child(str(config), database, str(output))
+            self.assertFalse(output.exists())
+
+    def test_successful_samples_cannot_mask_transaction_cleanup_failure(self):
+        with tempfile.TemporaryDirectory() as folder:
+            config = Path(folder) / "isolated.conf"
+            config.write_text("[options]\ndb_name=tcsi_alignment_test\ndbfilter=^tcsi_alignment_test$\n")
+            args = arguments()
+            args.config, args.output_directory = str(config), str(Path(folder) / "cleanup-failed")
+            cursor = MagicMock()
+            cursor.__enter__.return_value = cursor
+            cursor.rollback.side_effect = RuntimeError("transaction cleanup failed")
+            env = MagicMock()
+            env.company.currency_id.name = "USD"
+            env.__getitem__.return_value.search.return_value.latest_version = "18.0.test"
+            odoo = SimpleNamespace(
+                tools=SimpleNamespace(config=SimpleNamespace(parse_config=lambda *a: None)),
+                registry=lambda *a: SimpleNamespace(cursor=lambda: cursor),
+                api=SimpleNamespace(Environment=lambda *a: env),
+            )
+            def samples(_env, _args, _output, evidence, checkpoint):
+                evidence.append({"report": "balance_sheet", "pdf_seconds": .01})
+                checkpoint()
+            with patch.object(annual, "parse_args", return_value=args), patch.dict("sys.modules", {"odoo": odoo}), \
+                    patch.object(annual, "validate_environment"), patch.object(annual, "cardinality", return_value={}), \
+                    patch.object(annual, "measure_reports", side_effect=samples), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(annual.main([]), 1)
+            result = json.loads((Path(args.output_directory) / "results.json").read_text())
+            self.assertEqual(result["status"], "FAILED")
+            self.assertEqual(result["exit_code"], 1)
+            self.assertIn("transaction cleanup failed", result["error"])
+            self.assertEqual(len(result["samples"]), 1, "Completed measurements must survive cleanup failure")
 
 
 if __name__ == "__main__":

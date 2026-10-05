@@ -272,9 +272,11 @@ def main(argv=None):
                 checkpoint()
             result["measured_cardinality"] = cardinality(env, args)
             measure_reports(env, args, output, result["samples"], checkpoint)
-            result["status"], result["exit_code"] = report_status(result["samples"], args.target_seconds)
+            status, exit_code = report_status(result["samples"], args.target_seconds)
             cursor.rollback()  # Transient report models are not part of the scenario.
+        result.update(status=status, exit_code=exit_code)
     except Exception as exc:
+        result.update(status="FAILED", exit_code=1)
         message = f"{type(exc).__name__}: {exc}"
         for secret in secrets:
             message = message.replace(secret, "[redacted]")
