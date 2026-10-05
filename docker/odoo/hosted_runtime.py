@@ -24,6 +24,17 @@ error_log stderr warn;
 events {{ worker_connections 1024; }}
 http {{
     access_log off;
+    server_tokens off;
+    # Early protocol/proxy errors can bypass Odoo's registry dispatch hooks.
+    # Keep its fixed security policy at this boundary without duplicate headers.
+    proxy_hide_header X-Content-Type-Options;
+    proxy_hide_header Referrer-Policy;
+    proxy_hide_header Permissions-Policy;
+    proxy_hide_header X-Permitted-Cross-Domain-Policies;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
+    add_header X-Permitted-Cross-Domain-Policies none always;
     client_body_temp_path {directory}/body;
     proxy_temp_path {directory}/proxy;
     fastcgi_temp_path {directory}/fastcgi;
