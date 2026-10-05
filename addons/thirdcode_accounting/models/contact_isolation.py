@@ -112,7 +112,7 @@ class ContactIsolation(models.Model):
     @api.model_create_multi
     def create(self, values_list):
         values_list = [dict(values) for values in values_list]
-        defaults = self.default_get(["parent_id", "child_ids"])
+        defaults = self.default_get(["parent_id", "child_ids", *_SCOPE_FIELDS])
         for values in values_list:
             for name, value in defaults.items():
                 values.setdefault(name, value)
@@ -171,6 +171,21 @@ class ContactIsolation(models.Model):
         _logger.info("Contact isolation: preserved %s shared business contacts through explicit accounting links; ownership unchanged", len(grants))
 
 
+def normalize_partner_defaults(records, values_list):
+    """Check the same effective values the ORM will store, including ir.default."""
+    names = {name for name, field in records._fields.items()
+             if field.type == "many2one" and field.comodel_name in {"res.partner", "res.partner.bank"}}
+    names |= {"company_id", "journal_id", "move_id"} & records._fields.keys()
+    result = []
+    for values in values_list:
+        defaults = records.with_context(**{
+            "default_" + name: values[name]
+            for name in ("company_id", "journal_id", "move_id") if name in values
+        }).default_get(list(names - values.keys()))
+        result.append({**defaults, **values})
+    return result
+
+
 def check_partner_reference(records, values):
     """Many2one assignment does not itself check the referenced record's rules."""
     if records.env.su or is_platform_owner(records.env):
@@ -207,6 +222,7 @@ class ContactScopedMove(models.Model):
 
     @api.model_create_multi
     def create(self, values_list):
+        values_list = normalize_partner_defaults(self, values_list)
         for values in values_list:
             check_partner_reference(self, values)
         return super().create(values_list)
@@ -221,6 +237,7 @@ class ContactScopedMoveLine(models.Model):
 
     @api.model_create_multi
     def create(self, values_list):
+        values_list = normalize_partner_defaults(self, values_list)
         for values in values_list:
             check_partner_reference(self, values)
         return super().create(values_list)
@@ -235,6 +252,7 @@ class ContactScopedPayment(models.Model):
 
     @api.model_create_multi
     def create(self, values_list):
+        values_list = normalize_partner_defaults(self, values_list)
         for values in values_list:
             check_partner_reference(self, values)
         return super().create(values_list)
@@ -261,6 +279,8 @@ class ContactScopedBank(models.Model):
 
     @api.model_create_multi
     def create(self, values_list):
+        defaults = self.default_get(["partner_id"])
+        values_list = [{**defaults, **values} for values in values_list]
         for values in values_list:
             self._check_partner_target(values)
         return super().create(values_list)

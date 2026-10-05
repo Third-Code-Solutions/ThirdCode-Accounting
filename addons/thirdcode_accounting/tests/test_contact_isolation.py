@@ -172,3 +172,14 @@ class TestContactIsolation(TransactionCase):
         self.assertIn(self.pb, self.partners(self.owner).search([]))
         self.owner.thirdcode_platform_owner = False
         self.assertNotIn(self.pb, self.partners(self.owner).search([]))
+
+    def test_user_defaults_do_not_grant_hidden_partner_access(self):
+        self.env["ir.default"].set("account.move", "partner_id", self.unassigned.id, user_id=self.ua.id)
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.env["account.move"].with_user(self.ua).with_context(allowed_company_ids=self.a.ids).create({})
+
+    def test_console_groups_without_owner_flag_cannot_share_contacts(self):
+        self.ua.groups_id |= self.env.ref("base.group_system") | self.env.ref("thirdcode_accounting.group_thirdcode_platform_console")
+        self.assertNotIn(self.pb, self.partners(self.ua).search([]))
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.partners(self.ua).browse(self.pa.id).write({"thirdcode_shared_company_ids": [Command.set(self.b.ids)]})

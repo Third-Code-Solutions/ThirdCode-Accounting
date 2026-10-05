@@ -234,6 +234,14 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
             "journal_id": self.company_data["default_journal_sale"].id, "partner_id": shared.id})
         with self.assertRaises(AccessError), self.cr.savepoint():
             move.write({"journal_id": other["default_journal_sale"].id})
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            moves.with_context(default_journal_id=other["default_journal_sale"].id).create({
+                "move_type": "out_invoice", "partner_id": shared.id})
+        target = moves.create({"company_id": company_b.id, "journal_id": other["default_journal_misc"].id})
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.env["account.move.line"].with_user(user).with_context(
+                allowed_company_ids=companies.ids, default_move_id=target.id
+            ).create({"partner_id": shared.id, "name": "Forbidden shared contact"})
         shared.with_user(SUPERUSER_ID).write({"thirdcode_shared_company_ids": [Command.set(companies.ids)]})
         move.write({"journal_id": other["default_journal_sale"].id})
         self.assertEqual(move.company_id, company_b)
