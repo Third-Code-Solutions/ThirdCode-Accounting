@@ -1,212 +1,280 @@
-"""Measure synthetic Odoo save/post latency with the proposed two-user load."""
+"""Measure native invoice save/post RPC latency in an explicitly isolated database.
+
+Credentials come from ODOO_LOGIN and ODOO_PASSWORD. Synthetic posted invoices and
+fixture partners remain in the disposable database; never point this at customer
+books. This measures RPC calls, not browser interaction or client acceptance.
+"""
 
 from __future__ import annotations
 
 import argparse
+import http.cookiejar
 import json
+import math
+import os
+import re
 import statistics
+import sys
 import time
 import urllib.error
-import http.cookiejar
+import urllib.parse
 import urllib.request
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
-from typing import Any
+from datetime import date, datetime, timezone
+from typing import Any, Callable
+
+
+ISOLATED_DATABASE = re.compile(r"tcsi_alignment_[A-Za-z0-9_]+\Z")
 
 
 class OdooHttp:
     def __init__(self, base_url: str, database: str, login: str, password: str) -> None:
+        if not ISOLATED_DATABASE.fullmatch(database):
+            raise ValueError("Synthetic probes require an isolated tcsi_alignment_ database")
         self.base_url = base_url.rstrip("/")
+        self.password = password
+        self.company_id: int | None = None
+        self.closed = False
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
-        payload = self._request(
-            "/web/session/authenticate",
-            {"db": database, "login": login, "password": password},
-        )
+        payload = self._request("/web/session/authenticate", {"db": database, "login": login, "password": password})
         result = payload.get("result") or {}
         if not result.get("uid"):
-            raise RuntimeError(f"Odoo authentication failed: {payload}")
+            raise RuntimeError("Odoo authentication failed")
         self.uid = int(result["uid"])
 
     def _request(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
             f"{self.base_url}{path}",
             data=json.dumps({"jsonrpc": "2.0", "method": "call", "params": params}).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method="POST",
+            headers={"Content-Type": "application/json"}, method="POST",
         )
         try:
             with self.opener.open(request, timeout=60) as response:
                 payload = json.loads(response.read().decode("utf-8"))
         except (OSError, urllib.error.URLError) as exc:
-            raise RuntimeError(f"Odoo HTTP request failed: {exc}") from exc
+            message = str(exc).replace(self.password, "[redacted]")
+            raise RuntimeError(f"Odoo HTTP request failed: {message}") from exc
         if payload.get("error"):
-            raise RuntimeError(json.dumps(payload["error"], sort_keys=True))
+            error = payload["error"]
+            message = (error.get("data") or {}).get("message") or error.get("message") or "Odoo RPC failed"
+            raise RuntimeError(str(message).replace(self.password, "[redacted]"))
         return payload
 
     def call(self, model: str, method: str, args: list[Any], kwargs: dict[str, Any] | None = None) -> Any:
-        payload = self._request(
-            "/web/dataset/call_kw",
-            {"model": model, "method": method, "args": args, "kwargs": kwargs or {}},
-        )
+        scoped_kwargs = dict(kwargs or {})
+        if self.company_id is not None:
+            scoped_kwargs["context"] = {**scoped_kwargs.get("context", {}), "allowed_company_ids": [self.company_id]}
+        payload = self._request("/web/dataset/call_kw", {
+            "model": model, "method": method, "args": args, "kwargs": scoped_kwargs,
+        })
         return payload.get("result")
 
+    def bind_company(self, company_id: int) -> None:
+        users = self.call("res.users", "read", [[self.uid]], {"fields": ["company_ids"]})
+        if not users or company_id not in users[0]["company_ids"]:
+            raise RuntimeError("Company is outside the authenticated user's scope")
+        self.company_id = company_id
 
-def percentile(values: list[float], fraction: float) -> float:
+    def close(self) -> None:
+        if not self.closed:
+            self._request("/web/session/destroy", {})
+            self.closed = True
+
+
+def percentile(values: list[float], fraction: float) -> float | None:
+    """Nearest-rank quantile: rank ceil(n * fraction), with no interpolation."""
+    if not 0 < fraction <= 1:
+        raise ValueError("Percentile fraction must be greater than zero and at most one")
     if not values:
-        return 0.0
-    ordered = sorted(values)
-    index = min(len(ordered) - 1, round((len(ordered) - 1) * fraction))
-    return ordered[index]
+        return None
+    return sorted(values)[math.ceil(len(values) * fraction) - 1]
 
 
-def summary(values: list[float]) -> dict[str, float | int]:
+def summary(values: list[float]) -> dict[str, float | int | None]:
     return {
         "count": len(values),
-        "min_ms": round(min(values), 2) if values else 0.0,
-        "p50_ms": round(statistics.median(values), 2) if values else 0.0,
-        "p95_ms": round(percentile(values, 0.95), 2),
-        "max_ms": round(max(values), 2) if values else 0.0,
+        "min_ms": round(min(values), 2) if values else None,
+        "p50_ms": round(statistics.median(values), 2) if values else None,
+        "p95_ms": round(percentile(values, .95), 2) if values else None,
+        "max_ms": round(max(values), 2) if values else None,
     }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default="http://localhost:8069")
-    parser.add_argument("--database", default="thirdcode_accounting")
-    parser.add_argument("--company-id", type=int, help="Explicit synthetic company; otherwise use the authenticated user's default company")
-    parser.add_argument("--login", default="admin")
-    parser.add_argument("--password", default="admin")
-    parser.add_argument("--iterations", type=int, default=10)
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("--url", default=os.environ.get("ODOO_URL", "http://localhost:8069"))
+    parser.add_argument("--database", required=True)
+    parser.add_argument("--confirm-isolated-database", required=True, help="Repeat the disposable database name to acknowledge synthetic writes")
+    parser.add_argument("--company-id", type=int, required=True)
+    parser.add_argument("--login", default=os.environ.get("ODOO_LOGIN"))
+    parser.add_argument("--iterations", type=int, default=20)
     parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--post", action="store_true", help="Also post each synthetic invoice; posted probes remain in the database")
+    parser.add_argument("--min-samples", type=int, default=20, help="Minimum successful samples per enabled phase; 20 is only a directional small-sample check")
+    parser.add_argument("--post", action="store_true", help="Post synthetic invoices; they remain in the isolated database")
     parser.add_argument("--target-save-ms", type=float, default=2000.0)
     parser.add_argument("--target-post-ms", type=float, default=2000.0)
-    parser.add_argument("--output", type=str)
-    args = parser.parse_args()
-    if not args.database.startswith("tcsi_alignment_"):
-        parser.error("Synthetic transaction probes require an isolated tcsi_alignment_ database")
-    if args.iterations <= 0 or args.workers <= 0:
-        raise SystemExit("--iterations and --workers must be positive")
+    parser.add_argument("--output")
+    supplied = sys.argv[1:] if argv is None else argv
+    if any(value == "--password" or value.startswith("--password=") for value in supplied):
+        parser.error("Use ODOO_PASSWORD; --password is not supported")
+    args = parser.parse_args(supplied)
+    if not ISOLATED_DATABASE.fullmatch(args.database) or args.confirm_isolated_database != args.database:
+        parser.error("Synthetic transaction probes require an isolated tcsi_alignment_ database and matching --confirm-isolated-database")
+    if min(args.iterations, args.workers, args.company_id, args.min_samples) <= 0:
+        parser.error("--iterations, --workers, --company-id and --min-samples must be positive")
+    if any(not math.isfinite(target) or target <= 0 for target in (args.target_save_ms, args.target_post_ms)):
+        parser.error("Latency targets must be finite and positive")
+    url = urllib.parse.urlsplit(args.url)
+    if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password or url.query or url.fragment:
+        parser.error("--url must be an HTTP(S) base URL without credentials, query or fragment")
+    args.password = os.environ.get("ODOO_PASSWORD")
+    if not args.login or not args.password:
+        parser.error("Set ODOO_LOGIN (or --login) and ODOO_PASSWORD; password arguments are not accepted")
+    return args
 
-    odoo = OdooHttp(args.url, args.database, args.login, args.password)
-    company_id = args.company_id or int(odoo.call("res.users", "read", [[odoo.uid], ["company_id"]])[0]["company_id"][0])
-    partner_rows = odoo.call(
-        "res.partner",
-        "search_read",
-        [[("ref", "=", "TC-BENCHMARK-PARTNER")]],
-        {"fields": ["id"], "limit": 1},
-    )
-    if partner_rows:
-        partner = partner_rows[0]
-    else:
-        receivable = odoo.call(
-            "account.account",
-            "search_read",
-            [[("company_ids", "in", [company_id]), ("code", "=", "121000")]],
-            {"fields": ["id"], "limit": 1},
-        )[0]
-        payable = odoo.call(
-            "account.account",
-            "search_read",
-            [[("company_ids", "in", [company_id]), ("code", "=", "211000")]],
-            {"fields": ["id"], "limit": 1},
-        )[0]
-        partner_id = odoo.call(
-            "res.partner",
-            "create",
-            [{
-                "name": "Synthetic Performance Benchmark Partner",
-                "ref": "TC-BENCHMARK-PARTNER",
-                "company_type": "company",
-                "customer_rank": 1,
-                "property_account_receivable_id": int(receivable["id"]),
-                "property_account_payable_id": int(payable["id"]),
-            }],
-        )
-        partner = {"id": int(partner_id)}
-    income = odoo.call(
-        "account.account",
-        "search_read",
-        [[("company_ids", "in", [company_id]), ("code", "=", "400000")]],
-        {"fields": ["id"], "limit": 1},
-    )[0]
-    journal = odoo.call(
-        "account.journal",
-        "search_read",
-        [[("company_id", "=", company_id), ("type", "=", "sale")]],
-        {"fields": ["id"], "limit": 1},
-    )[0]
 
-    def one(iteration: int) -> dict[str, Any]:
-        local = OdooHttp(args.url, args.database, args.login, args.password)
-        reference = f"TC-BENCH-{uuid.uuid4().hex[:12]}-{iteration}"
+def prepare_fixture(client: OdooHttp, company_id: int, run_id: str) -> dict[str, int]:
+    """Resolve all company-scoped chart requirements before creating any fixture."""
+    accounts = {}
+    for kind in ("asset_receivable", "liability_payable", "income"):
+        rows = client.call("account.account", "search_read", [[
+            ("company_ids", "in", [company_id]), ("account_type", "=", kind), ("deprecated", "=", False),
+        ]], {"fields": ["id"], "limit": 1, "order": "id"})
+        if not rows:
+            raise RuntimeError(f"No usable {kind} account in selected company")
+        accounts[kind] = int(rows[0]["id"])
+    journals = client.call("account.journal", "search_read", [[
+        ("company_id", "=", company_id), ("type", "=", "sale"), ("active", "=", True),
+    ]], {"fields": ["id"], "limit": 1, "order": "id"})
+    if not journals:
+        raise RuntimeError("No active sale journal in selected company")
+    partner_id = client.call("res.partner", "create", [{
+        "name": "Synthetic Performance Benchmark Partner", "ref": f"TC-BENCH-{company_id}-{run_id}",
+        "company_id": company_id, "company_type": "company", "customer_rank": 1,
+        "property_account_receivable_id": accounts["asset_receivable"],
+        "property_account_payable_id": accounts["liability_payable"],
+    }])
+    return {"partner_id": int(partner_id), "income_id": accounts["income"], "journal_id": int(journals[0]["id"])}
+
+
+def error_text(exc: Exception, password: str) -> str:
+    return f"{type(exc).__name__}: {exc}".replace(password, "[redacted]")
+
+
+def run_probe(args: argparse.Namespace, fixture: dict[str, int], iteration: int, run_id: str,
+              client_factory: Callable[..., OdooHttp] = OdooHttp) -> dict[str, Any]:
+    reference = f"TC-BENCH-{run_id}-{iteration}"
+    result: dict[str, Any] = {"reference": reference, "create_ms": None, "post_ms": None, "error": None, "cleanup_errors": []}
+    client = None
+    move_id = None
+    try:
+        client = client_factory(args.url, args.database, args.login, args.password)
+        client.bind_company(args.company_id)
         values = {
-            "company_id": company_id,
-            "move_type": "out_invoice",
-            "partner_id": int(partner["id"]),
-            "journal_id": int(journal["id"]),
-            "invoice_date": date.today().isoformat(),
-            "ref": reference,
+            "company_id": args.company_id, "move_type": "out_invoice", "partner_id": fixture["partner_id"],
+            "journal_id": fixture["journal_id"], "invoice_date": date.today().isoformat(), "ref": reference,
             "invoice_line_ids": [[0, 0, {
-                "name": "Synthetic performance probe",
-                "quantity": 1,
-                "price_unit": 1.0,
-                "account_id": int(income["id"]),
+                "name": "Synthetic performance probe", "quantity": 1, "price_unit": 1.0,
+                "account_id": fixture["income_id"], "tax_ids": [[6, 0, []]],
             }]],
         }
-        move_id = None
-        try:
+        started = time.perf_counter()
+        move_id = int(client.call("account.move", "create", [values]))
+        result["create_ms"] = (time.perf_counter() - started) * 1000
+        if args.post:
             started = time.perf_counter()
-            move_id = int(local.call("account.move", "create", [values]))
-            create_ms = (time.perf_counter() - started) * 1000
-            post_ms = None
-            if args.post:
-                started = time.perf_counter()
-                local.call("account.move", "action_post", [[move_id]])
-                post_ms = (time.perf_counter() - started) * 1000
-            else:
-                local.call("account.move", "unlink", [[move_id]])
-            return {"create_ms": create_ms, "post_ms": post_ms, "reference": reference}
-        except Exception:
-            if move_id:
-                try:
-                    state = local.call("account.move", "read", [[move_id]], {"fields": ["state"]})[0]["state"]
-                    if state == "draft":
-                        local.call("account.move", "unlink", [[move_id]])
-                except Exception:
-                    pass
-            raise
+            client.call("account.move", "action_post", [[move_id]])
+            result["post_ms"] = (time.perf_counter() - started) * 1000
+        else:
+            client.call("account.move", "unlink", [[move_id]])
+            move_id = None
+    except Exception as exc:
+        result["error"] = error_text(exc, args.password)
+        if client is not None and move_id is not None:
+            try:
+                rows = client.call("account.move", "read", [[move_id]], {"fields": ["state"]})
+                if rows and rows[0]["state"] == "draft":
+                    client.call("account.move", "unlink", [[move_id]])
+            except Exception as cleanup_exc:
+                result["cleanup_errors"].append(error_text(cleanup_exc, args.password))
+    finally:
+        if client is not None:
+            try:
+                client.close()
+            except Exception as cleanup_exc:
+                result["cleanup_errors"].append(error_text(cleanup_exc, args.password))
+    return result
 
-    results: list[dict[str, Any]] = []
-    with ThreadPoolExecutor(max_workers=args.workers) as executor:
-        futures = [executor.submit(one, index) for index in range(args.iterations)]
-        for future in as_completed(futures):
-            results.append(future.result())
-    create_values = [float(item["create_ms"]) for item in results]
-    post_values = [float(item["post_ms"]) for item in results if item["post_ms"] is not None]
-    result = {
-        "status": "VERIFIED LOCALLY",
-        "synthetic": True,
-        "database": args.database,
-        "workers": args.workers,
-        "iterations": args.iterations,
-        "post_enabled": args.post,
-        "targets_ms": {"save": args.target_save_ms, "post": args.target_post_ms},
-        "save": summary(create_values),
-        "post": summary(post_values),
-        "target_observed": {
-            "save_p95_within_target": bool(create_values) and percentile(create_values, 0.95) <= args.target_save_ms,
-            "post_p95_within_target": bool(post_values) and percentile(post_values, 0.95) <= args.target_post_ms if args.post else None,
-        },
-        "note": "Synthetic local timing only; not evidence for client hardware, volume, or production concurrency acceptance.",
+
+def build_report(args: argparse.Namespace, results: list[dict[str, Any]], errors: list[str]) -> dict[str, Any]:
+    saves = [item["create_ms"] for item in results if item["create_ms"] is not None]
+    posts = [item["post_ms"] for item in results if item["post_ms"] is not None]
+    failures = [item for item in results if item["error"] or item["cleanup_errors"]]
+    target_observed = {
+        "save_p95_within_target": bool(saves) and percentile(saves, .95) < args.target_save_ms,
+        "post_p95_within_target": bool(posts) and percentile(posts, .95) < args.target_post_ms if args.post else None,
     }
+    sufficient = len(saves) >= args.min_samples and (not args.post or len(posts) >= args.min_samples)
+    if errors or failures:
+        status, exit_code = "EXECUTION_FAILED", 1
+    elif len(results) != args.iterations or not sufficient:
+        status, exit_code = "INSUFFICIENT_SAMPLES", 3
+    elif not target_observed["save_p95_within_target"] or (args.post and not target_observed["post_p95_within_target"]):
+        status, exit_code = "TARGET_MISSED", 2
+    else:
+        status, exit_code = "TARGET_OBSERVED", 0
+    return {
+        "status": status, "exit_code": exit_code, "accepted": exit_code == 0, "synthetic": True,
+        "database": args.database, "company_id": args.company_id, "workers": args.workers,
+        "iterations": args.iterations, "attempted_iterations": len(results), "failed_iterations": len(failures),
+        "failure_rate": len(failures) / len(results) if results else None, "post_enabled": args.post,
+        "targets_ms": {"save": args.target_save_ms, "post": args.target_post_ms}, "target_comparison": "strictly less than",
+        "save": summary(saves), "post": summary(posts), "target_observed": target_observed,
+        "percentile_method": "nearest rank: ceil(n * 0.95)", "minimum_samples": args.min_samples,
+        "sufficient_samples": sufficient, "errors": errors, "failed_probes": failures,
+        "measurement_scope": "Per-call invoice create/post RPC, one authenticated account across independent sessions; authentication, fixture setup and cleanup excluded from timings but contribute concurrent server load. Cold/warm calls are not separated.",
+        "note": "Synthetic isolated timing only. A 20-sample p95 is directional; agree larger samples and representative annual volume. No browser/network path, role-mix or client acceptance is implied.",
+    }
+
+
+def run_benchmark(args: argparse.Namespace, client_factory: Callable[..., OdooHttp] = OdooHttp) -> dict[str, Any]:
+    run_id = uuid.uuid4().hex[:12]
+    started_at = datetime.now(timezone.utc).isoformat()
+    setup = None
+    errors: list[str] = []
+    results: list[dict[str, Any]] = []
+    fixture = None
+    try:
+        setup = client_factory(args.url, args.database, args.login, args.password)
+        setup.bind_company(args.company_id)
+        fixture = prepare_fixture(setup, args.company_id, run_id)
+    except Exception as exc:
+        errors.append(error_text(exc, args.password))
+    finally:
+        if setup is not None:
+            try:
+                setup.close()
+            except Exception as exc:
+                errors.append("Setup session teardown: " + error_text(exc, args.password))
+    if not errors and fixture:
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = [executor.submit(run_probe, args, fixture, index, run_id, client_factory) for index in range(args.iterations)]
+            for future in as_completed(futures):
+                results.append(future.result())
+    return {**build_report(args, results, errors), "run_id": run_id, "actor_uid": setup.uid if setup is not None else None,
+            "started_at": started_at, "completed_at": datetime.now(timezone.utc).isoformat()}
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    result = run_benchmark(args)
     serialized = json.dumps(result, indent=2, sort_keys=True)
     print(serialized)
     if args.output:
         with open(args.output, "w", encoding="utf-8") as handle:
             handle.write(serialized + "\n")
-    return 0
+    return result["exit_code"]
 
 
 if __name__ == "__main__":
