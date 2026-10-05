@@ -8,9 +8,12 @@ Baseline (2026-10-06): upstream global partner rule shares all company-less cont
 
 Plan:
 - [x] Inspect native rules, production metadata and existing changes.
-- [ ] Implement global contact/bank restrictions, explicit shared access and identity scope.
+- [x] Implement global contact/bank restrictions, explicit shared access and identity scope.
 - [ ] Test two-company isolation, authorized sharing/multi-company/owner and accounting workflows.
 - [ ] Independent security/code review; resolve findings.
 - [ ] Capture recovery evidence, rehearse upgrade, deploy and verify live.
 
 Checkpoint: implementation beginning; source base 2ffc58f, clean dedicated branch codex/company-contact-isolation. Existing user documentation untouched. Shared historical accounting links can preserve read access; no inferred company ownership. Unassigned records without evidence require owner review.
+
+
+Checkpoint (candidate a08f443): global partner/bank and delegated user rules implemented; protected explicit grants, stored identity membership, default normalization, target-company accounting checks, post-compute reference checks and owner-cache invalidation covered. Production metadata: 87 contacts; 69 unassigned = 67 identities + two business contacts linked to company 1. No contact ownership/deletion changes made. Fresh encrypted paired capture succeeded (77,404,734 bytes, 1,320 manifest files; baseline preserved). Isolated upgrade helper prepared, not executed. Hosted API and recovery tests passed on 1f54aea; full native setup revealed inherited partner access checks during user group writes, addressed by active-company Settings-admin identity writes in a08f443. Latest CI 37390429469 pending. Production still 18.0.2.14.0. PR18 remains draft. Next: final native failures if any, complete review, isolated upgrade, merge/deploy and live two-company verification.

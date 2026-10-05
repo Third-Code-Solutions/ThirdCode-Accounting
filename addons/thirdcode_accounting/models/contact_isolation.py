@@ -4,6 +4,7 @@ from collections import defaultdict
 
 from odoo import SUPERUSER_ID, Command, _, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.addons.mail.tools.discuss import Store
 from odoo.osv import expression
 
 from .platform_access import is_platform_owner, require_platform_owner
@@ -85,6 +86,16 @@ class ContactIsolation(models.Model):
             partner.thirdcode_identity_company_ids = (
                 partner.thirdcode_company_identity_ids | users.company_ids
             )
+
+    def _to_store(self, store, /, *, fields=None, main_user_by_partner=None):
+        # Mail intentionally sudo-serializes personas. Apply the actual caller's
+        # contact rules again before names, emails, avatars or user IDs leave ORM.
+        records = self
+        actor = self.sudo(False)
+        if not is_platform_owner(self.env) and actor.env.user.has_group("base.group_user"):
+            records = actor.with_context(active_test=False).search([("id", "in", self.ids)])
+        return super(ContactIsolation, records)._to_store(
+            store, fields=fields, main_user_by_partner=main_user_by_partner)
 
     def _check_contact_scope_values(self, values):
         if _SCOPE_FIELDS.intersection(values) or any(
@@ -322,3 +333,32 @@ class ContactScopedBank(models.Model):
     def write(self, values):
         self._check_partner_target(values)
         return super().write(values)
+
+
+class ContactScopedChannel(models.Model):
+    _inherit = "discuss.channel"
+
+    def _subscribe_users_automatically_get_members(self):
+        # Native group/department subscription inspects all existing member
+        # contacts, including foreign tenants. Read only internal membership IDs
+        # elevated, then intersect with the acting user's actual contact rules.
+        self.check_access("read")
+        members = super(ContactScopedChannel, self.sudo())._subscribe_users_automatically_get_members()
+        if is_platform_owner(self.env):
+            return members
+        candidates = {partner_id for ids in members.values() for partner_id in ids}
+        visible = set(self.env["res.partner"].sudo(False).search([("id", "in", list(candidates))]).ids)
+        return {channel_id: [partner_id for partner_id in ids if partner_id in visible]
+                for channel_id, ids in members.items()}
+
+    def _load_more_members(self, known_member_ids):
+        self.ensure_one()
+        self.check_access("read")
+        if is_platform_owner(self.env) or not self.env.user.has_group("base.group_user"):
+            return super()._load_more_members(known_member_ids)
+        visible = self.env["res.partner"].sudo(False).with_context(active_test=False).search([])
+        domain = [("channel_id", "=", self.id), "|", ("partner_id", "=", False),
+                  ("partner_id", "in", visible.ids)]
+        members = self.env["discuss.channel.member"]
+        unknown = members.search(domain + [("id", "not in", known_member_ids)], limit=100)
+        return Store(unknown).add(self, {"memberCount": members.search_count(domain)}).get_result()

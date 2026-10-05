@@ -1,5 +1,8 @@
 """Real ORM rules: positive business access and negative tenant boundaries."""
+from unittest.mock import patch
+
 from odoo import Command
+from odoo.addons.mail.tools.discuss import Store
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
 
@@ -183,3 +186,33 @@ class TestContactIsolation(TransactionCase):
         self.assertNotIn(self.pb, self.partners(self.ua).search([]))
         with self.assertRaises(AccessError), self.cr.savepoint():
             self.partners(self.ua).browse(self.pa.id).write({"thirdcode_shared_company_ids": [Command.set(self.b.ids)]})
+
+    def test_automatic_channel_membership_scopes_candidate_contacts(self):
+        group = self.env["res.groups"].create({"name": "Contact test subscription"})
+        (self.ua | self.ub).write({"groups_id": [Command.link(group.id)]})
+        channel = self.env["discuss.channel"].create({"name": "Contact subscription test", "channel_type": "channel"})
+        # Set the group without invoking subscription yet, so both are candidates.
+        with patch.object(type(channel), "_subscribe_users_automatically", return_value=None):
+            channel.write({"group_ids": [Command.link(group.id)]})
+        candidates = channel.with_user(self.ua).with_context(allowed_company_ids=self.a.ids)._subscribe_users_automatically_get_members()[channel.id]
+        self.assertIn(self.ua.partner_id.id, candidates)
+        self.assertNotIn(self.ub.partner_id.id, candidates)
+
+    def test_mail_store_sudo_does_not_serialize_foreign_contacts(self):
+        for user, own, foreign in [(self.ua, self.pa, self.pb), (self.ub, self.pb, self.pa)]:
+            records = self.partners(user).browse((own | foreign).ids).sudo()
+            data = Store(records, fields=["name", "email"]).get_result()
+            ids = {row["id"] for row in data.get("res.partner", [])}
+            self.assertIn(own.id, ids)
+            self.assertNotIn(foreign.id, ids)
+        owner_data = Store((self.pa | self.pb).with_user(self.owner), fields=["name"]).get_result()
+        self.assertEqual({row["id"] for row in owner_data["res.partner"]}, {self.pa.id, self.pb.id})
+
+    def test_channel_member_api_scopes_existing_shared_channel(self):
+        channel = self.env["discuss.channel"].create({"name": "Legacy shared channel", "channel_type": "channel",
+            "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ub)]})
+        for user, foreign in [(self.ua, self.ub), (self.ub, self.ua)]:
+            data = channel.with_user(user).with_context(allowed_company_ids=user.company_id.ids)._load_more_members([])
+            ids = {row["id"] for row in data.get("res.partner", [])}
+            self.assertIn(user.partner_id.id, ids)
+            self.assertNotIn(foreign.partner_id.id, ids)
