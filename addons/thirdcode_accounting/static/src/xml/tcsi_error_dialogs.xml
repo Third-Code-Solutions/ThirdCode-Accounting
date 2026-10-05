@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+    <t t-name="thirdcode_accounting.ErrorDialogBranding" t-inherit="web.ErrorDialog">
+        <xpath expr="//Dialog" position="attributes">
+            <attribute name="title.translate"/>
+            <attribute name="title">tcsiTitle</attribute>
+        </xpath>
+        <xpath expr="//div[@role='alert']/p" position="replace">
+            <p class="text-prewrap">
+                TCSI Accounting could not complete this operation. Share the technical details with your administrator for help.
+            </p>
+        </xpath>
+        <xpath expr="//b[@t-esc]" position="attributes">
+            <attribute name="t-esc">tcsiTitle</attribute>
+        </xpath>
+        <xpath expr="//p[@t-esc='props.message']" position="attributes">
+            <attribute name="t-esc">tcsiMessage</attribute>
+        </xpath>
+        <xpath expr="//pre[@t-esc]" position="attributes">
+            <attribute name="t-esc">tcsiTraceback</attribute>
+        </xpath>
+    </t>
     <t t-name="thirdcode_accounting.SessionExpiredBranding" t-inherit="web.SessionExpiredDialog">
         <xpath expr="//Dialog" position="attributes">
             <attribute name="title.translate">TCSI Session Expired</attribute>

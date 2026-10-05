@@ -63,12 +63,21 @@ class BrandingTests(unittest.TestCase):
         self.assertIn("GENERIC_FALLBACKS", js)
         self.assertIn("Odoo Server Error", js)
         self.assertIn("data.message", js)
-        self.assertIn(r'replace(/\bOdoo\b/g, "TCSI")', js)
+        self.assertIn(r'replace(/\bOdoo\b/gi, "TCSI")', js)
         xml = (ADDON / "static/src/xml/tcsi_error_dialogs.xml").read_text()
         self.assertNotIn("Odoo", xml)
         self.assertIn("TCSI Session Expired", xml)
         manifest = (ADDON / "__manifest__.py").read_text()
         self.assertIn("tcsi_error_dialogs.xml", manifest)
+
+    def test_error_template_uses_branded_presentation_for_all_diagnostic_text(self):
+        root = ET.parse(ADDON / "static/src/xml/tcsi_error_dialogs.xml").getroot()
+        dialog = root.find("t[@t-inherit='web.ErrorDialog']")
+        self.assertIsNotNone(dialog)
+        attributes = {(node.get("name"), node.text) for node in dialog.iter("attribute")}
+        for name, value in (("title", "tcsiTitle"), ("t-esc", "tcsiTitle"),
+                            ("t-esc", "tcsiMessage"), ("t-esc", "tcsiTraceback")):
+            self.assertIn((name, value), attributes)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,15 @@
 /** @odoo-module **/
 
 import { patch } from "@web/core/utils/patch";
+import { browser } from "@web/core/browser/browser";
 import { _t } from "@web/core/l10n/translation";
 import {
     ErrorDialog, ClientErrorDialog, NetworkErrorDialog, RPCErrorDialog,
     WarningDialog, RedirectWarningDialog,
 } from "@web/core/errors/error_dialogs";
 
-// Keep exception identifiers and diagnostic tracebacks intact for support;
-// rebrand only what the user reads at first glance.
+// Preserve exception identifiers, file paths and the original error payload.
+// Brand the presentation and copied report, including their generic headings.
 ErrorDialog.title = _t("TCSI Error");
 ClientErrorDialog.title = _t("TCSI Client Error");
 NetworkErrorDialog.title = _t("TCSI Network Error");
@@ -26,7 +27,22 @@ const FRIENDLY_FALLBACK = _t(
 );
 
 function brand(text) {
-    return text == null ? text : String(text).replace(/\bOdoo\b/g, "TCSI");
+    return text == null ? text : String(text).replace(/\bOdoo\b/gi, "TCSI");
+}
+
+function brandDiagnosticText(text) {
+    // Never rewrite module names such as odoo.exceptions or diagnostic paths.
+    return text == null ? text : String(text).replace(
+        /\bOdoo (?:Server Error|Client Error|Network Error|Warning|Error|Session Expired)\b/gi,
+        brand,
+    );
+}
+
+function copyBrandedError(dialog) {
+    browser.navigator.clipboard.writeText(
+        `${dialog.props.name}\n\n${dialog.tcsiMessage}\n\n${dialog.contextDetails}\n\n${dialog.tcsiTraceback}`
+    );
+    dialog.showTooltip();
 }
 
 function liftRealMessage(dialog) {
@@ -47,12 +63,30 @@ function liftRealMessage(dialog) {
     dialog.message = brand(text);
 }
 
+patch(ErrorDialog.prototype, {
+    get tcsiTitle() {
+        return brand(this.title || this.constructor.title);
+    },
+    get tcsiMessage() {
+        return brandDiagnosticText(this.props.message);
+    },
+    get tcsiTraceback() {
+        return brandDiagnosticText(this.traceback || this.props.traceback);
+    },
+    onClickClipboard() {
+        copyBrandedError(this);
+    },
+});
+
 patch(RPCErrorDialog.prototype, {
     inferTitle() {
         super.inferTitle();
         if (this.title) {
             this.title = brand(this.title);
         }
+    },
+    onClickClipboard() {
+        copyBrandedError(this);
     },
 });
 

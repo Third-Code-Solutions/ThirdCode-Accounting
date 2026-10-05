@@ -1,5 +1,14 @@
 # TCSI Accounting Platform checklist
 
+## Error dialog branding — 6 October 2026
+
+- Objective: use TCSI in customer-facing error titles, messages and copied reports; retain diagnostic identifiers and accounting behavior.
+- Reproduced: a synthetic native RPC error on production showed a TCSI detail heading but retained the original vendor's server-error text in the message and stack heading. No server mutation was used.
+- Root cause: the existing patch changed titles and warnings; the shared error template and clipboard handlers still used the original message.
+- Implemented: branded presentation getters, shared clipboard formatting, and a native error-template extension. Original exception payloads remain unchanged.
+- Verified: three new regression tests failed before the fix; 16 branding and 8 token JS cases, 7 Python checks, package validation and scoped lint pass. Exact candidate JS/XML rendered through the native browser runtime; server/client/network dialogs, validation reason and copy behavior checked. Review approved after diagnostic-preservation fix.
+- Remaining: release CI, production deployment and post-deploy browser verification.
+
 ## Form input visibility — 5 October 2026
 
 - Objective: repair hidden editable amounts across native workspace forms, tables and dialogs; preserve permissions, computed fields and palette; deploy to production.

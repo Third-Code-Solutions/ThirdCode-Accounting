@@ -1,5 +1,13 @@
 # Verified implementation lessons
 
+## Error branding must cover rendered and copied diagnostics — 6 October 2026
+
+- Trigger: server errors still showed the upstream product name after dialog titles were branded.
+- Cause: the native error template and both clipboard handlers read the original message and traceback; title-only patches missed those paths.
+- Remedy: use branded presentation getters and clipboard formatting, retaining original payloads, exception identifiers and file paths. Apply native template inheritance to the title, message and diagnostic heading.
+- Prevention: test display and clipboard together; only replace known branding phrases in raw diagnostics. Verify native rendering because class stubs and XML source checks cannot prove template compilation.
+- Scope/evidence: `scripts/test-branding.mjs`, `scripts/test-branding.py`, and `docs/error-branding-2026-10-06/README.md`; synthetic native dialogs and copy behavior verified without accounting mutations.
+
 ## Editable amounts hidden by currency overlays — 5 October 2026
 
 - Trigger: bank reconciliation and other monetary inputs appeared empty and unresponsive, although the live input was enabled, focused and held `0.00`.
