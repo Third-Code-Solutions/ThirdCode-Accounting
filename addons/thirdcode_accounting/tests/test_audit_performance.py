@@ -3,7 +3,6 @@
 from contextlib import nullcontext
 from copy import deepcopy
 import hashlib
-import inspect
 import json
 import logging
 from unittest.mock import patch
@@ -204,7 +203,11 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
                 _logger.info("AUDIT_SNAPSHOT_QUERY_COUNTS model=%s native=%s candidate=%s",
                              records._name, native_queries, batch_queries)
                 self.assertEqual(actual, expected)
-                self.assertLess(batch_queries, native_queries)
+                if records._name == "account.move.line":
+                    self.assertLess(batch_queries, native_queries)
+                else:
+                    # Headers retain the native formatter without prefetching.
+                    self.assertEqual(batch_queries, native_queries)
                 self.assertIn("company_id", actual[0])
         self.assertEqual(actual[0]["company_id"][0], self.company.id)
 
@@ -223,10 +226,12 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
                         self._snapshot(records, False, **context)[0],
                     )
         # Raw relation IDs need no label fetches at all.
-        self.assertEqual(
-            self._snapshot(invoice, True, load="_classic_write"),
-            self._snapshot(invoice, False, load="_classic_write"),
-        )
+        for records in (invoice, invoice.line_ids):
+            with self.subTest(raw_ids=records._name):
+                self.assertEqual(
+                    self._snapshot(records, True, load="_classic_write"),
+                    self._snapshot(records, False, load="_classic_write"),
+                )
 
     def test_write_and_post_emit_identical_full_audit_history(self):
         invoice = self._snapshot_invoice()
@@ -236,35 +241,25 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         class RollbackComparison(Exception):
             pass
 
-        compute = getattr(type(invoice), "_compute_is_manually_modified", None)
-        _logger.info("AUDIT_REPLAY_NATIVE_MANUAL_FIELD compute=%r source=%s",
-                     invoice._fields["is_manually_modified"].compute,
-                     inspect.getsource(compute) if compute else "No native compute method")
-
-        def history(batch, label):
+        def history(batch, label, cache_mode):
             rows = []
             native = patch.object(accounting_audit, "_prefetch_audit_relation_labels")
             with self.assertRaises(RollbackComparison), self.cr.savepoint():
-                # Diagnostic SQL avoids warming the ORM fields being compared.
-                self.cr.execute("""
-                    SELECT state, ref, is_manually_modified, create_date, write_date,
-                           statement_timestamp() AT TIME ZONE 'UTC'
-                      FROM account_move WHERE id = %s
-                """, [invoice.id])
-                baseline = dict(zip(
-                    ("state", "ref", "is_manually_modified", "create_date", "write_date", "observed_utc"),
-                    self.cr.fetchone(),
-                ))
-                baseline["cached"] = {}
-                for name in ("state", "ref", "is_manually_modified", "create_date", "write_date"):
-                    field = invoice._fields[name]
-                    present = invoice.env.cache.contains(invoice, field)
-                    baseline["cached"][name] = {
-                        "present": present,
-                        "value": invoice.env.cache.get(invoice, field) if present else None,
-                    }
-                _logger.info("AUDIT_REPLAY_BASELINE label=%s data=%s", label,
-                             json.dumps(baseline, sort_keys=True, default=str))
+                # Savepoint rollback clears the ORM cache. Give every replay
+                # the same baseline, including the first one after creation.
+                self.env.invalidate_all()
+                if cache_mode == "warm":
+                    # Fixed native fetches provide an identical, explicit warm
+                    # state without invoking the formatter being compared.
+                    invoice.fetch(["state", "ref", "is_manually_modified", "create_date",
+                                   "write_date", "amount_total", "line_ids", "invoice_line_ids"])
+                    invoice.line_ids.fetch(["name", "price_unit", "quantity", "price_subtotal",
+                                            "price_total", "debit", "credit", "balance", "ref",
+                                            "partner_id", "account_id"])
+                self.assertEqual(
+                    invoice.env.cache.contains(invoice, invoice._fields["is_manually_modified"]),
+                    cache_mode == "warm",
+                )
                 start_id = self.env["auditlog.log"].sudo().search([], order="id desc", limit=1).id
                 with nullcontext() if batch else native:
                     invoice.write({
@@ -292,40 +287,41 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
                     })
                 raise RollbackComparison()
             rows = sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))
-            _logger.info("AUDIT_REPLAY_HISTORY label=%s groups=%s details=%s sha256=%s", label,
-                         len(rows), sum(len(row["details"]) for row in rows),
+            _logger.info("AUDIT_REPLAY_HISTORY cache=%s label=%s groups=%s details=%s sha256=%s", cache_mode,
+                         label, len(rows), sum(len(row["details"]) for row in rows),
                          hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest())
             return rows
 
-        expected = history(False, "native-first")
-        native_replay = history(False, "native-replay")
-        actual = history(True, "candidate-first")
-        candidate_replay = history(True, "candidate-replay")
-        _logger.info("AUDIT_REPLAY_EQUALITY native=%s candidate_to_native_replay=%s candidate_repeat=%s",
-                     expected == native_replay, actual == native_replay, actual == candidate_replay)
-        self.assertTrue(expected)
-        self.assertEqual(native_replay, expected, "Native replay itself changed full audit history")
-        self.assertEqual(actual, expected)
-        self.assertEqual(candidate_replay, expected)
-        details = [detail for row in actual for detail in row["details"]]
-        self.assertTrue(any(detail["field_name"] == "state" and detail["new_value"] == "posted"
-                            for detail in details))
-        self.assertTrue(any(detail["field_name"] == "amount_total" for detail in details))
+        for cache_mode in ("cold", "warm"):
+            with self.subTest(cache=cache_mode):
+                expected = history(False, "native-first", cache_mode)
+                native_replay = history(False, "native-replay", cache_mode)
+                actual = history(True, "candidate-first", cache_mode)
+                candidate_replay = history(True, "candidate-replay", cache_mode)
+                self.assertTrue(expected)
+                self.assertEqual(native_replay, expected, "Native replay itself changed full audit history")
+                self.assertEqual(actual, expected)
+                self.assertEqual(candidate_replay, expected)
+                details = [detail for row in actual for detail in row["details"]]
+                self.assertTrue(any(detail["field_name"] == "state" and detail["new_value"] == "posted"
+                                    for detail in details))
+                self.assertTrue(any(detail["field_name"] == "amount_total" for detail in details))
 
     def test_snapshot_cache_is_discarded_on_success_and_failure(self):
         invoice = self._snapshot_invoice()
+        items = invoice.line_ids
         self.env.flush_all()
         unsaved = self.env["account.move"].new({"ref": "Unsaved caller cache"})
         original_cache = self.env.cache
         original_tocompute = self.env.transaction.tocompute
-        self._snapshot(invoice, True)
+        self._snapshot(items, True)
         self.assertIs(self.env.cache, original_cache)
         self.assertIs(self.env.transaction.tocompute, original_tocompute)
         self.assertEqual(unsaved.ref, "Unsaved caller cache")
         with patch.object(type(self.env["res.partner"]), "fetch",
                           side_effect=UserError("Synthetic label dependency failure")):
             with self.assertRaisesRegex(UserError, "Synthetic label dependency failure"):
-                self._snapshot(invoice, True)
+                self._snapshot(items, True)
         self.assertIs(self.env.cache, original_cache)
         self.assertIs(self.env.transaction.tocompute, original_tocompute)
         self.assertEqual(unsaved.ref, "Unsaved caller cache")
@@ -341,11 +337,15 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
                 "thirdcode_accounting.group_thirdcode_readonly"
             ).ids)],
         })
-        with self.assertRaises(AccessError):
-            invoice.with_user(reader).with_context(
-                auditlog_disabled=True, prefetch_fields=False,
-                allowed_company_ids=reader.company_ids.ids,
-            ).read(["partner_id", "amount_total"])
+        for records, names in (
+            (invoice, ["partner_id", "amount_total"]),
+            (invoice.line_ids, ["partner_id", "balance"]),
+        ):
+            with self.subTest(denied_model=records._name), self.assertRaises(AccessError):
+                records.with_user(reader).with_context(
+                    auditlog_disabled=True, prefetch_fields=False,
+                    allowed_company_ids=reader.company_ids.ids,
+                ).read(names)
         encoder = self.env["res.users"].create({
             "name": "Snapshot encoder", "login": "snapshot-encoder",
             "company_id": self.company.id, "company_ids": [Command.set(self.company.ids)],

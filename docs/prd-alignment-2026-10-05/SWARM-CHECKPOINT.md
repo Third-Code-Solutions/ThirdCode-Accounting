@@ -33,14 +33,30 @@ PDFs took 2.202–4.604 seconds; balance-sheet equality, cash-flow reconciliatio
 and repeated calculation equality passed. This is small-volume CI evidence,
 not an NF-04 client-volume or hosted performance acceptance result.
 
-Source `db771e5` adds a native Read-only monthly PDF smoke and a benchmark failure
-exit correction, with independent review and 27 local benchmark/annual checks.
-Require the latest [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
-for this additional gate; [CI 37289593569](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37289593569)
-is its first run. The earlier green run does not prove the added monthly PDF
-check. The hosted 13.3 upgrade rehearsal has not been completed; Railway browser
-console access must be restored to perform it. The verified production baseline
-remains 13.2 at `4038c8d`.
+The later recovery baseline `474994f` passed all three jobs in
+[CI 37297823382](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37297823382).
+This includes the actual monthly PDF rendered by the Read-only role, first added
+at `db771e5`, and all 12 restore tests. Those restore tests include a real
+PostgreSQL 18/Odoo dump and fresh-target restore, accounting/audit/attachment
+conservation, offline registry loading, rejected existing targets and altered
+baselines, and Linux timeout/parent-SIGKILL descendant cleanup. The generic full
+restore implementation is therefore native-tested; it is not an active provider
+or monthly operational service.
+
+Later audit snapshot relation batching at `cfdbc80` failed two native tests.
+Diagnostic revision `7865707` also finished with two failures in
+[CI 37300335141](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37300335141).
+It exposed different replay cache states: the first warm native replay had six
+audit groups/29 details; native cold replay and candidate cold replay matched
+exactly at seven groups/30 details. Invoice-header query counts were 25/25 with
+no benefit; invoice-line counts were 25 native versus 22 candidate. The correction
+removes the header override and normalizes cold/warm replay tests; its native CI
+is still pending. Retain both failed runs as diagnostic evidence, not release
+proof or a hosted latency improvement. Require
+the latest [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
+and resolve the native failures before hosted candidate rehearsal or deployment.
+Railway console access and the remaining hosted release gates are still open.
+The verified production baseline remains 13.2 at `4038c8d`.
 
 Read-only postdeployment checks passed installed-version, portal readiness,
 engine login, both WebSocket upgrade/ping/pong/session-expiry paths, six encoder
@@ -91,6 +107,16 @@ retention policy or missed-run notification is activated. Separate Railway volum
 snapshots do not establish coordinated recovery. An identified deployed-image
 digest does not establish long-term registry retention.
 
+Unreleased recovery source now supplies the complete generic isolated drill:
+`hosted_recovery_drill.py` can invoke `hosted_recovery_restore.py`, backed by
+capture-time `recovery_fingerprint.py` hashes. It creates a fresh private target,
+uses explicit local database credentials, preserves evidence on failure, prevents
+target overwrite and never starts public HTTP. Source `474994f` passed the native
+checks above. Actual provider delivery, external capture transport/schedules,
+recipient alerts, retention execution, independently retained image and named
+operator/deputy handover remain unactivated or unproven. Neither historical
+manual recovery nor synthetic full-drill CI closes those operational requirements.
+
 ## Current parallel ownership
 
 - Recovery engineer: provider delivery/alert integration, retention and external
@@ -125,8 +151,9 @@ tests, an additive report action and a form button. It reads posted bank-account
 activity, linked statement rows and recorded reconciling totals, shows unresolved
 differences and evidence gaps, and distinguishes current matching state from
 month-end ledger balances. Its nine native tests, including direct HTML rendering
-and non-mutation checks, passed in CI 37288677011. The latest PR checks additionally
-require an actual PDF rendered by the Read-only role on the isolated clone.
+and non-mutation checks, passed in CI 37288677011. The actual PDF rendered by the
+Read-only role on the isolated clone passed at `474994f` in CI 37297823382. Later
+audit changes still require their own passing latest-head checks.
 Generating the report changes no reconciliation state or ledger entries. Its
 format is explicitly provisional; it does not complete the client-specific
 RP-04/AC-03 contract.

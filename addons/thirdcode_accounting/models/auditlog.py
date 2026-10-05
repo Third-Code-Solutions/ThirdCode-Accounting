@@ -6,7 +6,7 @@ from odoo.addons.auditlog.models.rule import DictDiffer, FIELDS_BLACKLIST
 
 
 def _prefetch_audit_relation_labels(records, field_names, load):
-    """Batch label dependencies in OCA's accounting snapshots.
+    """Batch label dependencies in OCA's journal-item snapshots.
 
     Keep the snapshot context and native formatter. In particular, do not turn
     general prefetching back on: that fetches unrelated columns on every model.
@@ -34,14 +34,6 @@ def _prefetch_audit_relation_labels(records, field_names, load):
             relations[related._name] = relations.get(related._name, related.browse()) | related
     for related in relations.values():
         related.fetch(["display_name"])
-
-
-class AccountMoveAuditSnapshot(models.Model):
-    _inherit = "account.move"
-
-    def _read_format(self, fnames, load="_classic_read"):
-        _prefetch_audit_relation_labels(self, fnames, load)
-        return super()._read_format(fnames, load=load)
 
 
 class AccountMoveLineAuditSnapshot(models.Model):

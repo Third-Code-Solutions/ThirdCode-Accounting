@@ -9,13 +9,18 @@ Historical phase-2 results do not supersede the latest hosted latency failure.
 Keep financial source files, report PDFs, credentials and raw recovery evidence
 outside public Git.
 
-The unreleased 13.3 work at `d3da03e` passed all three jobs in
-[CI 37288677011](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37288677011),
-including native monthly-report regressions and the annual synthetic PDF smoke.
-[PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
-are the release gate for subsequent changes, including the separate Read-only
-monthly PDF smoke added at `db771e5`. A green earlier revision does not establish
-that added check, a hosted upgrade rehearsal or a production deployment.
+The unreleased recovery baseline `474994f` passed all three jobs in
+[CI 37297823382](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37297823382),
+including native monthly-report regressions, the actual Read-only monthly PDF,
+annual synthetic PDFs and all 12 restore tests. These include real PostgreSQL
+18/Odoo restore/conservation and Linux subprocess cleanup checks. Later audit
+snapshot relation batching at `cfdbc80` failed two native tests; diagnostic revision
+`7865707` also finished with two failures in
+[CI 37300335141](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37300335141).
+The correction removes an ineffective header override and normalizes cold/warm
+replay tests; native CI is pending. Latest-head green checks, hosted candidate upgrade rehearsal
+and deployment remain unproven. The [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
+must pass for the exact candidate to be released; production remains on 13.2.
 
 The PRD is a review draft, not an approved client specification. The user is the
 developer/technical owner. Client Owner approval follows the Technical Adviser's
@@ -34,6 +39,12 @@ evidence preserved. Both cases retain `TARGET_MISSED`. This used two Odoo worker
 one authenticated account and loopback RPC on a shared host. It does not establish
 browser/network, cold/warm, multi-role or representative annual-volume acceptance.
 The private summary reference is `tcsi-swarm-candidate-resume-results.json`.
+
+The subsequent audit snapshot relation batching candidate remains under repair.
+`SWARM-CHECKPOINT.md` retains both failed runs and the diagnostic cold/warm replay
+and query-count evidence. The focused correction needs passing exact-candidate
+native assertions. No new hosted latency improvement or NF-02/NF-03 acceptance is
+claimed from these source changes.
 
 `scripts/benchmark.py` now requires an explicit `tcsi_alignment_` database name,
 an identical `--confirm-isolated-database` value, an explicit company and supplied
@@ -178,12 +189,12 @@ Nine native regressions in
 `addons/thirdcode_accounting/tests/test_monthly_reconciliation.py` cover arithmetic,
 matching/reversal, scope, role/direct-render controls and non-mutation. Local
 compilation, XML parsing and package validation passed, and all nine native tests
-passed in CI 37288677011. Source `db771e5` adds an actual PDF smoke using the
-Read-only role in the isolated CI clone; require it in the latest PR #10 checks.
-[CI 37289593569](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37289593569)
-is the first run containing that addition, distinct from the previously observed
-six financial-statement PDFs. This generic output does not close RP-04 or AC-03
-and does not establish client format approval.
+passed in CI 37288677011. The separate actual monthly PDF using the Read-only role,
+first added at `db771e5`, passed at `474994f` in
+[CI 37297823382](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37297823382).
+This is distinct from the six annual financial-statement PDFs. The latest audit
+changes still need passing exact-candidate checks. Generic output does not close
+RP-04 or AC-03 and does not establish client format approval or production release.
 
 RP-01–03, AC-01/02/04, AR-02/05, STD-01–12 and RG-01/04/06/07 need client formats,
 account mappings, cash-flow classifications, payment terms, tax/withholding
@@ -276,6 +287,19 @@ backup/restore and separate volume snapshots do not constitute nightly coordinat
 recovery. Track recurring recovery implementation and its isolated tests alongside
 these remaining operational inputs; never fabricate successful off-host delivery.
 
+The generic full drill is implemented and native-tested at `474994f`: a coordinated
+capture records canonical accounting/audit/attachment hashes; the drill restores
+into a fresh isolated database and private filestore, verifies conservation,
+disables cron/mail and loads Odoo offline before comparing again. CI 37297823382
+passed all 12 restore tests, including actual PostgreSQL 18/Odoo execution,
+existing-target refusal, altered-baseline rejection and Linux parent-death cleanup.
+The disabled monthly template invokes this implementation; a missing generic
+restore wrapper is no longer an engineering blocker. Actual recovery host/runtime
+provisioning, capture transport, provider credentials/delivery, scheduler and
+recipient setup, image retention, failure/missed-run exercises, whole-recovery
+RPO/RTO and operator/deputy handover remain separate activation/acceptance gates.
+See `RECOVERY-PROVIDER-INTEGRATION.md`; synthetic tests do not activate those services.
+
 ## Closure record
 
 ### Consolidated client decision checklist
@@ -290,7 +314,7 @@ decision, sample revision and approver privately when supplied.
 | Approve versioned client report samples and meaning of every amount: SOA, financial statements/comparatives, invoice/receipt and RP-04 monthly reconciliation | Finance lead validates sources, dates, signs, rounding, totals and layout; Client Owner approval follows adviser recommendation. RP-04 sample/contract absent; generic monthly report is provisional. | `requirements.csv` RP-01–04, AC-01–04; `addons/thirdcode_accounting/models/report_sample.py`; `addons/thirdcode_accounting/models/monthly_reconciliation.py`; `addons/thirdcode_accounting/report/monthly_reconciliation.xml` |
 | Provide authorized original MYOB extraction and authority to use it; agree source hashes/version, mappings, cutover date, history/retention and expected TB/open items | No authorized source or migration approval established. Named finance owner must approve source and accounting mapping. Archive-only history is the implemented non-overlap proposal, not assumed client approval. No production import is authorized by a development test. | `MIGRATION-DESIGN.md`; `phase-2/CUTOVER.md`; `scripts/migration_validate.py`; `scripts/cutover_load.py`; `requirements.csv` GL-01, DM-01–07, AC-05/06 |
 | Confirm chart/tax/withholding/cash-flow mappings, payment terms/instruments, document stock/signatures/control values and EIS/CAS applicability | Client finance/tax decisions pending. No fabricated statutory values, issued documents or inferred EIS integration. | `docs/cas-control-pack.md`; `addons/thirdcode_accounting/models/tax_profile.py`; `addons/thirdcode_accounting/models/financial_report.py`; `requirements.csv` RG and STD rows |
-| Supply actual recovery account/destination/access, alert recipient, operator/deputy; accept operational schedule, retention, RPO/RTO and demonstrate handover | Engineering defaults and adapters do not establish client operations acceptance or statutory retention. Actual provider delivery, failure/missed-run alerts and operator handover need evidence. | `RECOVERY-AUTOMATION.md`; `HOSTED-OPERATIONS.md`; `requirements.csv` NF-08/09/10, AC-09 |
+| Supply actual recovery account/destination/access, alert recipient, operator/deputy; accept operational schedule, retention, RPO/RTO and demonstrate handover | Generic full restore passed native CI; actual provider delivery, independent schedules/alerts, retained image and operator handover remain unactivated or unproven. Engineering defaults and synthetic tests do not establish client operations acceptance or statutory retention. | `RECOVERY-AUTOMATION.md`; `RECOVERY-PROVIDER-INTEGRATION.md`; `HOSTED-OPERATIONS.md`; `requirements.csv` NF-08/09/10, AC-09 |
 | Supply representative annual workload and agreed performance protocol; provide supported Windows Chrome/Edge environment | Current small-dataset and loopback results do not prove proposed annual-volume, end-user latency or Windows targets. | `requirements.csv` NF-02/03/04/12, O2, AC-08; `scripts/benchmark.py`; `addons/thirdcode_accounting/models/financial_report.py` |
 | Schedule and complete the real parallel accounting month, resolve discrepancies, examine audit evidence and record acceptance | Actual elapsed month and client review remain open. Synthetic fixtures and deployment health do not replace this evidence. | `requirements.csv` AC-05–09, DM-05/06, O4/O5; `AUDIT-COVERAGE.md`; `SWARM-CHECKPOINT.md` |
 
