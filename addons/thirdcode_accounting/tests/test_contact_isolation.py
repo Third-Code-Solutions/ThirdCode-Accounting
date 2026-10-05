@@ -159,3 +159,16 @@ class TestContactIsolation(TransactionCase):
         with self.assertRaises(AccessError), self.cr.savepoint():
             self.env["account.move"].with_user(self.multi).with_context(allowed_company_ids=(self.a | self.b).ids).create({
                 "company_id": self.b.id, "partner_id": self.shared.id})
+
+    def test_plain_internal_users_cannot_read_delegated_foreign_contacts(self):
+        self.ua.groups_id = self.env.ref("base.group_user")
+        users = self.env["res.users"].with_user(self.ua).with_context(allowed_company_ids=self.a.ids)
+        self.assertIn(self.ua, users.search([]))
+        self.assertNotIn(self.ub, users.search([]))
+        with self.assertRaises(AccessError):
+            users.browse(self.ub.id).read(["name", "email"])
+
+    def test_owner_flag_revocation_invalidates_cached_rules(self):
+        self.assertIn(self.pb, self.partners(self.owner).search([]))
+        self.owner.thirdcode_platform_owner = False
+        self.assertNotIn(self.pb, self.partners(self.owner).search([]))

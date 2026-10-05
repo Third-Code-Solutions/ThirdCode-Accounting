@@ -57,8 +57,7 @@ def verify_platform(port, owner_cookie, database):
     own_a = rpc("create", [{"name": "HTTP contact A", "company_id": False, "customer_rank": 1}],
                 cookie=tenant_cookie, model="res.partner")
     own_b = rpc("create", [{"name": "HTTP contact B", "supplier_rank": 1}], cookie=cookie_b, model="res.partner")
-    ambiguous = rpc("create", [{"name": "HTTP unassigned review"}], cookie=tenant_cookie, model="res.partner")
-    rpc("write", [[ambiguous], {"company_id": False}], model="res.partner")
+    ambiguous = rpc("create", [{"name": "HTTP unassigned review", "company_id": False}], model="res.partner")
     for cookie, own, foreign, company_id in [(tenant_cookie, own_a, own_b, company["id"]),
                                             (cookie_b, own_b, own_a, second["id"])]:
         rows = rpc("search_read", [[]], cookie=cookie, model="res.partner", kwargs={"fields": ["id", "name", "company_id"]})

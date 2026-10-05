@@ -18,6 +18,13 @@ _SCOPE_FIELDS = {
 class ContactScopeUser(models.Model):
     _inherit = "res.users"
 
+    def _get_invalidation_fields(self):
+        return super()._get_invalidation_fields() | {"thirdcode_platform_owner"}
+
+    @api.model
+    def _thirdcode_is_contact_owner(self):
+        return is_platform_owner(self.env)
+
     @api.model
     def _thirdcode_contact_domain(self, company_ids, write=False, bank=False):
         if is_platform_owner(self.env):
