@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Native rules are noupdate; the private installer updates them explicitly. -->
+    <function model="res.partner" name="_install_contact_isolation"/>
+</odoo>

@@ -12,6 +12,7 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        (cls.partner_a | cls.partner_b).write({"company_id": cls.env.company.id})
         cls.roles = {}
         for role in ("administrator", "accountant", "encoder", "readonly"):
             cls.roles[role] = cls.env["res.users"].create({

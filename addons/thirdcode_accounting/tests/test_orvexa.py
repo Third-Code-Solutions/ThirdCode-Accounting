@@ -11,6 +11,7 @@ class TestOrvexa(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        (cls.partner_a | cls.partner_b).write({"company_id": cls.env.company.id})
         cls.company = cls.company_data["company"]
         cls.other_company = cls.env["res.company"].sudo().create({"name": "ORVEXA isolated company"})
         cls.partner_a.name = "ORVEXA Customer Test"

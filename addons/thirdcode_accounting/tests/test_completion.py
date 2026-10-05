@@ -16,6 +16,7 @@ class TestAccountingCompletion(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        (cls.partner_a | cls.partner_b).write({"company_id": cls.env.company.id})
         cls.company = cls.company_data["company"]
         cls.admin = cls.env["res.users"].create({"name": "Completion administrator", "login": "completion-admin",
             "company_id": cls.company.id, "company_ids": [Command.set(cls.company.ids)],

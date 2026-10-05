@@ -40,3 +40,5 @@ from . import platform_event
 from . import platform_operations
 from . import platform_incident
 from . import platform_publication
+
+from . import contact_isolation
