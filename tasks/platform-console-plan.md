@@ -20,8 +20,12 @@ Authenticated tenant RPC, forged context/default values, generic ORM CRUD, compa
 Use existing TCSI light/dark tokens. Prioritize service health, tenant activity and actionable incidents, with compact charts and tables. Organization creation is the main action. Use measured data and explicit unavailable/empty states; no fabricated revenue, uptime or traffic. Charts include labels/counts. Filtered tables scroll within their panel on narrow screens. Publishing has draft preview and explicit publish controls.
 
 ## Checkpoint
-- Base: origin/main 9f76a34; worktree codex/platform-operations.
+- Base now includes origin/main 4ce5ba0 and supplied TCSI logo changes; worktree codex/platform-operations, PR #14.
 - Original checkout and user documents preserved.
-- Local Docker and Railway CLI unavailable; native tests will use repository CI. Existing GitHub CLI authenticated.
-- Completed: current architecture/source and native authorization inspection.
-- Next: implement owner isolation and guarded operations; then focused native tests.
+- Implemented slices 1–5; native rendered UI and live owner migration remain pending release.
+- Web lint/types/60 tests/build and production dependency audit pass. Six deferred-controller regression tests pass.
+- Hosted HTTP CI passed actual company/baseline/admin creation, owner/tenant boundaries, public snapshot isolation and incident capture after rollback.
+- First native install found unsupported false-domain syntax; corrected to id=0. Full suite then found SQL/ORM flush defects plus outdated trusted-operator test fixtures; corrections verified by CI 37381190163: 138 native tests and 59 integration checks, zero failures/errors.
+- Independent security and UI review findings addressed. PR remains draft pending recovery gate and live checks.
+- Railway CLI unauthenticated; authorized browser console is experiencing an automation connection failure. Latest production 4ce5ba0; console release not deployed.
+- Next: verify merged head in CI, fresh paired recovery capture, merge/release, verify owner scope and all console tabs with native browser rendering.
