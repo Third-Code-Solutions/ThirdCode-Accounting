@@ -45,6 +45,7 @@ class PlatformIncident(models.Model):
         family = "/" + str(route).split("?", 1)[0].strip("/").split("/", 1)[0]
         family = family if family in ("/web", "/workspace", "/report", "/mail", "/thirdcode_accounting", "/websocket") else "/other"
         fingerprint = hashlib.sha256((kind+":"+family).encode()).hexdigest()
+        self.flush_model()
         self.env.cr.execute("""
             INSERT INTO thirdcode_platform_incident
                 (fingerprint,kind,route,occurrences,first_seen,last_seen,state,create_uid,write_uid,create_date,write_date)
@@ -54,7 +55,7 @@ class PlatformIncident(models.Model):
                 last_seen=EXCLUDED.last_seen,write_date=EXCLUDED.write_date,
                 state=CASE WHEN thirdcode_platform_incident.state='resolved' THEN 'open' ELSE thirdcode_platform_incident.state END
         """, [fingerprint,kind,family])
-        self.invalidate_model()
+        self.invalidate_model(flush=False)
 
     @api.model
     def _purge_expired(self):

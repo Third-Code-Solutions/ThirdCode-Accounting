@@ -46,6 +46,7 @@ class PlatformPublication(models.Model):
 
     def _lock_revision(self, expected):
         self.ensure_one()
+        self.flush_recordset(["revision"])
         self.env.cr.execute("SELECT revision FROM thirdcode_platform_publication WHERE id=%s FOR UPDATE", [self.id])
         current = self.env.cr.fetchone()
         if not current or expected != current[0]:
