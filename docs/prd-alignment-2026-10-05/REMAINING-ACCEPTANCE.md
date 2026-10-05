@@ -9,6 +9,14 @@ Historical phase-2 results do not supersede the latest hosted latency failure.
 Keep financial source files, report PDFs, credentials and raw recovery evidence
 outside public Git.
 
+The unreleased 13.3 work at `d3da03e` passed all three jobs in
+[CI 37288677011](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37288677011),
+including native monthly-report regressions and the annual synthetic PDF smoke.
+[PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
+are the release gate for subsequent changes, including the separate Read-only
+monthly PDF smoke added at `db771e5`. A green earlier revision does not establish
+that added check, a hosted upgrade rehearsal or a production deployment.
+
 The PRD is a review draft, not an approved client specification. The user is the
 developer/technical owner. Client Owner approval follows the Technical Adviser's
 recommendation; named people and the finance lead remain pending CEO nomination.
@@ -127,9 +135,18 @@ rendering and the browser download separately with the correct accountant and
 company context. Compare balance-sheet equality, profit-and-loss/TB agreement,
 cash opening/movements/closing and comparative dates to independent ledger
 queries. Preserve report hashes and timings privately. A parameterized measurement
-harness can be prepared independently, but no annual-volume acceptance is possible
-until the data/period contract is supplied. Existing small-fixture PDFs prove
-neither annual-volume performance nor client format approval.
+harness is implemented in `scripts/benchmark_annual.py`, but no annual-volume
+acceptance is possible until the data/period contract is supplied.
+
+At `d3da03e`, CI 37288677011 executed 24 native invoices/bills and eight settlements
+in an isolated clone, adding 32 posted moves and 64 lines. Including the initial
+synthetic fixture, the measured ledger contained 45 moves, 90 lines and three
+attachments totaling 914 bytes. Six full-year financial-statement PDFs took
+2.202–4.604 seconds; balance-sheet equality, cash-flow reconciliation and repeated
+calculation equality passed. See
+[`ISOLATED-PERFORMANCE-PROTOCOL.md`](../performance/ISOLATED-PERFORMANCE-PROTOCOL.md)
+for the protocol and CI reference. These small-fixture observations do not prove
+annual client-volume performance, hosted end-user latency or client format approval.
 
 ## Client reports, custom RP-04 and statutory configuration
 
@@ -160,9 +177,13 @@ basis and are rejected explicitly.
 Nine native regressions in
 `addons/thirdcode_accounting/tests/test_monthly_reconciliation.py` cover arithmetic,
 matching/reversal, scope, role/direct-render controls and non-mutation. Local
-compilation, XML parsing and package validation passed; native execution and PDF
-rendering remain pending CI/isolated verification. This generic output does not
-close RP-04 or AC-03 and does not establish client format approval.
+compilation, XML parsing and package validation passed, and all nine native tests
+passed in CI 37288677011. Source `db771e5` adds an actual PDF smoke using the
+Read-only role in the isolated CI clone; require it in the latest PR #10 checks.
+[CI 37289593569](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37289593569)
+is the first run containing that addition, distinct from the previously observed
+six financial-statement PDFs. This generic output does not close RP-04 or AC-03
+and does not establish client format approval.
 
 RP-01–03, AC-01/02/04, AR-02/05, STD-01–12 and RG-01/04/06/07 need client formats,
 account mappings, cash-flow classifications, payment terms, tax/withholding

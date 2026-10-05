@@ -17,6 +17,31 @@ safeguards, 60 portal unit tests and package, lint, typecheck, build, migration,
 security and hosted-runtime gates. Independent principal and Python reviews
 completed. Source/CI results do not substitute for business acceptance.
 
+For the unreleased 13.3 work in [PR #10](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10),
+[CI 37288677011](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37288677011)
+passed all three jobs at `d3da03e`: 134 native Odoo tests, including the nine new
+monthly-report regressions; 59 integration checks; 22 hosted recovery tests;
+21 provider tests; 15 benchmark and eight annual safeguards; 60 portal tests;
+and the package, lint, typecheck, build, migration, security and hosted-runtime
+gates. The provider tests use a controlled provider model and the pinned SDK;
+they do not contact or activate a real backup destination.
+
+The native annual smoke added 24 documents and eight settlements, producing
+32 posted moves and 64 lines. Its measured synthetic ledger totaled 45 moves,
+90 lines and three attachments totaling 914 bytes. Six actual financial-statement
+PDFs took 2.202–4.604 seconds; balance-sheet equality, cash-flow reconciliation
+and repeated calculation equality passed. This is small-volume CI evidence,
+not an NF-04 client-volume or hosted performance acceptance result.
+
+Source `db771e5` adds a native Read-only monthly PDF smoke and a benchmark failure
+exit correction, with independent review and 27 local benchmark/annual checks.
+Require the latest [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks)
+for this additional gate; [CI 37289593569](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37289593569)
+is its first run. The earlier green run does not prove the added monthly PDF
+check. The hosted 13.3 upgrade rehearsal has not been completed; Railway browser
+console access must be restored to perform it. The verified production baseline
+remains 13.2 at `4038c8d`.
+
 Read-only postdeployment checks passed installed-version, portal readiness,
 engine login, both WebSocket upgrade/ping/pong/session-expiry paths, six encoder
 settlement denials and 35 trial-balance source-link comparisons. Original
@@ -95,14 +120,16 @@ Build adapters and scheduling support independently; activation requires the
 approved destination, recipient, policy, operators and recovery objectives.
 Never fabricate a destination, receipt, legal retention period or alert success.
 
-The new generic monthly report is implemented locally with nine native regression
+The new generic monthly report is implemented with nine native regression
 tests, an additive report action and a form button. It reads posted bank-account
 activity, linked statement rows and recorded reconciling totals, shows unresolved
 differences and evidence gaps, and distinguishes current matching state from
-month-end ledger balances. Compilation, XML parsing and package validation passed;
-native tests/PDF verification remain pending. It changes no reconciliation state
-or ledger entries. Its format is explicitly provisional; it does not complete the
-client-specific RP-04/AC-03 contract.
+month-end ledger balances. Its nine native tests, including direct HTML rendering
+and non-mutation checks, passed in CI 37288677011. The latest PR checks additionally
+require an actual PDF rendered by the Read-only role on the isolated clone.
+Generating the report changes no reconciliation state or ledger entries. Its
+format is explicitly provisional; it does not complete the client-specific
+RP-04/AC-03 contract.
 
 Before a new deployment: pass relevant native accounting, permission, migration
 and report tests; rehearse the candidate module/database upgrade against an

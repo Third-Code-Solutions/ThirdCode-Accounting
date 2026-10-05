@@ -1,6 +1,6 @@
 # Isolated performance evidence
 
-This protocol measures the deployed native accounting paths. It does not close NF-02/NF-03/NF-04, client report approval, multi-role coverage or Windows/browser acceptance by itself. Keep raw results and financial PDFs in protected storage outside Git.
+This protocol measures native accounting paths in isolated environments. It does not close NF-02/NF-03/NF-04, client report approval, multi-role coverage or Windows/browser acceptance by itself. Keep raw results and financial PDFs in protected storage outside Git.
 
 ## Baseline and diagnostic
 
@@ -63,4 +63,10 @@ python3 scripts/test_benchmark_annual.py
 python3 -m py_compile scripts/benchmark.py scripts/benchmark_annual.py
 ```
 
-Mocked safety/evidence checks do not replace native invoice/bill/settlement/PDF execution. Capture that smoke before treating this harness as runtime-verified.
+## Observed native CI smoke and release gate
+
+[CI run 37288677011](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37288677011) passed all three jobs at source `d3da03e`. Its disposable Odoo/PostgreSQL clone executed the annual scenario through native invoice, bill and settlement operations: 24 documents and eight payments added 32 posted moves and 64 journal lines. The measured ledger, including its existing synthetic fixture, contained 45 posted moves, 90 lines and three attachments totaling 914 bytes.
+
+The six actual financial-statement PDFs covered balance sheet, profit and loss, and cash flow twice each. Native PDF generation took 2.202–4.604 seconds; balance-sheet equality, cash-flow reconciliation and repeat-stable calculations passed. This verifies the small synthetic annual smoke. It does not establish representative client volume, hosted browser/network latency, a cold-cache result or a correction to the failed 13.2 save/post targets.
+
+Source `db771e5` adds a separate generic monthly reconciliation PDF smoke under the native Read-only role, checking company scope, ledger/statement values, PDF bytes and unchanged accounting evidence. It also marks rollback or cursor-close failures as failed benchmark runs. Those additions are not covered by the earlier run's six annual PDFs. Require the latest [PR #10 checks](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/10/checks), including this monthly PDF gate; [run 37289593569](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37289593569) is the first run of that revision. Retain each run's summary, logs and PDF hashes separately. CI evidence does not establish a hosted module upgrade or production deployment.
