@@ -2,7 +2,10 @@
 
 from contextlib import nullcontext
 from copy import deepcopy
+import hashlib
+import inspect
 import json
+import logging
 from unittest.mock import patch
 
 from odoo import Command, fields
@@ -13,6 +16,9 @@ from odoo.addons.auditlog.models.log import AuditlogLogLine as NativeAuditLogLin
 from odoo.addons.auditlog.models.rule import AuditlogRule as NativeAuditLogRule
 from odoo.addons.auditlog.models.rule import ThrowAwayCache
 from odoo.addons.thirdcode_accounting.models import auditlog as accounting_audit
+
+
+_logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install")
@@ -195,6 +201,8 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
             with self.subTest(model=records._name):
                 expected, native_queries = self._snapshot(records, False)
                 actual, batch_queries = self._snapshot(records, True)
+                _logger.info("AUDIT_SNAPSHOT_QUERY_COUNTS model=%s native=%s candidate=%s",
+                             records._name, native_queries, batch_queries)
                 self.assertEqual(actual, expected)
                 self.assertLess(batch_queries, native_queries)
                 self.assertIn("company_id", actual[0])
@@ -228,10 +236,35 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         class RollbackComparison(Exception):
             pass
 
-        def history(batch):
+        compute = getattr(type(invoice), "_compute_is_manually_modified", None)
+        _logger.info("AUDIT_REPLAY_NATIVE_MANUAL_FIELD compute=%r source=%s",
+                     invoice._fields["is_manually_modified"].compute,
+                     inspect.getsource(compute) if compute else "No native compute method")
+
+        def history(batch, label):
             rows = []
             native = patch.object(accounting_audit, "_prefetch_audit_relation_labels")
             with self.assertRaises(RollbackComparison), self.cr.savepoint():
+                # Diagnostic SQL avoids warming the ORM fields being compared.
+                self.cr.execute("""
+                    SELECT state, ref, is_manually_modified, create_date, write_date,
+                           statement_timestamp() AT TIME ZONE 'UTC'
+                      FROM account_move WHERE id = %s
+                """, [invoice.id])
+                baseline = dict(zip(
+                    ("state", "ref", "is_manually_modified", "create_date", "write_date", "observed_utc"),
+                    self.cr.fetchone(),
+                ))
+                baseline["cached"] = {}
+                for name in ("state", "ref", "is_manually_modified", "create_date", "write_date"):
+                    field = invoice._fields[name]
+                    present = invoice.env.cache.contains(invoice, field)
+                    baseline["cached"][name] = {
+                        "present": present,
+                        "value": invoice.env.cache.get(invoice, field) if present else None,
+                    }
+                _logger.info("AUDIT_REPLAY_BASELINE label=%s data=%s", label,
+                             json.dumps(baseline, sort_keys=True, default=str))
                 start_id = self.env["auditlog.log"].sudo().search([], order="id desc", limit=1).id
                 with nullcontext() if batch else native:
                     invoice.write({
@@ -258,12 +291,22 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
                         ], load="_classic_write")], key=lambda row: row["field_name"]),
                     })
                 raise RollbackComparison()
-            return sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))
+            rows = sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))
+            _logger.info("AUDIT_REPLAY_HISTORY label=%s groups=%s details=%s sha256=%s", label,
+                         len(rows), sum(len(row["details"]) for row in rows),
+                         hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest())
+            return rows
 
-        expected = history(False)
-        actual = history(True)
+        expected = history(False, "native-first")
+        native_replay = history(False, "native-replay")
+        actual = history(True, "candidate-first")
+        candidate_replay = history(True, "candidate-replay")
+        _logger.info("AUDIT_REPLAY_EQUALITY native=%s candidate_to_native_replay=%s candidate_repeat=%s",
+                     expected == native_replay, actual == native_replay, actual == candidate_replay)
         self.assertTrue(expected)
+        self.assertEqual(native_replay, expected, "Native replay itself changed full audit history")
         self.assertEqual(actual, expected)
+        self.assertEqual(candidate_replay, expected)
         details = [detail for row in actual for detail in row["details"]]
         self.assertTrue(any(detail["field_name"] == "state" and detail["new_value"] == "posted"
                             for detail in details))
