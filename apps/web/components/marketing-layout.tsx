@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+
+import { portalThemeCookie, resolvePortalTheme } from "../lib/portal-theme";
+import { ThemeToggle } from "./theme-toggle";
 
 function ArrowIcon() {
   return (
@@ -12,30 +16,31 @@ function TCSIMark({ compact = false }: { compact?: boolean }) {
   return <span className={`landing-mark${compact ? " landing-mark--compact" : ""}`} aria-hidden="true">TC</span>;
 }
 
-export function MarketingHeader({ active }: { active?: string }) {
+export async function MarketingHeader({ active }: { active?: string }) {
+  const theme = resolvePortalTheme((await cookies()).get(portalThemeCookie)?.value);
   const links = [
-    ["Platform", "/platform"],
-    ["Controls", "/controls"],
-    ["Pilot", "/pilot"],
-    ["Contact", "/contact"],
+    ["Platform", "/#platform"],
+    ["Why TCSI", "/#why-tcsi"],
+    ["Getting started", "/#rollout"],
   ] as const;
 
   return (
     <header className="landing-header">
+      <a className="marketing-skip" href="#main-content">Skip to content</a>
       <Link className="landing-brand" href="/" aria-label="TCSI Accounting home">
         <TCSIMark />
-        <span><strong>Third Code Solutions Inc.</strong><small>TCSI Accounting</small></span>
+        <span><strong>TCSI <span>Accounting</span></strong><small>BY THIRD CODE SOLUTIONS INC.</small></span>
       </Link>
       <nav className="landing-nav" aria-label="Primary navigation">
         {links.map(([label, href]) => (
-          <Link className={active === href ? "marketing-nav-link--active" : undefined} href={href} key={href} aria-current={active === href ? "page" : undefined}>
-            {label}
-          </Link>
+          <Link href={href} key={href} aria-current={active === href ? "page" : undefined}>{label}</Link>
         ))}
+        <a className="marketing-mobile-signin" href="/web/login">Sign in</a>
       </nav>
       <div className="landing-header-actions">
-        <a className="landing-text-link landing-header-company" href="https://www.thirdcodesolutions.com" target="_blank" rel="noreferrer">Company site <ArrowIcon /></a>
-        <Link className="landing-header-cta" href="/web/login">Open workspace <ArrowIcon /></Link>
+        <ThemeToggle initialTheme={theme} />
+        <a className="marketing-signin" href="/web/login">Sign in</a>
+        <Link className="landing-header-cta" href="/contact">Request a demo <ArrowIcon /></Link>
       </div>
     </header>
   );
@@ -44,25 +49,30 @@ export function MarketingHeader({ active }: { active?: string }) {
 export function MarketingFooter() {
   return (
     <footer className="landing-footer">
-      <div className="landing-footer-brand"><TCSIMark compact /><span><strong>Third Code Solutions Inc.</strong><small>Accounting systems, made clearer.</small></span></div>
-      <div className="landing-footer-links">
-        <span>© {new Date().getFullYear()} TCSI</span>
-        <Link href="/contact">Request a demo <ArrowIcon /></Link>
-        <a href="https://www.thirdcodesolutions.com" target="_blank" rel="noreferrer">thirdcodesolutions.com <ArrowIcon /></a>
+      <div className="marketing-footer-top">
+        <div className="marketing-footer-about">
+          <Link className="landing-brand" href="/" aria-label="TCSI Accounting home">
+            <TCSIMark compact /><span><strong>TCSI Accounting</strong><small>BY THIRD CODE SOLUTIONS INC.</small></span>
+          </Link>
+          <p>A clearer view of your business.<br />A better way to work with your numbers.</p>
+        </div>
+        <nav aria-label="Product links"><strong>Product</strong><Link href="/#platform">Capabilities</Link><Link href="/controls">Accounting controls</Link><Link href="/web/login">Sign in to workspace</Link></nav>
+        <nav aria-label="Company links"><strong>Let’s talk</strong><Link href="/contact">Request a demo</Link><Link href="/pilot">Rollout & access</Link><a href="https://www.thirdcodesolutions.com" target="_blank" rel="noreferrer">Third Code Solutions <ArrowIcon /></a></nav>
       </div>
+      <div className="marketing-footer-bottom"><span>© {new Date().getFullYear()} Third Code Solutions Inc.</span><span>Built for the people behind the numbers.</span></div>
     </footer>
   );
 }
 
 export function MarketingShell({ children, active }: Readonly<{ children: React.ReactNode; active?: string }>) {
   return (
-    <main className="landing marketing-page">
+    <div className="landing marketing-page">
       <div className="landing-frame">
         <MarketingHeader active={active} />
-        {children}
+        <main id="main-content">{children}</main>
         <MarketingFooter />
       </div>
-    </main>
+    </div>
   );
 }
 
