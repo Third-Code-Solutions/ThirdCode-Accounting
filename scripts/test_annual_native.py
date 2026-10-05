@@ -7,6 +7,7 @@ source name or remote database host. Retains the clone and protected artifacts.
 from __future__ import annotations
 
 import configparser
+from decimal import Decimal
 import hashlib
 import json
 import os
@@ -24,6 +25,7 @@ import uuid
 SOURCE = "tcsi_orvexa_ci"
 HTTP_PORT = 18078
 SCRIPTS = Path(__file__).resolve().parent
+CAPACITY_DOCUMENTS = 3750
 
 
 def require(condition, message):
@@ -36,6 +38,20 @@ def validate_ci_environment(environ):
     require(environ.get("PGHOST") in ("127.0.0.1", "localhost", "::1"), "Native smoke requires loopback PostgreSQL")
     require(environ.get("PGDATABASE", SOURCE) == SOURCE, "Native smoke source must be tcsi_orvexa_ci")
     require(environ.get("PGUSER") == "odoo" and environ.get("PGPASSWORD"), "Disposable Odoo database credentials are required")
+
+
+def scenario_settings(environ):
+    """The larger fixed scenario is opt-in; normal CI keeps its 24-document smoke."""
+    mode = environ.get("TCSI_ANNUAL_CAPACITY_CI")
+    require(mode in (None, "engineering-only"), "Unknown annual capacity scenario; arbitrary volumes are not accepted")
+    if mode is None:
+        return {"documents": 24, "max_seed_seconds": 180, "benchmark_seconds": 300, "deadline_seconds": 0,
+                "qualification": "Small smoke only"}
+    require(environ.get("GITHUB_ACTIONS") == "true", "Capacity scenario requires the dedicated disposable GitHub Actions runner")
+    for name in ("PGHOSTADDR", "PGSERVICE", "PGSERVICEFILE", "PGOPTIONS"):
+        require(not environ.get(name), f"Capacity scenario rejects connection routing override {name}")
+    return {"documents": CAPACITY_DOCUMENTS, "max_seed_seconds": 3300, "benchmark_seconds": 3600, "deadline_seconds": 3600,
+            "qualification": "Unapproved synthetic engineering capacity; not client or hosted performance acceptance"}
 
 
 def save(path, value):
@@ -205,15 +221,18 @@ def ready(server, database):
     raise RuntimeError("Owned isolated server did not become ready within 60 seconds")
 
 
-def verify_smoke(result, directory):
+def verify_smoke(result, directory, documents=24):
+    require(documents in (24, CAPACITY_DOCUMENTS), "Unsupported native annual scenario")
+    payments = documents // 3
+    moves = documents + payments
     require(result.get("exit_code") == 0 and result.get("status") == "ENGINEERING_TARGET_OBSERVED", "Native annual target was not observed; retain failure evidence")
     require(result.get("acceptance_claim") is False and result.get("approved_client_volume") is False, "Smoke must not claim client acceptance")
     require(result.get("seed_committed") is True, "Native seed was not committed")
     seeded = result["seeded"]
-    for key, expected in (("documents", 24), ("payments", 8), ("posted_moves", 32), ("posted_lines", 64), ("months", 12)):
+    for key, expected in (("documents", documents), ("payments", payments), ("posted_moves", moves), ("posted_lines", 2 * moves), ("months", 12)):
         require(seeded[key] == expected, f"Unexpected native seed {key}: expected {expected}, got {seeded[key]}")
-    require(result["measured_cardinality"]["year_posted_documents"] - result["before"]["year_posted_documents"] == 32, "Annual posted move delta differs from scenario")
-    require(result["measured_cardinality"]["year_posted_lines"] - result["before"]["year_posted_lines"] == 64, "Annual line delta differs from scenario")
+    require(result["measured_cardinality"]["year_posted_documents"] - result["before"]["year_posted_documents"] == moves, "Annual posted move delta differs from scenario")
+    require(result["measured_cardinality"]["year_posted_lines"] - result["before"]["year_posted_lines"] == 2 * moves, "Annual line delta differs from scenario")
     require(len(result["samples"]) == 6, "Expected six annual report samples")
     for sample in result["samples"]:
         pdf = directory / f"{sample['report']}-{sample['repeat']}.pdf"
@@ -221,6 +240,62 @@ def verify_smoke(result, directory):
         require(body.startswith(b"%PDF") and len(body) == sample["pdf_bytes"] and
                 hashlib.sha256(body).hexdigest() == sample["pdf_sha256"], "Rendered PDF evidence is missing or mismatched")
     require(len(list(directory.glob("*.pdf"))) == 6, "Expected six actual PDFs")
+
+
+def verify_capacity_totals(totals):
+    """Independent oracle for the fixed 100-unit, untaxed native scenario."""
+    expected = {"documents": 3750, "invoices": 1875, "bills": 1875, "document_amount": 375000,
+                "payments": 1250, "inbound": 625, "outbound": 625, "payment_amount": 125000,
+                "moves": 5000, "lines": 10000, "debit": 500000, "credit": 500000, "months": 12}
+    for key, value in expected.items():
+        require(Decimal(str(totals[key])) == value, f"Capacity native ledger {key} differs from fixed synthetic scenario")
+    require(totals.get("scope_valid") is True, "Capacity native ledger escaped company, year or posted state")
+
+
+def capacity_ledger_totals(database, seeded):
+    """Read committed native records independently of benchmark counters/reports."""
+    import psycopg2
+    require(database.startswith("tcsi_alignment_annual_ci_"), "Unexpected capacity ledger database")
+    connection = psycopg2.connect(dbname=database, host=os.environ["PGHOST"], port=os.environ.get("PGPORT", "5432"),
+                                  user=os.environ["PGUSER"], password=os.environ["PGPASSWORD"], connect_timeout=10)
+    try:
+        connection.set_session(readonly=True, isolation_level="REPEATABLE READ")
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL statement_timeout = '30s'")
+            cursor.execute("SET LOCAL lock_timeout = '5s'")
+            cursor.execute("SELECT current_database()")
+            require(cursor.fetchone() == (database,), "Capacity verifier database identity mismatch")
+            cursor.execute("""SELECT count(*), count(*) FILTER (WHERE move_type='out_invoice'),
+                count(*) FILTER (WHERE move_type='in_invoice'), sum(amount_total),
+                bool_and(company_id=1 AND state='posted' AND date BETWEEN '2025-01-01' AND '2025-12-31')
+                FROM account_move WHERE partner_id=%s AND starts_with(ref,%s)
+                AND move_type IN ('out_invoice','in_invoice')""",
+                (seeded["partner_id"], f"TC-ANNUAL-{seeded['run_id']}-"))
+            documents, invoices, bills, amount, document_scope = cursor.fetchone()
+            cursor.execute("""SELECT count(*), count(*) FILTER (WHERE payment_type='inbound'),
+                count(*) FILTER (WHERE payment_type='outbound'), sum(amount),
+                bool_and(company_id=1 AND date BETWEEN '2025-01-01' AND '2025-12-31')
+                FROM account_payment WHERE partner_id=%s""", (seeded["partner_id"],))
+            payments, inbound, outbound, payment_amount, payment_scope = cursor.fetchone()
+            cursor.execute("""WITH scenario_moves AS (
+                SELECT id FROM account_move WHERE partner_id=%s AND starts_with(ref,%s)
+                AND move_type IN ('out_invoice','in_invoice')
+                UNION SELECT move_id FROM account_payment WHERE partner_id=%s
+            ) SELECT count(DISTINCT m.id), count(l.id), sum(l.debit), sum(l.credit),
+                count(DISTINCT date_trunc('month',m.date)),
+                bool_and(m.company_id=1 AND m.state='posted' AND l.company_id=1 AND
+                         m.date BETWEEN '2025-01-01' AND '2025-12-31')
+                FROM scenario_moves s JOIN account_move m ON m.id=s.id
+                JOIN account_move_line l ON l.move_id=m.id""",
+                (seeded["partner_id"], f"TC-ANNUAL-{seeded['run_id']}-", seeded["partner_id"]))
+            moves, lines, debit, credit, months, line_scope = cursor.fetchone()
+        connection.rollback()
+    finally:
+        connection.close()
+    return {"documents": documents, "invoices": invoices, "bills": bills, "document_amount": amount,
+            "payments": payments, "inbound": inbound, "outbound": outbound, "payment_amount": payment_amount,
+            "moves": moves, "lines": lines, "debit": debit, "credit": credit, "months": months,
+            "scope_valid": document_scope is True and payment_scope is True and line_scope is True}
 
 
 def verify_monthly_smoke(result, directory):
@@ -354,6 +429,7 @@ def monthly_child(config_path, database, directory):
 
 def main():
     validate_ci_environment(os.environ)  # No directory, subprocess or DB access before guard.
+    scenario = scenario_settings(os.environ)
     require(sys.platform == "linux", "Native CI process ownership requires Linux /proc")
     os.umask(0o077)
     root = Path(os.environ.get("TCSI_ANNUAL_EVIDENCE", "/tmp/tcsi-annual-native"))
@@ -362,13 +438,18 @@ def main():
     data = root / "data"
     data.mkdir()
     config = root / "isolated.conf"
-    summary = {"database": database, "source_database": SOURCE, "status": "FAILED", "source": "Disposable CI clone; not production or client-volume acceptance"}
+    summary = {"database": database, "source_database": SOURCE, "status": "FAILED", "source": "Disposable CI clone; not production or client-volume acceptance",
+               "scenario": scenario, "approved_client_volume": False, "acceptance_claim": False}
     processes = []
     def interrupted(signum, frame):
         raise RuntimeError(f"Native annual smoke interrupted by signal {signum}")
     for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
         signal.signal(sig, interrupted)
     try:
+        if scenario["deadline_seconds"]:
+            signal.signal(signal.SIGALRM, interrupted)
+            signal.alarm(scenario["deadline_seconds"])
+        save(root / "summary.json", summary)
         with socket.socket() as check:
             check.bind(("127.0.0.1", HTTP_PORT))
         summary["copied_filestore_files"] = clone_database(database, data)
@@ -384,17 +465,23 @@ def main():
         output = root / "annual-results"
         benchmark = OwnedProcess([sys.executable, str(SCRIPTS / "benchmark_annual.py"), "--config", str(config),
             "--database", database, "--confirm-isolated-database", database, "--company-id", "1", "--actor-id", "2",
-            "--year", "2025", "--seed-documents", "24", "--settle-every", "3", "--max-seed-seconds", "180",
+            "--year", "2025", "--seed-documents", str(scenario["documents"]), "--settle-every", "3",
+            "--max-seed-seconds", str(scenario["max_seed_seconds"]),
             "--repeats", "2", "--render-pdf", "--report-url", f"http://127.0.0.1:{HTTP_PORT}",
             "--output-directory", str(output)], root / "benchmark.log")
         processes.append(benchmark)
-        code = benchmark.wait(300)
+        code = benchmark.wait(scenario["benchmark_seconds"])
         summary["benchmark_exit"] = code
         require((output / "results.json").is_file(), "Benchmark did not preserve results.json")
         result = json.loads((output / "results.json").read_text())
-        verify_smoke(result, output)
+        verify_smoke(result, output, scenario["documents"])
         require(code == 0, "Benchmark process failed despite result evidence")
         summary.update(seeded=result["seeded"], measured_cardinality=result["measured_cardinality"], samples=result["samples"])
+        if scenario["documents"] == CAPACITY_DOCUMENTS:
+            totals = capacity_ledger_totals(database, result["seeded"])
+            summary["native_ledger_totals"] = totals
+            save(output / "native-ledger-totals.json", totals)
+            verify_capacity_totals(totals)
         require(server.process.poll() is None and listener_owned(server), "Isolated PDF server no longer owns its listener")
         monthly_output = output / "monthly"
         monthly = OwnedProcess([sys.executable, str(Path(__file__).resolve()), "--monthly-child", str(config), database,
@@ -408,9 +495,12 @@ def main():
         require(monthly_code == 0, "Monthly process failed despite result evidence")
         summary.update(status="PASSED", monthly=monthly_result)
     except BaseException as exc:
+        summary["status"] = "FAILED"
         message = f"{type(exc).__name__}: {exc}"
         summary["error"] = message.replace(os.environ["PGPASSWORD"], "[redacted]")
     finally:
+        if scenario["deadline_seconds"]:
+            signal.alarm(0)  # Cleanup has its own bounded TERM/KILL waits.
         errors = []
         for process in reversed(processes):
             try:
@@ -420,7 +510,7 @@ def main():
         if errors:
             summary.update(status="FAILED", cleanup_errors=errors)
         save(root / "summary.json", summary)
-    print("ANNUAL_NATIVE", json.dumps(summary, sort_keys=True), flush=True)
+    print("ANNUAL_NATIVE", json.dumps(summary, sort_keys=True, default=str), flush=True)
     return 0 if summary["status"] == "PASSED" else 1
 
 
