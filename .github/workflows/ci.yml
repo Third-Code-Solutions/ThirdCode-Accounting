@@ -119,6 +119,7 @@ jobs:
           --env TCSI_ADMIN_PASSWORD=ci-disposable-password-never-use-in-production
           --env TCSI_MASTER_PASSWORD=ci-disposable-master-never-use-in-production
           --env PORT=18069
+          --mount type=volume,source=tcsi-hosted-ci-data,target=/var/lib/odoo
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
           tcsi-hosted-ci /tcsi-tests/test_hosted_http.py
       - name: Verify coordinated recovery against disposable PostgreSQL
@@ -129,6 +130,15 @@ jobs:
           --env TCSI_RECOVERY_TEST_PG=disposable-only
           --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
           tcsi-hosted-ci /tcsi-tests/test_hosted_backup.py
+      - name: Verify full isolated recovery with native PostgreSQL and Odoo
+        run: >-
+          docker run --rm --network host --entrypoint python3
+          --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
+          --env PGPASSWORD=ci-disposable-only --env PGDATABASE=tcsi_orvexa_hosted_ci
+          --env TCSI_RECOVERY_RESTORE_TEST_PG=disposable-only
+          --mount type=volume,source=tcsi-hosted-ci-data,target=/var/lib/odoo
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          tcsi-hosted-ci /tcsi-tests/test_hosted_recovery_restore.py
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -9,13 +9,15 @@ OnFailure=tcsi-recovery-failed.service
 Type=oneshot
 User=tcsi-recovery
 UMask=0077
-ExecStartPre=/usr/bin/test -x /usr/local/libexec/tcsi-isolated-restore-drill
-ExecStart=/usr/local/libexec/tcsi-isolated-restore-drill
-TimeoutStartSec=14400
+ExecStartPre=/usr/bin/test -r /etc/tcsi/recovery-restore.json
+ExecStart=/opt/tcsi-recovery/venv/bin/python /opt/tcsi-recovery/scripts/hosted_recovery_drill.py --config /etc/tcsi/recovery-provider.json --run-id latest --output-root /private/tcsi-recovery/drills --private-key /private/keys/recovery.key --public-certificate /private/keys/recovery.crt --confirm-offhost-recovery --full-restore --restore-config /etc/tcsi/recovery-restore.json --restore-python /usr/bin/python3
+TimeoutStartSec=15420
 TimeoutStopSec=30
 KillMode=control-group
 NoNewPrivileges=true
 PrivateTmp=true
 
-# Operator-supplied wrapper must enforce isolated DB and ledger/attachment comparison.
-# hosted_recovery_drill.py alone prepares bytes and cannot satisfy this contract.
+# Disabled example: provision matching pinned Odoo/Python and local PostgreSQL,
+# set actual private policies and enforce egress isolation before activation.
+# This command creates unique isolated targets; old drill targets are never reused
+# or deleted. Record whole recovery RTO and operator handover separately.

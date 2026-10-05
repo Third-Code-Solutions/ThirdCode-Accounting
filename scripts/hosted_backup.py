@@ -370,6 +370,11 @@ def capture_snapshot(policy, directory):
                 finally:
                     pgpass.unlink(missing_ok=True)
                 copy_tree(Path(policy["data_dir"]) / "filestore" / policy["database"], directory / "filestore", deadline)
+                # Same paused writers, table locks and deadline as the dump/copy.
+                # Store hashes only; never export raw accounting rows into logs.
+                from recovery_fingerprint import fingerprint
+                atomic_json(directory / "accounting-baseline.json",
+                            fingerprint(connection, directory / "filestore", deadline))
                 (directory / "odoo.conf").write_bytes(config_bytes)
                 atomic_json(directory / "recovery-environment.json", environment)
                 idle(cursor, policy["database"])

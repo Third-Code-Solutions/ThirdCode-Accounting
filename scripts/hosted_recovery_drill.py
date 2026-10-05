@@ -1,7 +1,7 @@
-"""Off-host retrieval, decryption and safe manifest verification for restore drills.
+"""Off-host retrieval and optional fresh-target full isolated recovery drill.
 
-Produces a private payload for the documented isolated database restore procedure.
-It does not restore a database, approve ledger equality or certify the agreed RTO.
+Preparation alone verifies bytes. --full-restore explicitly adds PostgreSQL/Odoo
+validation through hosted_recovery_restore.py; neither mode certifies client RTO.
 """
 import argparse
 import json
@@ -12,6 +12,7 @@ import signal
 import sys
 import tarfile
 import time
+import uuid
 
 import hosted_backup as capture
 import hosted_recovery_provider as provider
@@ -97,23 +98,62 @@ def prepare(policy, client, run_id, output, private_key, certificate, *, confirm
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=provider.DEFAULT_POLICY)
-    parser.add_argument("--run-id", required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--run-id", required=True, help="Exact receipt UUID, or latest healthy captured snapshot")
+    outputs = parser.add_mutually_exclusive_group(required=True)
+    outputs.add_argument("--output", type=Path)
+    outputs.add_argument("--output-root", type=Path, help="Create a new random private drill directory beneath this root")
     parser.add_argument("--private-key", type=Path, required=True)
     parser.add_argument("--public-certificate", type=Path, required=True)
     parser.add_argument("--passphrase-file", type=Path)
     parser.add_argument("--confirm-offhost-recovery", action="store_true")
+    parser.add_argument("--full-restore", action="store_true", help="Explicitly create and validate a new isolated database")
+    parser.add_argument("--restore-config", type=Path)
+    parser.add_argument("--restore-python", type=Path, default=Path("/usr/bin/python3"), help="Python with pinned Odoo and psycopg2 installed")
     args = parser.parse_args()
     os.umask(0o077)
     try:
         policy = provider.load_policy(args.config)
+        if args.full_restore != bool(args.restore_config):
+            raise provider.ProviderError("full_restore_config_required")
+        if args.full_restore:
+            import hosted_recovery_restore as restoration
+            restore_policy = restoration.load_policy(args.restore_config)
+            if (not args.restore_python.is_absolute() or not args.restore_python.is_file()
+                    or args.restore_python.stat().st_mode & 0o022 or not os.access(args.restore_python, os.X_OK)):
+                raise provider.ProviderError("trusted_odoo_python_required")
+        started = time.monotonic()
         def deadline(_number, _frame):
             raise provider.ProviderError("recovery_drill_deadline")
         signal.signal(signal.SIGTERM, deadline)
         signal.signal(signal.SIGALRM, deadline)
-        signal.alarm(policy["operation_timeout_seconds"])
-        report = prepare(policy, provider.s3_client(policy), args.run_id, args.output, args.private_key,
+        signal.alarm(policy["operation_timeout_seconds"] + (restore_policy["timeout_seconds"] if args.full_restore else 0))
+        client = provider.s3_client(policy)
+        run_id = args.run_id
+        if run_id == "latest":
+            provider.versioned(client, policy)
+            run_id = provider.healthy_latest(client, policy, provider.catalog(client, policy), provider.utcnow())["run_id"]
+        output = args.output
+        if args.output_root:
+            capture.private_directory(args.output_root)
+            output = args.output_root / ("drill-" + uuid.uuid4().hex)
+        report = prepare(policy, client, run_id, output, args.private_key,
                          args.public_certificate, confirm_offhost=args.confirm_offhost_recovery, passphrase_file=args.passphrase_file)
+        if args.full_restore:
+            target = "tcsi_alignment_restore_" + uuid.uuid4().hex
+            restore_output = output / "restore"
+            restoration.run_owned([str(args.restore_python), str(Path(__file__).with_name("hosted_recovery_restore.py")),
+                "--config", str(args.restore_config), "--payload", str(output / "payload"), "--output", str(restore_output),
+                "--target", target, "--confirm-target", target, "--verified-manifest-sha256", report["manifest_sha256"]],
+                {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "LANG": "C.UTF-8", "PYTHONDONTWRITEBYTECODE": "1"},
+                restore_policy["timeout_seconds"] + 5, output / "restore-command.log")
+            result = json.loads(capture.private_read(restore_output / "restore-results.json"))
+            if result.get("status") != "ISOLATED_RESTORE_VERIFIED":
+                raise provider.ProviderError("full_restore_verification_failed")
+            report = {"status": "FULL_ISOLATED_DRILL_VERIFIED", "run_id": run_id,
+                      "preparation": report, "restore": result,
+                      "retrieval_restore_validation_seconds": round(time.monotonic() - started, 3),
+                      "rto_met": None, "operator_handover_verified": False}
+            capture.atomic_json(output / "drill-results.json", report)
         print(json.dumps(report, sort_keys=True))
         return 0
     except Exception as error:

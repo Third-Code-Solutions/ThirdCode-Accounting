@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location("hosted_backup", Path(__file__).with_name("hosted_backup.py"))
 backup = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = backup
 SPEC.loader.exec_module(backup)
 
 
@@ -345,6 +346,18 @@ class PostgreSQLCaptureTests(unittest.TestCase):
         with connection, connection.cursor() as cursor:
             cursor.execute("CREATE TABLE ledger (id integer PRIMARY KEY, amount numeric)")
             cursor.execute("INSERT INTO ledger VALUES (1, 123.45)")
+            from recovery_fingerprint import REQUIRED
+            for table in REQUIRED:
+                columns = "id integer PRIMARY KEY"
+                if table == "account_move_line":
+                    columns += ", company_id integer, account_id integer, balance numeric, parent_state text"
+                elif table == "ir_attachment":
+                    columns += ", store_fname text, checksum text"
+                cursor.execute(sql.SQL("CREATE TABLE {} ({})").format(sql.Identifier(table), sql.SQL(columns)))
+            cursor.execute("INSERT INTO account_move_line VALUES (1, 1, 1, 123.450000000000001, 'posted')")
+            import hashlib
+            cursor.execute("INSERT INTO ir_attachment VALUES (1, 'attachment', %s)",
+                           (hashlib.sha1(b"isolated attachment bytes").hexdigest(),))
         connection.close()
         filestore = self.root / "data" / "filestore" / self.database
         filestore.mkdir(parents=True)
@@ -373,7 +386,10 @@ class PostgreSQLCaptureTests(unittest.TestCase):
         self.assertNotEqual(backup.process(self.service.pid)["state"], "T")
         self.assertEqual((self.directory / "filestore" / "attachment").read_bytes(), b"isolated attachment bytes")
         backup.write_manifest(self.directory, {"database": self.database})
-        self.assertEqual(backup.verify(self.directory), 4)
+        self.assertEqual(backup.verify(self.directory), 5)
+        baseline = json.loads((self.directory / "accounting-baseline.json").read_text())
+        self.assertEqual(baseline["tables"]["account_move_line"]["count"], 1)
+        self.assertEqual(baseline["files"]["attachment"]["size"], len(b"isolated attachment bytes"))
         environment = {**os.environ, "PGDATABASE": self.restored}
         backup.run(["pg_restore", "--no-owner", "--no-acl", "--dbname", self.restored,
                     str(self.directory / "database.dump")], timeout=10, environment=environment)
