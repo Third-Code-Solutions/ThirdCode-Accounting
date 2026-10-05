@@ -7,8 +7,9 @@ import shutil
 import sys
 import tempfile
 import time
+from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import uuid
 
 import hosted_backup as capture
@@ -63,6 +64,41 @@ class RestoreGuardTests(unittest.TestCase):
             with patch.dict(os.environ, {name: "untrusted"}), self.subTest(name=name), \
                     self.assertRaisesRegex(restore.RestoreError, "ambient_postgres_routing_forbidden"):
                 restore.connect(self.policy, "postgres")
+
+    def test_connected_client_endpoint_and_database_identity_are_verified(self):
+        def connection(**changes):
+            result = MagicMock()
+            values = {"host": "127.0.0.1", "port": 5432, "dbname": "postgres", "user": "fixture",
+                      "dsn_parameters": {"hostaddr": "127.0.0.1"}}
+            values.update(changes)
+            result.info = SimpleNamespace(**values)
+            result.cursor.return_value.__enter__.return_value.fetchone.return_value = ("postgres", "fixture")
+            return result
+        fake = SimpleNamespace(connect=MagicMock())
+        good = connection()
+        fake.connect.return_value = good
+        with patch.dict(sys.modules, {"psycopg2": fake}):
+            self.assertIs(restore.connect(self.policy, "postgres", readonly=True), good)
+            self.assertEqual(fake.connect.call_args.kwargs["hostaddr"], "127.0.0.1")
+            self.assertEqual(fake.connect.call_args.kwargs["host"], "127.0.0.1")
+            good.set_session.assert_called_once_with(readonly=True, isolation_level="REPEATABLE READ")
+            # A port-forwarded server may report a bridge address. The guard
+            # deliberately queries logical DB identity, not server-side routing.
+            good.cursor.return_value.__enter__.return_value.execute.assert_called_once_with("SELECT current_database(), current_user")
+            good.close.assert_not_called()
+            for changes in ({"host": "203.0.113.1"}, {"port": 5433}, {"dbname": "other"}, {"user": "other"},
+                            {"dsn_parameters": {"hostaddr": "203.0.113.1"}}, {"dsn_parameters": {}}):
+                rejected = connection(**changes)
+                fake.connect.return_value = rejected
+                with self.subTest(changes=changes), self.assertRaisesRegex(restore.RestoreError, "postgres_endpoint_mismatch"):
+                    restore.connect(self.policy, "postgres")
+                rejected.close.assert_called_once()
+            wrong_database = connection()
+            wrong_database.cursor.return_value.__enter__.return_value.fetchone.return_value = ("other", "fixture")
+            fake.connect.return_value = wrong_database
+            with self.assertRaisesRegex(restore.RestoreError, "postgres_database_identity_mismatch"):
+                restore.connect(self.policy, "postgres")
+            wrong_database.close.assert_called_once()
 
     def test_existing_output_refused_before_database_access(self):
         with patch.object(restore.sys, "platform", "linux"), patch.object(restore, "connect") as connect:
@@ -201,6 +237,10 @@ class NativeRestoreTests(unittest.TestCase):
             with admin.cursor() as cursor:
                 cursor.execute("SHOW server_version_num")
                 self.assertGreaterEqual(int(cursor.fetchone()[0]), 180000)
+                cursor.execute("SELECT inet_server_addr()::text, inet_server_port()")
+                server_address, server_port = cursor.fetchone()
+                print("RECOVERY_NATIVE_ENDPOINT " + json.dumps({"client_host": admin.info.host,
+                      "client_port": admin.info.port, "server_address": server_address, "server_port": server_port}))
                 cursor.execute("SELECT count(*) FROM pg_stat_activity WHERE datname='tcsi_orvexa_hosted_ci'")
                 self.assertEqual(cursor.fetchone()[0], 0, "Previous hosted CI process must have stopped")
                 cursor.execute(sql.SQL("CREATE DATABASE {} TEMPLATE tcsi_orvexa_hosted_ci").format(sql.Identifier(source)))

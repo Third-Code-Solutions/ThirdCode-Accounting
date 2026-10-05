@@ -70,9 +70,15 @@ def connect(policy, database, readonly=False):
         sslmode="disable", options="-c statement_timeout=30000 -c lock_timeout=1000")
     try:
         connection.set_session(readonly=readonly, isolation_level="REPEATABLE READ")
+        # Validate the client endpoint. inet_server_addr()/inet_server_port()
+        # describe the server behind Docker/NAT, not the loopback socket we
+        # explicitly opened. libpq exposes the effective connection parameters.
+        info = connection.info
+        require((info.host, info.port, info.dbname, info.user, info.dsn_parameters.get("hostaddr"))
+                == (pg["host"], pg["port"], database, pg["user"], pg["host"]), "postgres_endpoint_mismatch")
         with connection.cursor() as cursor:
-            cursor.execute("SELECT current_database(), inet_server_addr()::text, inet_server_port()")
-            require(cursor.fetchone() == (database, pg["host"], pg["port"]), "postgres_endpoint_mismatch")
+            cursor.execute("SELECT current_database(), current_user")
+            require(cursor.fetchone() == (database, pg["user"]), "postgres_database_identity_mismatch")
     except BaseException:
         connection.close()
         raise

@@ -32,3 +32,11 @@
 - Remedy: pass the manifest capture timestamp through delivery/receipts and use it for freshness; round requested lock deadlines upward to whole seconds before PUT and compare the exact returned version's lock. Keep lock duration anchored to provider creation time on retries.
 - Prevention: retain recent-upload/stale-capture, retry timestamp conflict, shortened-lock and actual SDK serializer roundtrip tests in `scripts/test_hosted_recovery_provider.py`. Compare the decrypted manifest's timestamp with its receipt during drill preparation.
 - Scope/evidence: pinned SDK provider suite 21/21 passed locally; these tests do not establish real destination access, active schedules, full database restore or client acceptance.
+
+## Recovery connection identity across local container ports — 5 October 2026
+
+- Trigger: native CI `37296882814` rejected the full restore at `create_database` with `postgres_endpoint_mismatch`; no target database was created.
+- Cause: the guard compared `inet_server_addr()`/`inet_server_port()` with the explicitly selected client loopback endpoint. Those SQL functions describe the server's interface, which can differ behind container port mapping.
+- Remedy: retain exact PostgreSQL option allowlisting, numeric loopback `host` and `hostaddr`, and ambient routing-override rejection; verify libpq's effective client host/hostaddr/port/database/user plus SQL `current_database()`/`current_user()` instead. Close rejected connections before any write.
+- Prevention: `test_connected_client_endpoint_and_database_identity_are_verified` covers accepted loopback routing, endpoint/user/database mismatch, missing/redirected hostaddr and close-on-rejection. Native CI logs the synthetic client/server endpoints for diagnosis without credentials.
+- Scope/evidence: nine local restore guards passed; three Linux/native cases require CI rerun. API contract: [Psycopg ConnectionInfo](https://www.psycopg.org/docs/extensions.html#psycopg2.extensions.ConnectionInfo). This correction does not establish completed recovery or production readiness.
