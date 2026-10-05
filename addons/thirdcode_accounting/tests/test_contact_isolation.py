@@ -1,5 +1,8 @@
 """Real ORM rules: positive business access and negative tenant boundaries."""
+import json
 from unittest.mock import patch
+
+from odoo.addons.bus.models.bus import ImBus
 
 from odoo import Command
 from odoo.addons.mail.tools.discuss import Store
@@ -216,3 +219,35 @@ class TestContactIsolation(TransactionCase):
             ids = {row["id"] for row in data.get("res.partner", [])}
             self.assertIn(user.partner_id.id, ids)
             self.assertNotIn(foreign.partner_id.id, ids)
+
+    def test_message_author_email_and_bus_payload_are_receiver_scoped(self):
+        self.ub.email = "foreign-contact-marker@example.invalid"
+        message = self.env["mail.message"].create({"body": "Contact boundary test", "author_id": self.ub.partner_id.id,
+            "email_from": self.ub.email, "message_type": "comment"})
+        store = Store()
+        message.with_user(self.ua).with_context(allowed_company_ids=self.a.ids)._author_to_store(store)
+        direct = store.get_result()
+        self.assertNotIn(self.ub.email, json.dumps(direct))
+        self.assertFalse(direct["mail.message"][0]["author"])
+        # Build the actual native sender Store, then poll as each receiver.
+        sender_store = Store(self.ua.partner_id | self.ub.partner_id, fields=["name", "email"])
+        message._author_to_store(sender_store)
+        data = sender_store.get_result()
+        notifications = [
+            {"id": 101, "message": {"type": "discuss.channel/new_message", "payload": {"id": 1, "data": data}}},
+            {"id": 102, "message": {"type": "mail.record/insert", "payload": data}},
+            {"id": 103, "message": {"type": "unrelated/test", "payload": {"value": "unchanged"}}},
+        ]
+        with patch.object(ImBus, "_poll", return_value=notifications):
+            for user, own, foreign in [(self.ua, self.ua, self.ub), (self.ub, self.ub, self.ua)]:
+                result = self.env["bus.bus"].with_user(user).with_context(allowed_company_ids=user.company_id.ids)._poll([])
+                self.assertEqual([item["id"] for item in result], [101, 102, 103])
+                self.assertEqual(result[2], notifications[2])
+                for store_data in [result[0]["message"]["payload"]["data"], result[1]["message"]["payload"]]:
+                    ids = {row["id"] for row in store_data["res.partner"]}
+                    self.assertIn(own.partner_id.id, ids)
+                    self.assertNotIn(foreign.partner_id.id, ids)
+                if user == self.ua:
+                    self.assertNotIn(self.ub.email, json.dumps(result))
+            self.assertEqual(self.env["bus.bus"].with_user(self.owner)._poll([]), notifications)
+        self.assertIn(self.ub.email, json.dumps(notifications))

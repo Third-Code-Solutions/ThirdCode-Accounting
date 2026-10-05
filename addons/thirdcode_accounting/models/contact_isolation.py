@@ -1,5 +1,6 @@
 """Company-scoped contacts. Sharing grants access, never inferred ownership."""
 import logging
+from copy import deepcopy
 from collections import defaultdict
 
 from odoo import SUPERUSER_ID, Command, _, api, fields, models
@@ -362,3 +363,77 @@ class ContactScopedChannel(models.Model):
         members = self.env["discuss.channel.member"]
         unknown = members.search(domain + [("id", "not in", known_member_ids)], limit=100)
         return Store(unknown).add(self, {"memberCount": members.search_count(domain)}).get_result()
+
+
+class ContactScopedMessage(models.Model):
+    _inherit = "mail.message"
+
+    def _author_to_store(self, store):
+        result = super()._author_to_store(store)
+        actor = self.sudo(False)
+        if not is_platform_owner(self.env) and actor.env.user.has_group("base.group_user"):
+            authors = self.sudo().author_id
+            visible = actor.env["res.partner"].with_context(active_test=False).search([("id", "in", authors.ids)])
+            for message in self:
+                if message.sudo().author_id and message.sudo().author_id.id not in visible.ids:
+                    store.add(message, {"author": False, "email_from": False})
+        return result
+
+
+def scope_contact_store(env, data):
+    """Scope native Store payloads at the receiving WebSocket session boundary."""
+    data = deepcopy(data)
+    partner_ids = {row["id"] for row in data.get("res.partner", [])}
+
+    def collect(value):
+        if isinstance(value, dict):
+            if value.get("type") == "partner" and isinstance(value.get("id"), int):
+                partner_ids.add(value["id"])
+            for item in value.values():
+                collect(item)
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                collect(item)
+    collect(data)
+    visible = set(env["res.partner"].sudo(False).with_context(active_test=False).search([("id", "in", list(partner_ids))]).ids)
+    hidden = partner_ids - visible
+
+    def clean(value):
+        if isinstance(value, dict):
+            if value.get("type") == "partner" and value.get("id") in hidden:
+                return False
+            return {key: clean(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [clean(item) for item in value if not (
+                isinstance(item, dict) and item.get("type") == "partner" and item.get("id") in hidden)]
+        return value
+    for row in data.get("mail.message", []):
+        author = row.get("author")
+        if isinstance(author, dict) and author.get("type") == "partner" and author.get("id") in hidden:
+            row["email_from"] = False
+    if "res.partner" in data:
+        data["res.partner"] = [row for row in data["res.partner"] if row["id"] not in hidden]
+    if "discuss.channel.member" in data:
+        data["discuss.channel.member"] = [row for row in data["discuss.channel.member"]
+            if not (isinstance(row.get("persona"), dict) and row["persona"].get("type") == "partner"
+                    and row["persona"].get("id") in hidden)]
+    return clean(data)
+
+
+class ContactScopedBus(models.Model):
+    _inherit = "bus.bus"
+
+    def _poll(self, channels, last=0, ignore_ids=None):
+        notifications = super()._poll(channels, last=last, ignore_ids=ignore_ids)
+        if is_platform_owner(self.env) or not self.env.user.has_group("base.group_user"):
+            return notifications
+        # Producers broadcast the same Store to every channel member. Scope it
+        # per receiver; sender-side filtering alone leaks across legacy channels.
+        notifications = deepcopy(notifications)
+        for notification in notifications:
+            message = notification["message"]
+            if message["type"] == "mail.record/insert":
+                message["payload"] = scope_contact_store(self.env, message["payload"])
+            elif message["type"] == "discuss.channel/new_message":
+                message["payload"]["data"] = scope_contact_store(self.env, message["payload"]["data"])
+        return notifications
