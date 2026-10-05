@@ -77,6 +77,35 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
                     self.assertEqual(invoice.amount_residual, 0)
                     self.assertEqual(refund.amount_residual, 0)
 
+    def test_encoder_cannot_bypass_settlement_guard_with_native_sudo_paths(self):
+        invoice = self.env["account.move"].create(self._invoice_values("out_invoice"))
+        refund = self.env["account.move"].create({**self._invoice_values("out_invoice"), "move_type": "out_refund"})
+        (invoice | refund).action_post()
+        lines = (invoice | refund).line_ids.filtered(lambda line: line.account_id.account_type == "asset_receivable")
+        values = {"debit_move_id": lines.filtered(lambda line: line.balance > 0).id,
+                  "credit_move_id": lines.filtered(lambda line: line.balance < 0).id,
+                  "amount": 10, "debit_amount_currency": 10, "credit_amount_currency": 10}
+        encoder = self.roles["encoder"]
+        accountant = self.roles["accountant"]
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.env["account.partial.reconcile"].with_user(encoder).sudo().create(values)
+        partial = self.env["account.partial.reconcile"].with_user(accountant).create(values)
+        self.assertEqual(invoice.amount_residual, 15)
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            partial.with_user(encoder).sudo().unlink()
+        self.assertEqual(invoice.amount_residual, 15)
+        partial.unlink()
+        lines.with_user(accountant).reconcile()
+        self.assertEqual(invoice.amount_residual, 0)
+        for operation in (lines.with_user(encoder).remove_move_reconcile,
+                          lines.full_reconcile_id.with_user(encoder).sudo().unlink):
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                operation()
+            self.assertEqual(invoice.amount_residual, 0)
+        lines.with_user(accountant).remove_move_reconcile()
+        self.assertEqual(invoice.amount_residual, 25)
+        self.assertEqual(refund.amount_residual, 25)
+
     def test_reports_permissions_and_audit_matrix(self):
         for role, user in self.roles.items():
             with self.subTest(role=role):

@@ -1,7 +1,7 @@
 """Real hosted launcher, HTTP authentication and WebSocket round trip in disposable CI."""
 import base64
 import hashlib
-import http.client
+from http.client import HTTPConnection
 import json
 import os
 import socket
@@ -24,7 +24,7 @@ def main():
             if process.poll() is not None:
                 raise AssertionError(f"Hosted runtime exited before readiness: {process.returncode}")
             try:
-                http = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                http = HTTPConnection("127.0.0.1", port, timeout=5)
                 http.request("GET", "/web/login")
                 response = http.getresponse()
                 response.read()
@@ -37,7 +37,7 @@ def main():
             if time.monotonic() > deadline:
                 raise AssertionError("Hosted runtime did not become ready")
             time.sleep(1)
-        http = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+        http = HTTPConnection("127.0.0.1", port, timeout=30)
         body = json.dumps({"jsonrpc": "2.0", "params": {"db": database,
             "login": os.environ["TCSI_ADMIN_LOGIN"], "password": os.environ["TCSI_ADMIN_PASSWORD"]}})
         http.request("POST", "/web/session/authenticate", body,

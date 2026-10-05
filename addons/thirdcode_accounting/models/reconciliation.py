@@ -1,11 +1,18 @@
 from odoo import _, api, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 from .account_move import _RECONCILIATION_METADATA_TOKEN
 
 
 class AccountPartialReconcile(models.Model):
     _inherit = "account.partial.reconcile"
+
+    @api.model
+    def _thirdcode_check_reconciliation_role(self):
+        # Native reconciliation uses sudo internally. Check the acting user even
+        # in that path: draft-only users must not change posted settlement state.
+        if self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder"):
+            raise AccessError(_("Encoder users may prepare drafts, but may not reconcile or undo settlements."))
 
     @api.model
     def _update_matching_number(self, amls):
@@ -20,6 +27,7 @@ class AccountPartialReconcile(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        self._thirdcode_check_reconciliation_role()
         # A payment in an open period may settle an older invoice. The native
         # max_date is the effective reconciliation date used by ageing reports.
         for vals in vals_list:
@@ -39,6 +47,7 @@ class AccountPartialReconcile(models.Model):
         return super().write(vals)
 
     def unlink(self):
+        self._thirdcode_check_reconciliation_role()
         self._thirdcode_check_period()
         return super().unlink()
 
@@ -46,6 +55,24 @@ class AccountPartialReconcile(models.Model):
 class AccountFullReconcile(models.Model):
     _inherit = "account.full.reconcile"
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        self.env["account.partial.reconcile"]._thirdcode_check_reconciliation_role()
+        return super().create(vals_list)
+
     def unlink(self):
+        self.env["account.partial.reconcile"]._thirdcode_check_reconciliation_role()
         self.partial_reconcile_ids._thirdcode_check_period()
         return super().unlink()
+
+
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
+
+    def reconcile(self):
+        self.env["account.partial.reconcile"]._thirdcode_check_reconciliation_role()
+        return super().reconcile()
+
+    def remove_move_reconcile(self):
+        self.env["account.partial.reconcile"]._thirdcode_check_reconciliation_role()
+        return super().remove_move_reconcile()
