@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Odoo inheritance modifies the first XPath match. Target every native amount explicitly. -->
+    <template id="trial_balance_source_domains" inherit_id="account_financial_report.report_trial_balance_line">
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[1]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'initial', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[2]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'initial', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[3]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'initial', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[4]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[5]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[6]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[7]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[8]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[9]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[10]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[11]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[12]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'period', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[13]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'ending', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[14]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'ending', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[15]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'ending', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[16]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'initial', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[17]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'initial', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[18]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'ending', aml_domain_extra)</attribute>
+        </xpath>
+        <xpath expr="(//span[@res-model='account.move.line'][@t-att-domain])[19]" position="attributes">
+            <attribute name="t-att-domain">thirdcode_source_domain(domain, 'ending', aml_domain_extra)</attribute>
+        </xpath>
+    </template>
+</odoo>

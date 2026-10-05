@@ -1,7 +1,7 @@
 {
     "name": "TCSI Accounting",
     "summary": "Third Code Solutions Inc. accounting workspace",
-    "version": "18.0.2.13.0",
+    "version": "18.0.2.13.1",
     "category": "Accounting/Accounting",
     "author": "Third Code Solutions Inc.",
     "license": "AGPL-3",
@@ -86,6 +86,7 @@
         "views/bank_reconciliation_views.xml",
         "views/year_end_close_views.xml",
         "views/financial_report_views.xml",
+        "views/trial_balance_sources.xml",
         "views/menu_views.xml",
         "views/completion_views.xml",
         "views/org_user_views.xml",

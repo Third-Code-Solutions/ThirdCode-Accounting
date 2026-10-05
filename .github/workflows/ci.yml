@@ -47,6 +47,37 @@ jobs:
           --db_host=127.0.0.1 --db_user=odoo --db_password=ci-disposable-only
           -d tcsi_orvexa_ci --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons
           --no-http --max-cron-threads=0
+
+  hosted-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_DB: tcsi_orvexa_hosted_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production runtime without test helpers
+        run: docker build -f docker/odoo/Dockerfile -t tcsi-hosted-ci .
+      - name: Verify hosted HTTP and evented WebSocket routing
+        run: >-
+          docker run --rm --network host --entrypoint python3
+          --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
+          --env PGPASSWORD=ci-disposable-only --env PGDATABASE=tcsi_orvexa_hosted_ci
+          --env TCSI_ADMIN_LOGIN=hosted-ci@example.invalid
+          --env TCSI_ADMIN_PASSWORD=ci-disposable-password-never-use-in-production
+          --env TCSI_MASTER_PASSWORD=ci-disposable-master-never-use-in-production
+          --env PORT=18069
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          tcsi-hosted-ci /tcsi-tests/test_hosted_http.py
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -71,6 +102,9 @@ jobs:
 
       - name: Check live company readiness validation
         run: python scripts/test_check_company_readiness.py
+
+      - name: Verify hosted runtime supervision
+        run: python scripts/test_hosted_runtime.py
 
       - name: Verify branding regression
         run: |

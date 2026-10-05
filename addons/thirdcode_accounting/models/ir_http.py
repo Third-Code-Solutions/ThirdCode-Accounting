@@ -18,8 +18,9 @@ import json
 import logging
 
 from odoo import SUPERUSER_ID, models
-from odoo.http import request
-from werkzeug.exceptions import NotFound
+from odoo.http import Response, request
+from odoo.addons.bus.websocket import UpgradeRequired
+from werkzeug.exceptions import HTTPException, NotFound
 
 _logger = logging.getLogger(__name__)
 
@@ -115,6 +116,17 @@ class IrHttp(models.AbstractModel):
     def _handle_error(cls, exception):
         response = super()._handle_error(exception)
         try:
+            if isinstance(response, UpgradeRequired) and response.response is None:
+                # Odoo 18's override lacks Werkzeug's optional ASGI scope
+                # argument. Call its WSGI methods directly to retain the 426
+                # and Sec-WebSocket-Version instead of raising a TypeError.
+                environ = request.httprequest.environ
+                response = Response(response.get_body(environ), status=response.code,
+                                    headers=response.get_headers(environ))
+            elif isinstance(response, HTTPException):
+                # HTTP dispatchers may return a WSGI exception instead of a
+                # response. Preserve its status/body/headers before hardening.
+                response = response.get_response(request.httprequest.environ)
             if response is not None:
                 cls._tcsi_strip_error_debug(response)
                 cls._tcsi_harden_headers(response)
