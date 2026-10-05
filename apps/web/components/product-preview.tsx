@@ -2,6 +2,7 @@
 
 import { ArrowDownLeft, ArrowUpRight, BarChart3, BookOpen, Check, ChevronDown, CircleHelp, FileText, LayoutDashboard, Search, ShieldCheck, Wallet } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
+import { TCSIMark } from "./tcsi-mark";
 
 const views = ["Overview", "Invoicing", "Reporting"] as const;
 type View = typeof views[number];
@@ -97,7 +98,7 @@ export function ProductPreview() {
       <div className="showcase-selector"><span>TAKE A CLOSER LOOK</span><div role="tablist" aria-label="Product preview">{views.map((label, index) => <button type="button" role="tab" key={label} id={`preview-tab-${label}`} aria-selected={view === label} aria-controls="preview-panel" tabIndex={view === label ? 0 : -1} onClick={() => setView(label)} onKeyDown={event => moveTab(event, index)}>{label}</button>)}</div><span className="showcase-sample-label">Illustrative workspace · Sample data</span></div>
       <div className="showcase-window" role="tabpanel" id="preview-panel" aria-labelledby={`preview-tab-${view}`} tabIndex={0}>
         <aside className="showcase-sidebar" aria-label="Illustrative workspace sidebar">
-          <div className="showcase-logo"><span className="landing-mark landing-mark--compact">TC</span><strong>TCSI <small>ACCOUNTING</small></strong></div>
+          <div className="showcase-logo"><TCSIMark compact /><strong>TCSI <small>ACCOUNTING</small></strong></div>
           <div className="showcase-company"><span>EX</span><div>Example company<small>Finance workspace</small></div><ChevronDown size={12} /></div>
           <span className="showcase-sidebar-label">WORKSPACE</span>
           {[{ label: "Overview", icon: LayoutDashboard }, { label: "Revenue", icon: FileText }, { label: "Purchases", icon: Wallet }, { label: "Banking", icon: BookOpen }, { label: "Reporting", icon: BarChart3 }, { label: "Controls", icon: ShieldCheck }].map(({ label, icon: Icon }) => <span className={`showcase-nav-item${label === (view === "Invoicing" ? "Revenue" : view) ? " is-active" : ""}`} key={label}><Icon size={16} />{label}</span>)}

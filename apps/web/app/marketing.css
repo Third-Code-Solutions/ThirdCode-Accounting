@@ -11,8 +11,8 @@
 .landing-brand strong { font-size: 17px; font-weight: 750; letter-spacing: -.045em; }
 .landing-brand strong > span { font-weight: 450; margin-left: 4px; }
 .landing-brand small { font-size: 8px; letter-spacing: .12em; color: var(--landing-muted); }
-.landing-mark { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px; color: white; background: var(--landing-purple); font-size: 13px; letter-spacing: -.09em; box-shadow: none; }
-.landing-mark--compact { width: 30px; height: 30px; flex-basis: 30px; font-size: 12px; }
+.landing-mark { display: block; width: 34px; height: 34px; flex: 0 0 34px; object-fit: contain; padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.landing-mark--compact { width: 30px; height: 30px; flex-basis: 30px; }
 .landing-nav { display: flex; margin: 0 auto; gap: 28px; }
 .landing-nav a { color: var(--landing-muted); font-size: 12px; font-weight: 550; white-space: nowrap; transition: none; }
 .landing-nav a:is(:hover, :focus-visible) { color: var(--marketing-accent); }
