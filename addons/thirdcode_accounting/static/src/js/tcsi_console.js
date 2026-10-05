@@ -12,7 +12,7 @@ class CreateOrganizationDialog extends Component {
     static template = "thirdcode_accounting.CreateOrganizationDialog";
     static components = { Dialog };
     static props = ["controller", "close"];
-    setup() { this.state = this.props.controller.state; }
+    setup() { this.state = useState(this.props.controller.state); }
     closeCreate() { this.props.controller.closeCreate(); }
     createOrganization() { return this.props.controller.createOrganization(); }
 }
@@ -178,13 +178,15 @@ class PlatformConsole extends Component {
     }
     publish(action) {
         const p = this.selectedPublication;
+        const expectedRevision = this.state.revision;
         this.dialog.add(ConfirmationDialog, {
             title: "Change public website",
             body: `${action === "publish" ? "Publish the saved draft" : action === "revert" ? "Restore the previous public revision" : "Remove this content from public pages"}? Unsaved editor changes are not included.`,
             confirmLabel: "Confirm",
             confirm: async () => {
-                if (await this.run("publish_content", [p.id, p.revision, action], "Website publication updated.")) {
-                    this.state.revision = this.selectedPublication?.revision || this.state.revision;
+                if (await this.run("publish_content", [p.id, expectedRevision, action], "Website publication updated.")) {
+                    // Keep our committed revision: a reload may already include another owner's newer edit.
+                    this.state.revision = expectedRevision + 1;
                 }
             },
         });

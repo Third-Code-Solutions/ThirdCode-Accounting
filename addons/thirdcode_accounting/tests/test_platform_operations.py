@@ -1,5 +1,6 @@
 import json
 import uuid
+from datetime import datetime, time, timedelta
 from unittest.mock import patch
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -162,3 +163,26 @@ class TestPlatformOperations(TransactionCase):
         self.assertEqual(len(data["points"]),30)
         with self.assertRaises(UserError):self.console.get_analytics(36500)
         with self.assertRaises(UserError):self.console.get_people(page=-1)
+
+    def test_publication_paging_always_keeps_homepage_seo(self):
+        model = self.env["thirdcode.platform.publication"]
+        seo = model._new_draft({"kind":"seo", "title":"Homepage", "description":"SEO"})
+        for n in range(27):
+            model._new_draft({"kind":"release", "title":"Update %s" % n, "description":"Details"})
+        first = self.console.get_publications(0)
+        second = self.console.get_publications(1)
+        self.assertEqual(first["total"], 27)
+        self.assertIn(seo.id, [r["id"] for r in first["rows"]])
+        self.assertIn(seo.id, [r["id"] for r in second["rows"]])
+        self.assertEqual(len(second["rows"]), 3)
+
+    def test_analytics_uses_same_utc_day_window_for_totals_and_points(self):
+        moves = self.env["account.move"]
+        oldest = datetime.combine(fields.Date.today()-timedelta(days=29), time.min)
+        # A real dated document is unnecessary here: exercise the grouping query
+        # contract at UTC/Manila boundaries without requiring a client chart.
+        with patch.object(type(moves), "_read_group", autospec=True, return_value=[]) as grouped:
+            self.console.with_context(tz="Asia/Manila").get_analytics(30)
+            recordset, domain = grouped.call_args.args[:2]
+            self.assertEqual(recordset.env.context.get("tz"), "UTC")
+            self.assertIn(("create_date", ">=", oldest), domain)
