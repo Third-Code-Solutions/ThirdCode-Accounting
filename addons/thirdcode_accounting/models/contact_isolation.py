@@ -35,7 +35,10 @@ class ContactScopeUser(models.Model):
                  (prefix + "company_id", "in", companies)]
         own_profile = [(prefix + "id", "=", self.env.user.sudo().partner_id.id)]
         if write:
-            return expression.OR([owned, own_profile])
+            domains = [owned, own_profile]
+            if bank:
+                domains.append([(prefix + "thirdcode_company_identity_ids", "in", companies)])
+            return expression.OR(domains)
         identities = [(prefix + "thirdcode_is_identity", "=", True),
                       (prefix + "thirdcode_identity_company_ids", "in", companies)]
         shared = [(prefix + "thirdcode_is_identity", "=", False),
@@ -114,6 +117,7 @@ class ContactIsolation(models.Model):
         return super().create(values_list)
 
     def write(self, values):
+        self.check_access("write")
         self._check_contact_scope_values(values)
         return super().write(values)
 
@@ -138,6 +142,7 @@ class ContactIsolation(models.Model):
             SELECT DISTINCT partner_id, company_id FROM (
                 SELECT partner_id, company_id FROM account_move
                 UNION SELECT commercial_partner_id, company_id FROM account_move
+                UNION SELECT partner_shipping_id, company_id FROM account_move
                 UNION SELECT partner_id, company_id FROM account_move_line
                 UNION SELECT partner_id, company_id FROM account_payment
             ) refs WHERE partner_id IS NOT NULL AND company_id IS NOT NULL
@@ -147,9 +152,12 @@ class ContactIsolation(models.Model):
             partner = self.browse(partner_id)
             # Ancestors are needed for native display/commercial fields, siblings
             # are not. Existing foreign ownership and identities stay restricted.
-            for contact in partner | partner.parent_id:
-                if not contact.company_id and not contact.thirdcode_is_identity:
-                    grants[contact.id].add(company_id)
+            seen = set()
+            while partner and partner.id not in seen:
+                seen.add(partner.id)
+                if not partner.company_id and not partner.thirdcode_is_identity:
+                    grants[partner.id].add(company_id)
+                partner = partner.parent_id
         for partner_id, companies in grants.items():
             self.browse(partner_id).write({"thirdcode_shared_company_ids": [Command.link(c) for c in sorted(companies)]})
         params.set_param(marker, "done")
@@ -160,12 +168,32 @@ def check_partner_reference(records, values):
     """Many2one assignment does not itself check the referenced record's rules."""
     if records.env.su or is_platform_owner(records.env):
         return
-    partner_id = values.get("partner_id", records.env.context.get("default_partner_id") if not records else None)
-    if partner_id:
-        records.env["res.partner"].browse(partner_id).check_access("read")
-    bank_id = values.get("partner_bank_id")
-    if bank_id and "partner_bank_id" in records._fields:
-        records.env["res.partner.bank"].browse(bank_id).check_access("read")
+    names = [name for name, field in records._fields.items()
+             if field.type == "many2one" and field.comodel_name in {"res.partner", "res.partner.bank"}]
+    if records and not ({"company_id"} | set(names)).intersection(values):
+        return
+    for record in records or [records]:
+        company_id = values.get("company_id")
+        if not company_id and record:
+            company_id = record.company_id.id
+        if not company_id:
+            company_id = records.env.context.get("default_company_id")
+        if not company_id and values.get("move_id") and "move_id" in records._fields:
+            company_id = records.env["account.move"].browse(values["move_id"]).company_id.id
+        if not company_id and values.get("journal_id"):
+            company_id = records.env["account.journal"].browse(values["journal_id"]).company_id.id
+        company_id = company_id or records.env.company.id
+        for name in names:
+            target_id = values.get(name)
+            if name not in values:
+                if record and "company_id" in values:
+                    target_id = record[name].id
+                elif not record:
+                    target_id = records.env.context.get("default_" + name)
+            if target_id:
+                records.env[records._fields[name].comodel_name].with_context(
+                    allowed_company_ids=[company_id]
+                ).browse(target_id).check_access("read")
 
 
 class ContactScopedMove(models.Model):
@@ -220,7 +248,8 @@ class ContactScopedBank(models.Model):
         if partner_id:
             partner = self.env["res.partner"].browse(partner_id)
             partner.check_access("read")
-            partner.check_access("write")
+            if partner not in self.env.companies.partner_id:
+                partner.check_access("write")
             if self and any(bank.partner_id != partner for bank in self):
                 raise AccessError(_("Bank account ownership changes require platform owner review."))
 

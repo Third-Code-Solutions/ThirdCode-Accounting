@@ -180,3 +180,39 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
                     period.with_user(self.roles[role]).action_reopen()
             period.with_user(self.roles["administrator"]).action_reopen()
             self.assertEqual(period.state, "open")
+
+    def test_shared_contact_accounting_and_company_bank_setup(self):
+        from odoo import SUPERUSER_ID
+        shared = self.partner_a.copy({"name": "Approved shared business", "company_id": False})
+        shared.with_user(SUPERUSER_ID).write({"thirdcode_shared_company_ids": [Command.set(self.env.company.ids)]})
+        accountant = self.roles["accountant"]
+        for kind in ["out_invoice", "in_invoice"]:
+            move = self.env["account.move"].with_user(accountant).create({**self._invoice_values(kind), "partner_id": shared.id})
+            move.action_post()
+            refund = move._reverse_moves([{"date": fields.Date.today()}])
+            refund.action_post()
+            lines = (move | refund).line_ids.filtered(lambda line: line.account_id.account_type in {"asset_receivable", "liability_payable"})
+            lines.reconcile()
+            self.assertEqual(move.amount_residual, 0)
+        journal = self.company_data["default_journal_bank"].with_user(self.roles["administrator"])
+        journal.write({"bank_acc_number": "TEST-COMPANY-BANK-123"})
+        self.assertEqual(journal.bank_account_id.partner_id, self.env.company.partner_id)
+        self.assertFalse(shared.company_id)
+
+    def test_historical_shared_backfill_preserves_ownership_and_is_one_time(self):
+        from odoo import SUPERUSER_ID
+        partners = self.env["res.partner"].with_user(SUPERUSER_ID)
+        shared = self.partner_a.copy({"name": "Legacy shared business", "company_id": False})
+        shipping = partners.create({"name": "Legacy shipping", "company_id": False})
+        move = self.env["account.move"].create({**self._invoice_values("out_invoice"), "partner_id": shared.id, "partner_shipping_id": shipping.id})
+        marker = self.env["ir.config_parameter"].sudo()
+        marker.set_param("thirdcode.contact_scope_backfill_v1", False)
+        partners._install_contact_isolation()
+        for partner in [shared, shipping]:
+            self.assertFalse(partner.company_id)
+            self.assertEqual(partner.thirdcode_shared_company_ids, self.env.company)
+        self.assertEqual(move.partner_id, shared)
+        later = partners.create({"name": "Unreviewed later", "company_id": False})
+        self.env["account.move"].create({**self._invoice_values("out_invoice"), "partner_id": later.id})
+        partners._install_contact_isolation()
+        self.assertFalse(later.thirdcode_shared_company_ids)

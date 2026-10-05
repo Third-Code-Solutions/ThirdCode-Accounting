@@ -130,3 +130,32 @@ class TestContactIsolation(TransactionCase):
                 self.bank_a.with_user(self.ua).with_context(allowed_company_ids=self.a.ids).write({"partner_id": hidden.id})
             with self.assertRaises(AccessError), self.cr.savepoint():
                 self.env["res.partner.bank"].with_user(self.ua).with_context(allowed_company_ids=self.a.ids, default_partner_id=hidden.id).create({"acc_number": "FORGED"})
+
+    def test_company_bank_management_preserved(self):
+        banks = self.env["res.partner.bank"].with_user(self.ua).with_context(allowed_company_ids=self.a.ids)
+        bank = banks.create({"partner_id": self.a.partner_id.id, "acc_number": "OWN-COMPANY-BANK"})
+        bank.write({"acc_holder_name": "Company A"})
+        self.assertEqual(bank.acc_holder_name, "Company A")
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            banks.create({"partner_id": self.b.partner_id.id, "acc_number": "OTHER-COMPANY-BANK"})
+        bank.unlink()
+
+    def test_shipping_commercial_and_bank_defaults_checked(self):
+        moves = self.env["account.move"].with_user(self.ua).with_context(allowed_company_ids=self.a.ids)
+        for values in [{"partner_shipping_id": self.unassigned.id}, {"commercial_partner_id": self.pb.id}]:
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                moves.create(values)
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            moves.with_context(default_partner_bank_id=self.bank_b.id).create({})
+
+    def test_shared_is_company_write_cannot_use_native_sudo_branch(self):
+        for partner in [self.shared, self.pb]:
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                self.partners(self.ua).browse(partner.id).write({"is_company": True})
+
+    def test_multicompany_document_does_not_spread_shared_grants(self):
+        # A grant to A cannot be used on B's document just because both companies
+        # are selected. Native check_company accepts company-less partners.
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            self.env["account.move"].with_user(self.multi).with_context(allowed_company_ids=(self.a | self.b).ids).create({
+                "company_id": self.b.id, "partner_id": self.shared.id})
