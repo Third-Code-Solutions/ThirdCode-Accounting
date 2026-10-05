@@ -31,3 +31,11 @@
 - Remedy: keep resuming the original pidfd-bound workers after deadline until the parent's pipe closes; run each adapter in an owned process group and terminate that group on interruption/timeout. Failure alerts must also run when writing local status fails.
 - Prevention: retain late-stop, parent-death, descendant-timeout and status-storage-failure regressions in `scripts/test_hosted_backup.py`. Local POSIX timeout and storage-failure tests passed; Linux pidfd tests require CI and must not be described as passed on macOS.
 - Scope: single-supervisor hosted recovery tooling. This does not establish actual off-host delivery, a nightly schedule or client recovery acceptance.
+
+## Public theme changes must cover destination pages — 6 October 2026
+
+- Trigger: homepage passed light/dark checks, but its demo CTA opened a white form panel with pale text in dark mode; detail-page labels also failed contrast.
+- Cause: public form surfaces and accent labels used fixed light/background or background-accent colors outside the shared theme tokens. Color transitions briefly interpolated text through low-contrast values during mode changes.
+- Remedy: use surface/muted/accent-text tokens for form panels, fields, placeholders and public section labels; keep color changes immediate. Read active theme from the document when mounting a prefetched destination's toggle.
+- Prevention: follow the primary CTA and check every public route in both themes, including typed input, keyboard toggles, reloads and prefetched navigation. Do not accept a homepage-only theme scan.
+- Scope/evidence: Next.js public marketing; all 10 public route/theme combinations passed axe A/AA scans in `docs/landing-page-evidence/public-route-checks.json`; final width matrix in `responsive-checks.json`.

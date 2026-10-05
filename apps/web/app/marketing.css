@@ -14,13 +14,14 @@
 .landing-mark { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 9px; color: white; background: var(--landing-purple); font-size: 13px; letter-spacing: -.09em; box-shadow: none; }
 .landing-mark--compact { width: 30px; height: 30px; flex-basis: 30px; font-size: 12px; }
 .landing-nav { display: flex; margin: 0 auto; gap: 28px; }
-.landing-nav a { color: var(--landing-muted); font-size: 12px; font-weight: 550; white-space: nowrap; }
-.landing-nav a:hover { color: var(--marketing-accent); }
+.landing-nav a { color: var(--landing-muted); font-size: 12px; font-weight: 550; white-space: nowrap; transition: none; }
+.landing-nav a:is(:hover, :focus-visible) { color: var(--marketing-accent); }
 .landing-nav .marketing-mobile-signin { display: none; }
 .landing-header-actions { display: flex; justify-content: flex-end; gap: 20px; }
 .marketing-signin { font-size: 12px; font-weight: 600; white-space: nowrap; }
 .landing-header-cta { min-height: 42px; border: 1px solid var(--landing-line-strong); border-radius: 7px; padding: 0 16px; color: var(--landing-ink); background: var(--tcsi-surface); font-size: 12px; white-space: nowrap; }
 .landing-header-cta:hover { color: var(--marketing-accent); background: var(--tcsi-accent-wash); border-color: var(--tcsi-accent-line); }
+.landing-header-cta, .landing-button { transition: transform 150ms ease; }
 .marketing-theme-toggle { display: inline-grid; width: 40px; height: 40px; flex-shrink: 0; padding: 0; place-items: center; border: 1px solid var(--landing-line); border-radius: 50%; color: var(--landing-ink); background: var(--tcsi-surface); }
 .marketing-theme-toggle:hover { background: var(--marketing-wash); border-color: var(--landing-line-strong); }
 .marketing-skip { position: absolute; top: 8px; left: 0; z-index: 10; transform: translateY(-180%); padding: 12px 20px; background: var(--tcsi-surface); color: var(--landing-ink); border: 2px solid var(--marketing-accent); border-radius: 6px; }
@@ -217,7 +218,11 @@
 /* Keep the existing public demo and detail routes in the same visual family. */
 .marketing-page .marketing-hero, .marketing-page .contact-hero { padding-top: 68px; }
 .marketing-page .landing-footer { border-top: 1px solid var(--landing-line); }
-.marketing-page .demo-field > input, .marketing-page .demo-field > select, .marketing-page .demo-field > textarea { color: var(--landing-ink); }
+.marketing-page .contact-form-panel { background: var(--marketing-wash); border-radius: var(--marketing-radius); }
+.marketing-page .demo-field > input, .marketing-page .demo-field > select, .marketing-page .demo-field > textarea { color: var(--landing-ink); background: var(--tcsi-surface); }
+.marketing-page .demo-field input::placeholder, .marketing-page .demo-field textarea::placeholder { color: var(--landing-muted); opacity: 1; }
+.marketing-page .demo-field > span, .marketing-page .demo-form-footer p { color: var(--landing-muted); }
+.marketing-page .landing-kicker, .marketing-page .landing-text-link, .marketing-page .contact-notes strong, .marketing-page .marketing-detail-number, .marketing-page .marketing-aside-index { color: var(--marketing-accent); }
 @media (max-width: 1100px) {
   .landing-frame { width: calc(100% - 56px); }
   .landing-header { gap: 20px; }

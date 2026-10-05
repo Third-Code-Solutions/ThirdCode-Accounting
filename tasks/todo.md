@@ -55,5 +55,6 @@
 - Base: current production/main `55c58eb`; isolated branch `codex/accounting-landing`. User documents in original checkout preserved.
 - Implemented: outcome-led hero, interactive sample product preview, 12 capability groups, controls, Orvexa, rollout, FAQs, demo CTAs, shared public navigation/footer, cookie-backed server-rendered theme.
 - Verified: lint/typecheck, 62 unit tests, 19 branding/palette tests, initial production build, 10 responsive size/theme checks, preview keyboard navigation, FAQ disclosure, zero axe WCAG A/AA violations in light desktop and dark mobile. Evidence: `docs/landing-page-verification.md`.
-- Next: final build after theme store and mobile sign-in correction; public route checks; release CI; deploy and verify live production.
+- Final local verification: full web/worker build, final web build after contrast corrections, 10 public route/theme axe scans (zero violations), final 10 responsive checks, keyboard theme/preview controls, cached navigation and readable form input passed.
+- Next: PR #12 release CI; merge, deploy and verify live production.
 - Blockers: none. Vercel connector has project access; local CLI is signed into a different account, so prefer existing Git deployment and connector verification.

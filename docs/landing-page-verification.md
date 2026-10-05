@@ -20,3 +20,14 @@ Candidate starts from production `55c58eb`. Scope is Next.js marketing UI and po
 ## Final release gates
 
 Final theme store correction and mobile sign-in access added after initial build. Final build, navigation/keyboard checks, release CI and live deployment evidence are recorded below when complete. A demo form submission is deliberately not part of production smoke testing, avoiding a fictitious lead in the intake queue.
+
+## Final local candidate
+
+- Full `TCSI_PORTAL_ONLY=true npm run build` (web + worker) passed after theme-store/mobile sign-in fixes. Subsequent form/contrast CSS correction passed `npm run build:web` again.
+- Final browser checks use the generated standalone server with its static/public assets on port 3186.
+- All five public routes (`/`, `/contact`, `/platform`, `/controls`, `/pilot`) passed axe WCAG 2 A/AA + 2.1 AA scans in both themes at 390px: **10 route/theme combinations, zero violations**. Raw results: `landing-page-evidence/public-route-checks.json`.
+- Final homepage layout passed all five widths in both themes with no overflowing content. Raw results: `landing-page-evidence/responsive-checks.json`.
+- Enter/Space operate theme button. Cached client navigation from home to contact retains the actual theme and correct accessible label. Form input entered text remains readable; no lead was submitted.
+- Reduced-motion emulation yields `0s` transition duration. Homepage has one H1. Mobile navigation exposes Sign in.
+- Public form's hard-coded light panel/input backgrounds and dark section-index colors were corrected. Color interpolation on navigation/CTAs was removed to avoid momentary low contrast on theme changes.
+- No warning/error logs during final tested browser flows. axe injection and media emulation were cleared by reload/reset.
