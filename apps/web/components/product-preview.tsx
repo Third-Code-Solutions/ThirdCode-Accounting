@@ -2,6 +2,7 @@
 
 import { ArrowDownLeft, ArrowUpRight, BarChart3, BookOpen, Check, ChevronDown, CircleHelp, FileText, LayoutDashboard, Search, ShieldCheck, Wallet } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
+import { TCSIMark } from "./tcsi-mark";
 
 const views = ["Overview", "Invoicing", "Reporting"] as const;
 type View = typeof views[number];
@@ -69,7 +70,7 @@ function InvoicingPreview() {
 function ReportingPreview() {
   return (
     <section className="showcase-reports" aria-label="Sample reporting workspace">
-      <div className="showcase-statement"><div className="showcase-panel-title"><strong>Profit & loss</strong><span>Sample period</span></div><p>September · Example company</p>
+      <div className="showcase-statement"><div className="showcase-panel-title"><strong>Profit & loss</strong><span>Sample period</span></div><p>September · TCSI</p>
         <dl><div><dt>Revenue</dt><dd>₱428,000.00</dd></div><div><dt>Cost of revenue</dt><dd>₱196,000.00</dd></div><div><dt>Gross profit</dt><dd>₱232,000.00</dd></div><div><dt>Operating expenses</dt><dd>₱84,000.00</dd></div><div className="showcase-total"><dt>Net result</dt><dd>₱148,000.00</dd></div></dl>
       </div>
       <div className="showcase-report-list"><strong>From overview to detail</strong>{["Balance sheet", "Cash flow statement", "Trial balance", "General ledger", "Customer & supplier ageing"].map(label => <div key={label}><FileText size={16} /><span>{label}</span><ArrowUpRight size={14} /></div>)}<small>Review by company and period. Export for your next conversation.</small></div>
@@ -97,8 +98,8 @@ export function ProductPreview() {
       <div className="showcase-selector"><span>TAKE A CLOSER LOOK</span><div role="tablist" aria-label="Product preview">{views.map((label, index) => <button type="button" role="tab" key={label} id={`preview-tab-${label}`} aria-selected={view === label} aria-controls="preview-panel" tabIndex={view === label ? 0 : -1} onClick={() => setView(label)} onKeyDown={event => moveTab(event, index)}>{label}</button>)}</div><span className="showcase-sample-label">Illustrative workspace · Sample data</span></div>
       <div className="showcase-window" role="tabpanel" id="preview-panel" aria-labelledby={`preview-tab-${view}`} tabIndex={0}>
         <aside className="showcase-sidebar" aria-label="Illustrative workspace sidebar">
-          <div className="showcase-logo"><span className="landing-mark landing-mark--compact">TC</span><strong>TCSI <small>ACCOUNTING</small></strong></div>
-          <div className="showcase-company"><span>EX</span><div>Example company<small>Finance workspace</small></div><ChevronDown size={12} /></div>
+          <div className="showcase-logo"><TCSIMark compact /><strong>TCSI <small>ACCOUNTING</small></strong></div>
+          <div className="showcase-company"><TCSIMark compact /><div>TCSI<small>Finance workspace</small></div><ChevronDown size={12} /></div>
           <span className="showcase-sidebar-label">WORKSPACE</span>
           {[{ label: "Overview", icon: LayoutDashboard }, { label: "Revenue", icon: FileText }, { label: "Purchases", icon: Wallet }, { label: "Banking", icon: BookOpen }, { label: "Reporting", icon: BarChart3 }, { label: "Controls", icon: ShieldCheck }].map(({ label, icon: Icon }) => <span className={`showcase-nav-item${label === (view === "Invoicing" ? "Revenue" : view) ? " is-active" : ""}`} key={label}><Icon size={16} />{label}</span>)}
           <div className="showcase-sidebar-bottom"><CircleHelp size={15} /><span>A connected financial day.</span></div>
