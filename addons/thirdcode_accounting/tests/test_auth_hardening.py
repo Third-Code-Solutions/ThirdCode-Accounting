@@ -191,18 +191,21 @@ class TestHttpHardeningHelpers(TransactionCase):
         from odoo.addons.http_routing.models.ir_http import IrHttp as BaseIrHttp
         from odoo.addons.thirdcode_accounting.models import ir_http
         from werkzeug.exceptions import InternalServerError, MethodNotAllowed
+        from odoo.addons.bus.websocket import UpgradeRequired
 
-        for error in (InternalServerError(), MethodNotAllowed(valid_methods=["GET"])):
+        for error in (InternalServerError(), MethodNotAllowed(valid_methods=["GET"]), UpgradeRequired()):
             with mock.patch.object(BaseIrHttp, "_handle_error", return_value=error), \
                     mock.patch.object(ir_http, "request", mock.Mock(httprequest=mock.Mock(environ={}), session=mock.Mock(uid=0))), \
                     mock.patch.object(type(self.env["ir.http"]), "_tcsi_is_secure", return_value=True):
                 response = self.env["ir.http"]._handle_error(error)
             self.assertEqual(response.status_code, error.code)
-            self.assertEqual(response.get_data(), error.get_response().get_data())
+            self.assertEqual(response.get_data(), error.get_body().encode())
             self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
             self.assertIn("Strict-Transport-Security", response.headers)
             if isinstance(error, MethodNotAllowed):
                 self.assertEqual(response.headers["Allow"], "GET")
+            if isinstance(error, UpgradeRequired):
+                self.assertEqual(response.headers["Sec-WebSocket-Version"], "13")
 
 
 @tagged("post_install", "-at_install")

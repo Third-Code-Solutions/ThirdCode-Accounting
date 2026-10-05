@@ -142,7 +142,11 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
                 with self.subTest(model=model, renderer=renderer):
                     action = getattr(wizard, method)()
                     data = json.loads(json.dumps(action["data"], default=str))
-                    reports = self.env["ir.actions.report"].with_user(reader).with_context(**context)
+                    # The web client applies the report action's context; its
+                    # active_ids replace the partner selection with wizard ids
+                    # for financial XLSX reports.
+                    report_context = {**context, **action.get("context", {})}
+                    reports = self.env["ir.actions.report"].with_user(reader).with_context(**report_context)
                     output, _format = getattr(reports, renderer)(action["report_name"], [], data=data)
                     self.assertTrue(output)
                     if renderer == "_render_xlsx":
