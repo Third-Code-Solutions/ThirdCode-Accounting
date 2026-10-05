@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-tcsi-theme="light">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Native form input regression</title>
+<!-- Serve beside native.css (captured Odoo web.assets_web CSS) and tcsi.css
+     (current tcsi_routes.scss followed by tcsi_dark.scss, compiled with Sass).
+     ?baseline=1 omits the candidate CSS; ?theme=dark tests the dark cascade.
+     No network requests or application records are created by this fixture. -->
+<link rel="stylesheet" href="native.css">
+<script>
+  const options = new URLSearchParams(location.search);
+  document.documentElement.dataset.tcsiTheme = options.get("theme") || "light";
+  if (!options.has("baseline")) document.write('<link rel="stylesheet" href="tcsi.css">');
+</script>
+<style>
+  body { display: block !important; height: auto !important; padding: 16px; }
+  main { max-width: 780px; margin: auto; }
+  section { margin: 16px 0; padding: 16px; border: 1px solid var(--tcsi-route-line); }
+  label { display: block; margin: 8px 0; }
+  .o_field_widget { width: 100%; }
+  #results { white-space: pre-wrap; }
+</style>
+<body class="o_web_client tcsi-shell-active">
+<main>
+  <h1>Native form input regression</h1>
+  <p>Exact monetary structure captured from production; native Odoo CSS retained.</p>
+  <div id="cases"></div>
+  <section class="o_form_view">
+    <label>Text<input class="o_input" aria-label="Text" value="Editable text"></label>
+    <label>Date<input class="o_input" aria-label="Date" value="10/05/2026"></label>
+    <label>Notes<textarea class="o_input" aria-label="Notes">Editable notes</textarea></label>
+    <div class="o_field_widget o_field_monetary o_readonly_modifier" id="computed">0.00</div>
+  </section>
+  <pre id="results" role="status">Waiting for styles</pre>
+</main>
+<script>
+  const cases = document.querySelector("#cases");
+  for (const context of ["form", "table", "dialog"]) {
+    for (const currency of ["none", "before", "after"]) {
+      const id = `${context}-${currency}`;
+      const widget = `<div class="o_field_widget o_field_monetary">
+        <div class="text-nowrap d-inline-flex w-100 align-items-baseline position-relative">
+          <span class="o_input position-absolute pe-none d-flex w-100">
+            ${currency === "before" ? '<span>₱&nbsp;</span>' : ""}
+            <span class="opacity-0 d-inline-block overflow-hidden mw-100 o_monetary_ghost_value">1,234.56</span>
+            ${currency === "after" ? '<span>&nbsp;€</span>' : ""}
+          </span>
+          ${currency === "before" ? '<span class="opacity-0">₱&nbsp;</span>' : ""}
+          <input class="o_input flex-grow-1 flex-shrink-1" id="${id}" aria-label="${id}" autocomplete="off" value="1,234.56">
+          ${currency === "after" ? '<span class="opacity-0">&nbsp;€</span>' : ""}
+        </div></div>`;
+      const section = document.createElement("section");
+      section.className = context === "dialog" ? "modal-content" : context === "table" ? "o_list_renderer" : "o_form_view";
+      section.innerHTML = `<label for="${id}">${context}: currency ${currency}</label>` +
+        (context === "table" ? `<table class="o_list_table table"><tbody><tr class="o_data_row o_selected_row"><td class="o_data_cell">${widget}</td></tr></tbody></table>` : widget);
+      cases.append(section);
+    }
+  }
+  addEventListener("load", () => {
+    const results = [];
+    const check = (label, pass) => results.push(`${pass ? "PASS" : "FAIL"} ${label}`);
+    for (const input of cases.querySelectorAll("input")) {
+      const mirror = input.parentElement.querySelector(".position-absolute");
+      const style = getComputedStyle(mirror);
+      check(`${input.id}: transparent amount overlay`, style.backgroundColor === "rgba(0, 0, 0, 0)");
+      check(`${input.id}: overlay passes pointer input`, style.pointerEvents === "none");
+      check(`${input.id}: overlay border transparent`, style.borderTopColor === "rgba(0, 0, 0, 0)");
+      input.focus();
+      check(`${input.id}: input focus`, document.activeElement === input && !input.readOnly && !input.disabled);
+      check(`${input.id}: text visible`, getComputedStyle(input).opacity === "1" && getComputedStyle(input).visibility === "visible");
+      const rect = input.getBoundingClientRect();
+      check(`${input.id}: input stays in viewport`, rect.width > 60 && rect.left >= 0 && rect.right <= innerWidth);
+    }
+    check("computed amount stays read-only", !document.querySelector("#computed input"));
+    document.querySelector("#results").textContent = results.join("\n");
+    document.title = `${results.some(line => line.startsWith("FAIL")) ? "FAIL" : "PASS"}: ${results.length} input checks`;
+    scrollTo(0, 0);
+  });
+</script>
+</body>
+</html>
