@@ -294,6 +294,14 @@ body.tcsi-shell-active {
         &:disabled { color: var(--tcsi-route-muted); background: var(--tcsi-route-surface-soft) !important; }
     }
     .o_field_widget textarea { min-height: 80px; }
+    // Odoo paints this currency/ghost-value span above the editable amount.
+    // Keep its matching padding and geometry, but never cover the input text.
+    // Specificity also wins over the later dark-theme .o_input background.
+    .o_field_monetary span.o_input.position-absolute {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
     .o_field_widget .o_field_many2one_selection,
     .o_field_widget .o_input_dropdown {
         min-height: 0;

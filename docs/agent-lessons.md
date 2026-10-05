@@ -1,5 +1,13 @@
 # Verified implementation lessons
 
+## Editable amounts hidden by currency overlays — 5 October 2026
+
+- Trigger: bank reconciliation and other monetary inputs appeared empty and unresponsive, although the live input was enabled, focused and held `0.00`.
+- Cause: native Odoo renders a positioned `.o_input` currency/ghost span above the editable input. Shared light and dark input backgrounds made that span opaque.
+- Remedy: make only `.o_field_monetary span.o_input.position-absolute` background and border transparent, with enough specificity to beat the later dark rules. Preserve its geometry and native pointer-event behavior.
+- Prevention: `scripts/fixtures/form-inputs.html` loads captured native CSS; verify prefix/suffix/no-symbol fields across forms, tables and dialogs in both themes. Keep native invisible currency spacers in fixtures.
+- Evidence: original production CSS failed transparency checks; candidate passed 55 checks at each of 1440/390px in light/dark (220 checks). Package validation and 25 branding/token tests passed. Live release verification is tracked separately.
+
 ## Native OCA report overrides — 5 October 2026
 
 - Trigger: a transient report accepted an export after its company left the active scope; only the first trial-balance amount link received the new source domain.
