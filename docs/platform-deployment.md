@@ -161,6 +161,15 @@ New Railway services no longer accept the legacy `railway.json` mechanism;
 configure these service settings explicitly. Set `RAILWAY_DOCKERFILE_PATH`,
 `RAILWAY_RUN_UID=0` (the bootstrap immediately drops to the odoo user),
 `PORT=8069`, and mount a persistent volume at `/var/lib/odoo`.
+The launcher supervises nginx and the Odoo master as one runtime. nginx owns
+the public `PORT`; regular requests go to loopback HTTP port 8068 and
+`/websocket` (including its HTTP subpaths) goes to loopback evented port 8072.
+Keep `TCSI_WORKERS` at least 1 (default 2). The public port must differ from
+8068 and 8072. Forwarded TLS/client headers and the original Host are preserved.
+If either essential process exits, the launcher stops its peer and exits
+nonzero so Railway restarts the complete service. The CI hosted-launcher gate
+checks HTTP login, secure cookies, error status/headers and a real WebSocket
+upgrade/ping/pong/close; production verification must also cover the Vercel relay.
 Set `PGHOST`, `PGPORT`, `PGDATABASE=tcsi_pilot`, `PGUSER=tcsi_app`, and
 `PGPASSWORD` in Railway. The application role must not be a superuser.
 Provision `pg_trgm` and `unaccent` in its empty database using the database

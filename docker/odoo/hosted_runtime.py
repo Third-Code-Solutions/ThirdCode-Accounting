@@ -26,6 +26,9 @@ http {{
     access_log off;
     client_body_temp_path {directory}/body;
     proxy_temp_path {directory}/proxy;
+    fastcgi_temp_path {directory}/fastcgi;
+    uwsgi_temp_path {directory}/uwsgi;
+    scgi_temp_path {directory}/scgi;
     map $http_upgrade $connection_upgrade {{ default upgrade; '' close; }}
     map $http_x_forwarded_proto $forwarded_proto {{ default $http_x_forwarded_proto; '' $scheme; }}
     map $http_x_forwarded_for $forwarded_for {{ default $http_x_forwarded_for; '' $remote_addr; }}

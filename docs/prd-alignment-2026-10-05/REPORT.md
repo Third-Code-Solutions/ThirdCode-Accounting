@@ -1,3 +1,5 @@
+> Historical implementation record. PRs #6/#7 are now merged and module18.0.2.13.0 is live. The current audit, candidate fixes, recovery evidence and remaining acceptance gates are in [LIVE-IMPLEMENTATION.md](LIVE-IMPLEMENTATION.md). Statements below about unavailable Railway access or an undeployed13.0 candidate describe the earlier snapshot.
+
 > Latest implementation and acceptance status: [phase 2 report](phase-2/REPORT.md), module18.0.2.13.0. The material below records phase 1 historical findings; superseded open engineering items are resolved only where the phase 2 evidence says so.
 
 # PRD alignment candidate — 5 October 2026 (Asia/Manila)

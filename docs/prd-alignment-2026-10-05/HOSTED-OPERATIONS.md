@@ -1,4 +1,4 @@
-> Candidate18.0.2.13.0 adds a richer local rehearsal: [phase2 evidence](phase-2/REPORT.md). The final isolated ZIP restored in8.051seconds and preserved posted balances, audit history and retained cutover archives. This does not verify the hosted schedule, destination, configuration/credential recovery or production volume; the release gates below remain in force.
+> Current production recovery and deployment evidence is in [LIVE-IMPLEMENTATION.md](LIVE-IMPLEMENTATION.md). A coordinated encrypted production database/filestore/configuration bundle has now been downloaded and verified off-host, restored separately, and upgraded with all original accounting/audit/attachment fingerprints preserved. The historical [phase-2 evidence](phase-2/REPORT.md) is synthetic. Nightly coordinated remote delivery, agreed retention/RPO/RTO, alerts and named recovery ownership remain open.
 
 # Hosted operations and release procedure
 
@@ -10,7 +10,7 @@ Preserve the PostgreSQL dump (including audit history), matching filestore, exac
 
 Odoo's ZIP backup copies files and dumps PostgreSQL sequentially. It is only a consistent bundle when all writers are quiesced, including HTTP, cron, workers, imports, attachment processing and filestore garbage collection, or when the hosting provider supplies a demonstrably coordinated snapshot. The repository's old dump-then-tar script alone is not sufficient for an active hosted system.
 
-Before production release, the hosting operator must record the actual nightly scheduler/job ID and timezone, separate recovery destination, encryption/access policy, retention and deletion policy, monitoring and failed-job alert recipient, named recovery operator/deputy, agreed RPO/RTO and restore cadence. No values have been invented. Developer/product owner is the user; future client finance owners are not yet named. Per-client obligations belong in the turnover agreement.
+For operational acceptance, record the actual nightly scheduler/job ID and timezone, separate recovery destination, encryption/access policy, retention and deletion policy, monitoring and failed-job alert recipient, named recovery operator/deputy, agreed RPO/RTO and restore cadence. The release backup gate uses a verified coordinated manual bundle; it does not close those recurring operations requirements. Developer/product owner is the user; future client finance owners are not yet named. Per-client obligations belong in the turnover agreement.
 
 ## Rehearsal and deployment
 
@@ -21,6 +21,14 @@ Before production release, the hosting operator must record the actual nightly s
 5. Rehearse `-u thirdcode_accounting --stop-after-init --no-http --max-cron-threads=0` against that copy using the candidate image. Check duplicate receipt sequences/numbers before upgrading: resolve existing exceptions through an approved process, never renumber or delete customer documents to make constraints pass. Inspect unresolved historical audit scope; it remains accessible only to platform staff rather than leaking to other companies.
 6. Run the relevant native suite and client-representative workflow/report/permission checks. Record actual revision IDs, output hashes, durations and accounting reconciliation. Resolve the release limitations listed in REPORT.md.
 7. Only after these gates pass, deploy the exact reviewed revision. Keep the live schema and persistent volume authoritative. Capture read-only production verification of installed version, inspected company scope, balances, document names, audit visibility and reports. Do not insert synthetic transactions in customer books.
+
+## Operator procedure for the supervised runtime
+
+Module13.1 puts the launcher at PID1, with separate Odoo and nginx children. Earlier private recovery helpers assumed Odoo itself was PID1. Do not rerun those old process-discovery assumptions against the new runtime. Discover the actual Odoo master/configuration and all of its HTTP, cron and evented descendants; verify the configured database and persistent data path before quiescing them. nginx alone is not an accounting writer, and pausing only HTTP leaves cron/evented writes possible.
+
+Keep a bounded independent resume watchdog, verify database sessions are idle without open transactions, capture the dump and matching filestore while all writers remain paused, and always resume in a finally path. If the preconditions or time bound fail, resume and report the backup failed. Do not describe separate scheduled volume snapshots as an equivalent consistent bundle. Encrypt with the recovery public certificate; keep the private key off-host. Download to the approved protected destination, decrypt in a protected directory, verify every manifest hash, and perform the separate database/filestore restore comparison. Configuration/environment material includes secrets and must never enter Git or chat.
+
+A new environment must recreate the pinned image/OCA/addon revisions, database extensions and least-privilege application role, restore the dump and filestore with correct ownership, then supply the preserved configuration through protected host settings. Disable cron, outgoing mail and external integrations in rehearsal copies. A successful module upgrade does not certify safe schema downgrades.
 
 ## Recovery without losing new transactions
 
