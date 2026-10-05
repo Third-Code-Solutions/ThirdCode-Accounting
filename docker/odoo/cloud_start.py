@@ -112,8 +112,9 @@ params = env['ir.config_parameter'].sudo()
 if not params.get_param('tcsi.cloud_bootstrapped'):
     admin = env.ref('base.user_admin')
     admin.write({'login': os.environ['TCSI_ADMIN_LOGIN'], 'password': os.environ['TCSI_ADMIN_PASSWORD']})
-    group = env.ref('thirdcode_accounting.group_thirdcode_administrator')
-    admin.write({'groups_id': [(4, group.id)]})
+    groups = [env.ref(xmlid).id for xmlid in ('base.group_user', 'base.group_system', 'thirdcode_accounting.group_thirdcode_platform_console')]
+    admin.write({'thirdcode_platform_owner': True, 'groups_id': [(6, 0, groups)],
+                 'action_id': env.ref('thirdcode_accounting.action_thirdcode_platform_console').id})
     params.set_param('auth_signup.invitation_scope', 'b2b')
     params.set_param('tcsi.cloud_bootstrapped', '1')
     env.cr.commit()

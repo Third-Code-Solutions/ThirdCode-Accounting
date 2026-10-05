@@ -47,3 +47,11 @@
 - Remedy: use surface/muted/accent-text tokens for form panels, fields, placeholders and public section labels; keep color changes immediate. Read active theme from the document when mounting a prefetched destination's toggle.
 - Prevention: follow the primary CTA and check every public route in both themes, including typed input, keyboard toggles, reloads and prefetched navigation. Do not accept a homepage-only theme scan.
 - Scope/evidence: Next.js public marketing; all 10 public route/theme combinations passed axe A/AA scans in `docs/landing-page-evidence/public-route-checks.json`; final width matrix in `responsive-checks.json`.
+
+## ORM state and platform authorization — 6 October 2026
+
+- Trigger: native tests found incident recurrence losing its state/count after direct SQL; a publication revision check read stale database state. Generic RPC also accepted a forged setup-context marker before the owner check was added.
+- Cause: pending ORM values were not flushed before SQL, and a caller-controlled context marker had been treated as authorization.
+- Remedy: flush incident rows before upsert and invalidate without another flush; flush publication revision before row locking. Require the full owner predicate before setup dispatch and keep internal user provisioning private to RPC.
+- Prevention: retain recurrence/revision regressions, tenant/group-only/public denial tests, and forged-context tests. The controller's trusted identity and token check remain separate boundaries.
+- Evidence: native CI 37381190163 passed 138 tests and 59 integration checks; hosted HTTP CI exercised owner/tenant denial, actual organization provisioning, snapshot publication isolation and capture after rollback.

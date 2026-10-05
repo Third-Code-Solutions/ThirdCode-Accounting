@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <record id="company_platform" model="res.company">
+      <field name="name">TCSI Platform Operations</field>
+      <field name="thirdcode_is_platform" eval="True"/>
+      <field name="thirdcode_platform_status">active</field>
+      <field name="thirdcode_trial_mode" eval="False"/>
+    </record>
+  </data>
+  <record id="rule_private_platform_company" model="ir.rule">
+    <field name="name">Private platform company is not a customer organization</field>
+    <field name="model_id" ref="base.model_res_company"/>
+    <field name="global" eval="True"/>
+    <field name="domain_force">[] if user.thirdcode_platform_owner and user.has_group('base.group_system') else [('thirdcode_is_platform', '=', False)]</field>
+  </record>
+  <record id="rule_platform_event_owner" model="ir.rule">
+    <field name="name">Platform event: owner only</field>
+    <field name="model_id" ref="model_thirdcode_platform_event"/>
+    <field name="global" eval="True"/>
+    <field name="domain_force">[] if user.thirdcode_platform_owner and user.has_group('base.group_system') and user.has_group('thirdcode_accounting.group_thirdcode_platform_console') else [('id', '=', 0)]</field>
+  </record>
+  <record id="rule_platform_incident_owner" model="ir.rule">
+    <field name="name">Platform incident: owner only</field>
+    <field name="model_id" ref="model_thirdcode_platform_incident"/>
+    <field name="global" eval="True"/>
+    <field name="domain_force">[] if user.thirdcode_platform_owner and user.has_group('base.group_system') and user.has_group('thirdcode_accounting.group_thirdcode_platform_console') else [('id', '=', 0)]</field>
+  </record>
+  <record id="rule_platform_publication_owner" model="ir.rule">
+    <field name="name">Platform publication: owner only</field>
+    <field name="model_id" ref="model_thirdcode_platform_publication"/>
+    <field name="global" eval="True"/>
+    <field name="domain_force">[] if user.thirdcode_platform_owner and user.has_group('base.group_system') and user.has_group('thirdcode_accounting.group_thirdcode_platform_console') else [('id', '=', 0)]</field>
+  </record>
+  <record id="cron_platform_incident_retention" model="ir.cron">
+    <field name="name">TCSI Sentry: 90-day incident retention</field>
+    <field name="model_id" ref="model_thirdcode_platform_incident"/>
+    <field name="state">code</field><field name="code">model._purge_expired()</field>
+    <field name="interval_number">1</field><field name="interval_type">days</field>
+  </record>
+  <function model="thirdcode.platform.console" name="_isolate_platform_owners"/>
+</odoo>

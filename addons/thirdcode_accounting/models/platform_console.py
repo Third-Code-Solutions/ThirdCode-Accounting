@@ -4,8 +4,10 @@ from datetime import timedelta
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, Command
 from odoo.exceptions import AccessError, UserError
+
+from .platform_access import require_platform_owner
 
 _logger = logging.getLogger(__name__)
 
@@ -37,16 +39,14 @@ class PlatformConsole(models.TransientModel):
 
     @api.model
     def _check_console_access(self):
-        user = self.env.user
-        if user.has_group(SYSTEM_GROUP) or user.has_group(PLATFORM_CONSOLE_GROUP):
-            return True
-        raise AccessError(_("The platform console is reserved to the system owner."))
+        require_platform_owner(self.env)
+        return True
 
     @api.model
     def _get_company(self, company_id):
         company = self.env["res.company"].sudo().browse(int(company_id)).exists()
-        if not company:
-            raise UserError(_("Unknown organisation."))
+        if not company or company.thirdcode_is_platform:
+            raise UserError(_("Unknown customer organization."))
         return company
 
     # ------------------------------------------------------------- aggregations
@@ -86,7 +86,6 @@ class PlatformConsole(models.TransientModel):
 
     @api.model
     def _company_row(self, company, week_start):
-        self._ensure_trial_window(company)
         today = fields.Date.context_today(self)
         move = self.env["account.move"].sudo()
         posted = self._company_domain(move, company) + [("state", "=", "posted")]
@@ -324,34 +323,35 @@ class PlatformConsole(models.TransientModel):
     def get_console_data(self):
         self._check_console_access()
         week_start = fields.Datetime.now() - timedelta(days=7)
-        companies = self.env["res.company"].sudo().search([], order="name")
+        companies = self.env["res.company"].sudo().search([("thirdcode_is_platform", "=", False)], order="name", limit=200)
         rows = [self._company_row(company, week_start) for company in companies]
         rows.sort(key=lambda row: (STATUS_ORDER.get(row["status"], 3), row["name"]))
-        trials = [row for row in rows if row["status"] == "trial"]
-        ending = [
-            row for row in trials if row["days_left"] is not None and row["days_left"] <= TRIAL_WARNING_DAYS
-        ]
-        users_total = sum(row["users"] for row in rows)
-        users_week = sum(row["users_week"] for row in rows)
-        users_never = sum(row["never_signed"] for row in rows)
-        docs_total = sum(row["docs"] for row in rows)
-        docs_week = sum(row["docs_week"] for row in rows)
-        status_counts = {key: 0 for key in STATUS_ORDER}
-        for row in rows:
-            status_counts[row["status"]] = status_counts.get(row["status"], 0) + 1
+        company_model = self.env["res.company"].sudo()
+        customer_domain = [("thirdcode_is_platform", "=", False)]
+        status_counts = {key: company_model.search_count(customer_domain + [("thirdcode_platform_status", "=", key)]) for key in STATUS_ORDER}
+        ending_count = company_model.search_count(customer_domain + [("thirdcode_platform_status", "=", "trial"), ("thirdcode_trial_end", "<=", fields.Date.today() + timedelta(days=7))])
+        users = self.env["res.users"].sudo()
+        user_domain = [("share", "=", False), ("thirdcode_platform_owner", "=", False), ("company_id.thirdcode_is_platform", "=", False)]
+        users_total = users.search_count(user_domain)
+        users_week = users.search_count(user_domain + [("login_date", ">=", week_start)])
+        users_never = users.search_count(user_domain + [("login_date", "=", False)])
+        moves = self.env["account.move"].sudo()
+        posted = [("state", "=", "posted"), ("company_id.thirdcode_is_platform", "=", False)]
+        docs_total = moves.search_count(posted)
+        docs_week = moves.search_count(posted + [("create_date", ">=", week_start)])
         kpis = [
             {
                 "key": "organizations",
                 "label": _("Organisations"),
-                "value": len(rows),
+                "value": company_model.search_count(customer_domain),
                 "sub": _("%(trial)s trial · %(active)s active · %(suspended)s suspended")
                 % {"trial": status_counts.get("trial", 0), "active": status_counts.get("active", 0), "suspended": status_counts.get("suspended", 0)},
             },
             {
                 "key": "trials",
                 "label": _("Trials running"),
-                "value": len(trials),
-                "sub": _("%s ending within 7 days") % len(ending) if ending else _("none ending this week"),
+                "value": status_counts["trial"],
+                "sub": _("%s ending within 7 days") % ending_count if ending_count else _("none ending this week"),
             },
             {
                 "key": "users",
@@ -379,6 +379,7 @@ class PlatformConsole(models.TransientModel):
                 }
             )
         return {
+            "coverage": "Totals cover all customer organizations. Alerts and the quick selector cover the first 200; use Organizations for the full directory.",
             "generated_at": self._fmt(fields.Datetime.now()),
             "kpis": kpis,
             "trend": self._trend(),
@@ -407,6 +408,7 @@ class PlatformConsole(models.TransientModel):
         if not company.thirdcode_platform_status:
             updates["thirdcode_platform_status"] = "trial"
         company.write(updates)
+        self._event("organization.trial_extended", company)
         return {
             "company": company.name,
             "trial_end": str(company.thirdcode_trial_end),
@@ -426,6 +428,7 @@ class PlatformConsole(models.TransientModel):
                 "thirdcode_trial_end": today + relativedelta(days=int(days)),
             }
         )
+        self._event("organization.trial_started", company)
         return {"company": company.name, "trial_end": str(company.thirdcode_trial_end)}
 
     @api.model
@@ -433,6 +436,7 @@ class PlatformConsole(models.TransientModel):
         self._check_console_access()
         company = self._get_company(company_id)
         company.write({"thirdcode_platform_status": "active", "thirdcode_trial_mode": False})
+        self._event("organization.activated", company)
         return {"company": company.name, "status": "active"}
 
     @api.model
@@ -457,6 +461,7 @@ class PlatformConsole(models.TransientModel):
             }
         )
         targets.sudo().write({"active": False})
+        self._event("organization.suspended", company)
         return {"company": company.name, "deactivated": len(targets)}
 
     @api.model
@@ -478,6 +483,7 @@ class PlatformConsole(models.TransientModel):
                 "thirdcode_suspended_user_ids": False,
             }
         )
+        self._event("organization.resumed", company)
         return {"company": company.name, "restored": len(ids), "status": restored}
 
     @api.model
@@ -487,32 +493,36 @@ class PlatformConsole(models.TransientModel):
         result = (
             self.env["thirdcode.setup.service"]
             .sudo()
-            ._action_ensure_baseline({"company_id": company.id})
+            ._action_ensure_baseline({"company_id": company.id, "country_code": company.country_id.code or "PH", "currency": company.currency_id.name})
         )
+        self._event("organization.baseline", company)
         return {"company": company.name, "steps": len(result.get("steps") or [])}
 
     @api.model
     def open_organization(self, company_id):
         self._check_console_access()
         company = self._get_company(company_id)
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("%s — documents") % company.name,
-            "res_model": "account.move",
-            "view_mode": "list,form",
-            "domain": [("move_type", "in", ["out_invoice", "in_invoice", "entry"])],
-            "context": {"allowed_company_ids": [company.id]},
-        }
+        return {"type": "ir.actions.client", "tag": "tcsi_platform_console",
+                "params": {"company_id": company.id, "tab": "organizations"}}
 
     @api.model
     def open_company_users(self, company_id):
-        self._check_console_access()
-        company = self._get_company(company_id)
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("%s — user accounts") % company.name,
-            "res_model": "res.users",
-            "view_mode": "list",
-            "domain": [("share", "=", False), ("company_ids", "in", [company.id])],
-            "context": {"create": False, "edit": False, "delete": False},
-        }
+        action = self.open_organization(company_id)
+        action["params"]["tab"] = "people"
+        return action
+
+    def _event(self, action, company):
+        self.env["thirdcode.platform.event"]._record(action, company.name, company)
+
+    @api.model
+    def _isolate_platform_owners(self):
+        require_platform_owner(self.env)
+        home = self.env.ref("thirdcode_accounting.company_platform")
+        owners = self.env["res.users"].sudo().with_context(active_test=False).search([
+            ("thirdcode_platform_owner", "=", True)])
+        groups = [self.env.ref(xmlid).id for xmlid in (
+            "base.group_user", SYSTEM_GROUP, PLATFORM_CONSOLE_GROUP)]
+        action = self.env.ref("thirdcode_accounting.action_thirdcode_platform_console")
+        owners.write({"company_id": home.id, "company_ids": [Command.set(home.ids)],
+                      "groups_id": [Command.set(groups)], "action_id": action.id})
+        return True

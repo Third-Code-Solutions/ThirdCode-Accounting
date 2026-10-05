@@ -51,12 +51,12 @@ class ThirdcodeEmployeeWizard(models.TransientModel):
         if len((self.password or "").strip()) < MIN_PASSWORD_LENGTH:
             raise UserError(_("Use a password with at least %s characters.") % MIN_PASSWORD_LENGTH)
         company = self._target_company()
-        if not company:
-            raise UserError(_("Choose a company for this account."))
+        if not company or company.sudo().thirdcode_is_platform:
+            raise UserError(_("Choose a customer company for this account."))
         provisioned = (
             self.env["thirdcode.setup.service"]
             .sudo()
-            .provision_user(
+            ._provision_user(
                 login=self.login,
                 name=self.name,
                 password=self.password,

@@ -88,3 +88,94 @@
     .tcsi-console-head { flex-direction: column; }
     .tcsi-console-cols { grid-template-columns: 1fr; }
 }
+
+/* Owner operations stays inside native Odoo's scroll boundary. */
+.tcsi-console.tcsi-operations {
+    padding: 0;
+    --console-accent: var(--tcsi-route-purple, #7152d6);
+    .tcsi-console-shell { display: grid; grid-template-columns: 208px minmax(0, 1fr); min-height: 100%; }
+    .tcsi-console-nav { padding: 28px 16px; border-right: 1px solid var(--console-line); background: var(--console-surface); }
+    .tcsi-console-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .tcsi-console-brand strong { display: block; font-size: 19px; letter-spacing: -.03em; }
+    .tcsi-console-brand small { display: block; color: var(--console-muted); font-size: 9px; letter-spacing: .08em; }
+    .tcsi-console-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--console-accent); color: #fff; font-weight: 700; }
+    .tcsi-console-nav nav { display: flex; flex-direction: column; gap: 4px; }
+    .tcsi-console-nav nav button { display: flex; align-items: center; gap: 10px; border: 0; border-radius: 6px; background: transparent; color: var(--console-muted); text-align: left; padding: 12px 10px; font: inherit; font-weight: 500; }
+    .tcsi-console-nav nav button:hover, .tcsi-console-nav nav button.is-selected { background: color-mix(in srgb, var(--console-accent) 12%, transparent); color: var(--console-ink); }
+    .tcsi-console-nav nav button.is-selected { box-shadow: inset 3px 0 var(--console-accent); font-weight: 650; }
+    .tcsi-console-owner-note { margin-top: 32px; padding: 14px 10px; border-top: 1px solid var(--console-line); color: var(--console-muted); font-size: 11px; }
+    .tcsi-console-owner-note strong { display: block; margin: 8px 0; color: var(--console-ink); }
+    .tcsi-console-content { min-width: 0; padding: 30px 32px 64px; }
+    .tcsi-console-head { max-width: none; }
+    .tcsi-console-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .tcsi-console-freshness { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; padding-top: 12px; border-top: 1px solid var(--console-line); color: var(--console-muted); font-size: 11px; }
+    section, footer { max-width: none; }
+    .tcsi-console-panel { padding: 22px; margin-bottom: 20px; border: 1px solid var(--console-line); border-radius: 10px; background: var(--console-surface); min-width: 0; }
+    .tcsi-console-kpis { margin-bottom: 20px; grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .tcsi-console-kpi-value { display: block; }
+    .tcsi-console-section-head { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 16px; }
+    .tcsi-console-section-head p { margin-bottom: 0; color: var(--console-muted); max-width: 700px; }
+    .tcsi-console-count { font-size: 11px; color: var(--console-muted); margin-left: 6px; }
+    .tcsi-console-chart-summary { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; color: var(--console-muted); }
+    .tcsi-console-chart-summary strong { font-size: 32px; color: var(--console-ink); }
+    .tcsi-console-bars { height: 165px; border: 0; border-bottom: 1px solid var(--console-line); border-radius: 0; padding: 0 0 8px; gap: 3px; }
+    .tcsi-console-bar span { min-height: 16px; }
+    .tcsi-console-chart-data { margin-top: 18px; color: var(--console-muted); }
+    summary { cursor: pointer; padding: 8px 0; }
+    .tcsi-console-data-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 6px; padding: 12px 0; }
+    .tcsi-console-alert-list { max-height: 430px; overflow-y: auto; }
+    .tcsi-console-cols { grid-template-columns: 1fr 1fr; gap: 20px; }
+    .tcsi-console-cols .tcsi-console-panel { margin-bottom: 0; }
+    .tcsi-console-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 20px; }
+    label { display: flex; flex-direction: column; gap: 6px; color: var(--console-muted); font-size: 12px; font-weight: 500; }
+    input, select, textarea { min-height: 38px; padding: 8px 10px; border: 1px solid var(--console-line); border-radius: 6px; background: var(--console-surface); color: var(--console-ink); font: inherit; max-width: 100%; }
+    textarea { resize: vertical; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--console-accent); outline-offset: 3px; }
+    .tcsi-console-toolbar input { width: 220px; }
+    .tcsi-console-toolbar select { max-width: 280px; }
+    .tcsi-console-table { margin: 0; }
+    .tcsi-console-table th { white-space: nowrap; padding-top: 14px; padding-bottom: 14px; }
+    .tcsi-console-table td { padding-top: 16px; padding-bottom: 16px; }
+    .tcsi-console-actions { min-width: 180px; max-width: 220px; }
+    .tcsi-console-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 16px 0; color: var(--console-muted); }
+    .tcsi-console-publishing { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0,1.8fr); gap: 20px; align-items: start; }
+    .tcsi-publication-item { display: block; width: 100%; padding: 14px 0; border: 0; border-top: 1px solid var(--console-line); background: transparent; color: var(--console-ink); text-align: left; }
+    .tcsi-publication-item strong, .tcsi-publication-item small { display: block; overflow-wrap: anywhere; }
+    .tcsi-publication-item small { color: var(--console-muted); margin-top: 6px; }
+    .tcsi-console-preview { padding: 18px; margin: 16px 0; border: 1px dashed var(--console-line); border-radius: 8px; }
+    .tcsi-console-preview h3 { font-size: 18px; margin: 8px 0; color: var(--console-accent); }
+    .tcsi-console-preview p, .tcsi-console-preview-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+.tcsi-console-form { display: flex; flex-direction: column; gap: 16px; }
+.tcsi-console-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.tcsi-console-form input, .tcsi-console-form select, .tcsi-console-form textarea { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--tcsi-route-line, #dfe6e2); border-radius: 6px; background: var(--tcsi-route-surface, #fff); color: var(--tcsi-route-ink, #20352f); }
+.tcsi-console-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1100px) {
+    .tcsi-console.tcsi-operations {
+        .tcsi-console-shell { grid-template-columns: 168px minmax(0,1fr); }
+        .tcsi-console-content { padding: 24px 18px 48px; }
+        .tcsi-console-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        .tcsi-console-cols { grid-template-columns: 1fr; }
+        .tcsi-console-head { flex-direction: column; }
+    }
+}
+@media (max-width: 760px) {
+    .tcsi-console.tcsi-operations {
+        .tcsi-console-shell { display: block; }
+        .tcsi-console-nav { padding: 12px; border-right: 0; border-bottom: 1px solid var(--console-line); }
+        .tcsi-console-brand, .tcsi-console-owner-note { display: none; }
+        .tcsi-console-nav nav { flex-direction: row; overflow-x: auto; }
+        .tcsi-console-nav nav button { flex: 0 0 auto; white-space: nowrap; padding: 10px; }
+        .tcsi-console-nav nav button.is-selected { box-shadow: inset 0 -3px var(--console-accent); }
+        .tcsi-console-content { padding: 20px 12px 40px; }
+        .tcsi-console-panel { padding: 16px; }
+        .tcsi-console-publishing { grid-template-columns: 1fr; }
+        .tcsi-console-section-head { flex-direction: column; }
+        .tcsi-console-table { min-width: 680px; }
+        .tcsi-console-toolbar label, .tcsi-console-toolbar input, .tcsi-console-toolbar select { width: 100%; max-width: 100%; }
+        .tcsi-console-pagination { justify-content: space-between; gap: 6px; }
+        .tcsi-console-bars { gap: 2px; }
+        .tcsi-console-bar span { font-size: 8px; }
+    }
+    .tcsi-console-form-row { grid-template-columns: 1fr; }
+}

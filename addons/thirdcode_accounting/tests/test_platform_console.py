@@ -18,10 +18,14 @@ class TestPlatformConsole(TransactionCase):
             {
                 "name": "Console Owner",
                 "login": "console-owner",
+                "thirdcode_platform_owner": True,
+                "company_id": cls.env.ref("thirdcode_accounting.company_platform").id,
+                "company_ids": [Command.set(cls.env.ref("thirdcode_accounting.company_platform").ids)],
                 "groups_id": [
                     Command.set(
                         [
                             cls.env.ref("base.group_user").id,
+                            cls.env.ref("base.group_system").id,
                             cls.env.ref("thirdcode_accounting.group_thirdcode_platform_console").id,
                         ]
                     )
@@ -158,14 +162,13 @@ class TestPlatformConsole(TransactionCase):
 
     def test_open_company_actions(self):
         action = self.console.with_user(self.owner).open_organization(self.company_a.id)
-        self.assertEqual(action["res_model"], "account.move")
-        self.assertEqual(action["context"]["allowed_company_ids"], [self.company_a.id])
+        self.assertEqual(action["tag"], "tcsi_platform_console")
+        self.assertEqual(action["params"]["company_id"], self.company_a.id)
         users_action = self.console.with_user(self.owner).open_company_users(self.company_a.id)
-        self.assertEqual(users_action["res_model"], "res.users")
-        self.assertEqual(users_action["domain"], [("share", "=", False), ("company_ids", "in", [self.company_a.id])])
+        self.assertEqual(users_action["params"]["tab"], "people")
 
     def test_provisioning_grants_console_group_to_platform_owners(self):
-        self.env["thirdcode.setup.service"].sudo().provision_user(
+        self.env["thirdcode.setup.service"].sudo()._provision_user(
             login="console-provisioned-owner",
             name="Provisioned Owner",
             password="Console-Owner-Pass1",

@@ -1,4 +1,4 @@
-from odoo import Command, fields
+from odoo import SUPERUSER_ID, Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
@@ -91,7 +91,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
         self.assertIn("DRAFT LAYOUT", wizard().get_report_data()["layout_status"])
 
     def test_setup_service_requires_token_context(self):
-        service = self.env["thirdcode.setup.service"]
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID)
 
         with self.assertRaises(AccessError):
             service.dispatch("status", {})
@@ -105,7 +105,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
     def test_setup_service_create_user_and_batch(self):
         company = self.env["res.company"].sudo().create({"name": "Trial service company"})
-        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context(tcsi_setup_token_ok=True)
 
         result = service.dispatch(
             "create_user",
@@ -152,7 +152,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
     def test_setup_service_period_and_journal_helpers(self):
         company = self.env["res.company"].sudo().create({"name": "Trial period company"})
-        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context(tcsi_setup_token_ok=True)
 
         journal_steps = service._ensure_journals(company)
         self.assertTrue(any("journals created" in step for step in journal_steps))
@@ -174,7 +174,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
         self.assertTrue(any("reused" in step for step in rerun_steps))
 
     def test_maintenance_locks_reports_backends(self):
-        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context(tcsi_setup_token_ok=True)
         result = service._action_maintenance({"op": "locks"})
         self.assertIn("backends", result)
         self.assertIsInstance(result["backends"], list)
@@ -341,7 +341,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
     def test_platform_owner_accounts_are_hidden_and_protected(self):
         company_d = self.env["res.company"].sudo().create({"name": "Tenant D"})
         admin_d = self._provision_admin("tenant-d-admin", company_d)
-        platform = self.env["res.users"].sudo().create(
+        platform = self.env["res.users"].with_user(SUPERUSER_ID).create(
             {
                 "name": "Platform Guard",
                 "login": "platform-guard-test",
@@ -359,8 +359,9 @@ class TestTrialMode(AccountTestInvoicingCommon):
             }
         )
 
-        # The platform account is invisible to the tenant even though the
-        # company overlaps.
+        # Owner provisioning discards the requested customer membership.
+        self.assertEqual(platform.company_ids, self.env.ref("thirdcode_accounting.company_platform"))
+        # The platform account is invisible to the tenant.
         self.assertFalse(
             self.env["res.users"].with_user(admin_d).search([("id", "=", platform.id)])
         )

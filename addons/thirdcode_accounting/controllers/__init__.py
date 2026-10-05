@@ -5,3 +5,5 @@ from . import orvexa
 from . import setup
 from . import auth
 from . import assets
+
+from . import platform_public
