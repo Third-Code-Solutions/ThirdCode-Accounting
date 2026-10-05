@@ -11,7 +11,10 @@
             <xpath expr="//button[@name='button_draft']" position="attributes">
                 <attribute name="invisible" add="posted_before or state == 'posted'" separator=" or "/>
             </xpath>
-            <xpath expr="//button[@name='button_cancel']" position="attributes">
+            <xpath expr="(//button[@name='button_cancel'])[1]" position="attributes">
+                <attribute name="invisible" add="posted_before or state == 'posted'" separator=" or "/>
+            </xpath>
+            <xpath expr="(//button[@name='button_cancel'])[2]" position="attributes">
                 <attribute name="invisible" add="posted_before or state == 'posted'" separator=" or "/>
             </xpath>
             <xpath expr="//field[@name='ref']" position="after">
