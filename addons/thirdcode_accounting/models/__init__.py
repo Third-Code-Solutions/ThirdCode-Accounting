@@ -34,6 +34,7 @@ from . import cutover
 from . import report_completion
 from . import migration_archive
 from . import trial_balance
+from . import settings
 
 from . import platform_access
 from . import platform_event
