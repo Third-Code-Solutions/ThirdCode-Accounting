@@ -117,7 +117,7 @@ test("workspace router brands root, query, fragment and record links", () => {
 
 test("navbar branding does not trigger another mutation for unchanged text", () => {
     const start = source.indexOf("function updateNavbarContext()");
-    const end = source.indexOf("function syncSidebarActiveState()", start);
+    const end = source.indexOf("function syncSidebarActiveState(", start);
     let writes = 0;
     let label = "Finance workspace";
     const page = {
@@ -345,7 +345,7 @@ test("owner console exposes a working Settings link only when the native Setting
             selectMenu: async item => selected.push(item),
         };
         const context = {
-            document: { createElement: element },
+            document: { createElement: element, body: element() },
             window: { location: { pathname: "/workspace/console" } },
             TCSI_APP_XMLID: root.xmlid, DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
             TCSI_WEB_PREFIX: "/workspace", INTERNAL_WEB_PREFIX: "/odoo",
@@ -360,4 +360,49 @@ test("owner console exposes a working Settings link only when the native Setting
             assert.deepEqual(selected, [settings], "use native menu selection, retaining access and routing");
         }
     }
+});
+
+test("Settings sections replace the inner navigation in the main sidebar and restore on exit", () => {
+    function element() {
+        return { dataset: {}, children: [], events: {}, attributes: {},
+            classList: { toggle() {}, remove() {} },
+            append(...items) { this.children.push(...items); },
+            replaceChildren(...items) { this.children = items; },
+            addEventListener(name, handler) { this.events[name] = handler; },
+            setAttribute(name, value) { this.attributes[name] = value; },
+        };
+    }
+    const root = { id: 1, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root", name: "Dashboard" };
+    const app = { id: 2, xmlid: "base.menu_administration", name: "Settings" };
+    const general = { id: 3, xmlid: "base_setup.menu_config", name: "General Settings" };
+    const nav = element(), label = element(), body = element();
+    const toggles = [];
+    body.classList.toggle = (...args) => toggles.push(args);
+    const sidebar = { querySelector: selector => ({ ".tcsi-sidebar-nav": nav, ".tcsi-sidebar-app-name": label })[selector] };
+    const menu = { getCurrentApp: () => app, getApps: () => [root, app], getMenuAsTree: () => ({ childrenTree: [general] }) };
+    const jumps = [], modules = [];
+    const settings = { active: true, activeSection: "emails", selectedModule: "general_settings",
+        modules: [{ key: "general_settings", string: "TCSI Settings" }], sections: [{ id: "emails", label: "Emails" }],
+        openSection: id => jumps.push(id), selectModule: id => modules.push(id),
+    };
+    const context = {
+        document: { createElement: element, body }, window: { location: { pathname: "/workspace/settings" } },
+        TCSI_APP_XMLID: root.xmlid, DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
+        TCSI_WEB_PREFIX: "/workspace", INTERNAL_WEB_PREFIX: "/odoo",
+        makeIcon: element, brandedLabel: text => text, syncSidebarActiveState() {},
+    };
+    runInNewContext(source.slice(source.indexOf("function makeSidebarLink"), source.indexOf("function filterSidebarNavigation")), context);
+    context.renderSidebar(sidebar, menu, { isOwner: true, active: false }, settings);
+    const link = nav.children.find(child => child.dataset.tcsiSettingsSection === "emails");
+    assert.ok(link); link.events.click();
+    assert.deepEqual(jumps, ["emails"]);
+    const moduleLink = nav.children.find(child => child.attributes["aria-pressed"] === "true");
+    moduleLink.events.click(); assert.deepEqual(modules, ["general_settings"]);
+    assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === general.xmlid), false);
+    assert.deepEqual(toggles.at(-1), ["tcsi-settings-in-main-sidebar", true]);
+    settings.active = false;
+    context.renderSidebar(sidebar, menu, { isOwner: true, active: false }, settings);
+    assert.equal(nav.children.some(child => child.dataset.tcsiSettingsSection), false);
+    assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === general.xmlid), true);
+    assert.deepEqual(toggles.at(-1), ["tcsi-settings-in-main-sidebar", false]);
 });
