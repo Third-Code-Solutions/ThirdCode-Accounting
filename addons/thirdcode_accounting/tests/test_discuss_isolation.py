@@ -100,6 +100,15 @@ class TestCompanyDiscuss(TransactionCase):
             with self.assertRaises(AccessError):
                 self.as_user(self.env["discuss.channel"], user).channel_get(peer.partner_id.ids)
 
+    def test_chat_picker_only_suggests_company_colleagues(self):
+        for user, peer, foreign in [(self.ua, self.ua2, self.ub | self.owner | self.staff),
+                                    (self.owner, self.staff, self.ua | self.ua2 | self.ub),
+                                    (self.staff, self.owner, self.ua | self.ua2 | self.ub)]:
+            result = self.as_user(self.env["res.partner"], user).im_search("Discuss")
+            ids = {row["id"] for row in result.get("res.partner", [])}
+            self.assertIn(peer.partner_id.id, ids)
+            self.assertFalse(ids & set(foreign.partner_id.ids))
+
     def test_attachment_token_cannot_cross_company(self):
         attachment = self.env["ir.attachment"].create({"name": "private.txt", "raw": b"PRIVATE FILE", "mimetype": "text/plain",
             "res_model": "discuss.channel", "res_id": self.ca.id, "public": True})

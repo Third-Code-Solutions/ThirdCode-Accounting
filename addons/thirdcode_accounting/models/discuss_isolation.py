@@ -6,6 +6,7 @@ private-channel membership checks. Only uid=1 is the trusted migration operator.
 from odoo import SUPERUSER_ID, Command, _, api, fields, models
 from odoo.addons.mail.tools.discuss import Store
 from odoo.exceptions import AccessError, UserError
+from odoo.osv import expression
 
 from .platform_access import is_platform_owner, require_platform_owner
 
@@ -30,6 +31,16 @@ class DiscussUser(models.Model):
     def _thirdcode_discuss_domain(self, company_ids, prefix=""):
         return [(prefix + "thirdcode_company_id", "in", scoped_companies(self.env, company_ids)),
                 (prefix + "thirdcode_quarantined", "=", False)]
+
+    @api.model
+    def _thirdcode_contact_domain(self, company_ids, write=False, bank=False):
+        domain = super()._thirdcode_contact_domain(company_ids, write=write, bank=bank)
+        if not write and not bank and self.has_group(STAFF_GROUP):
+            home = self.env.ref("thirdcode_accounting.company_platform", raise_if_not_found=False)
+            if home and home.id in scoped_companies(self.env, company_ids):
+                domain = expression.OR([domain, [("user_ids.thirdcode_platform_owner", "=", True),
+                                                  ("user_ids.company_ids", "in", home.ids)]])
+        return domain
 
     def _sync_company_discuss(self):
         if self.env["ir.config_parameter"].sudo().get_param(READY):
@@ -171,6 +182,10 @@ class CompanyDiscussChannel(models.Model):
         self._assert_company_access()
         return super()._to_store(store)
 
+    def _read_format(self, fnames, load="_classic_read"):
+        self._assert_company_scope()
+        return super()._read_format(fnames, load=load)
+
     @api.returns("self", lambda channels: Store(channels).get_result())
     def channel_get(self, partners_to, pin=True, force_open=False):
         partners = sorted(set(partners_to) | {self.env.user.partner_id.id})
@@ -237,6 +252,7 @@ class CompanyDiscussChannel(models.Model):
         # history in a restricted archive; never guess which tenant owns a body.
         legacy = self.with_context(active_test=False).search([("thirdcode_company_id", "=", False)])
         for channel in legacy:
+            channel.rtc_session_ids.unlink()
             for member in channel.channel_member_ids:
                 member._bus_send("discuss.channel/delete", {"id": channel.id})
             channel.write({"thirdcode_quarantined": True, "active": False, "group_ids": [Command.clear()],
@@ -247,6 +263,10 @@ class CompanyDiscussChannel(models.Model):
 
 class CompanyDiscussMember(models.Model):
     _inherit = "discuss.channel.member"
+
+    def _to_store(self, store, **kwargs):
+        self.sudo().channel_id._assert_company_access()
+        return super()._to_store(store, **kwargs)
 
     @api.model_create_multi
     def create(self, values_list):
@@ -286,7 +306,7 @@ class CompanyDiscussMessage(models.Model):
     def create(self, values_list):
         if self.env.uid != SUPERUSER_ID:
             for values in values_list:
-                if "thirdcode_channel_id" in values:
+                if "thirdcode_channel_id" in values or self.env.context.get("default_thirdcode_channel_id"):
                     raise AccessError(_("Conversation links are assigned by the system."))
                 if values.get("model", self.env.context.get("default_model")) == "discuss.channel":
                     self.env["discuss.channel"].browse(values.get("res_id", self.env.context.get("default_res_id")))._assert_company_access()
@@ -295,7 +315,10 @@ class CompanyDiscussMessage(models.Model):
     def write(self, values):
         if self.env.uid != SUPERUSER_ID:
             self._assert_discuss_access()
-            if {"model", "res_id", "thirdcode_channel_id"} & values.keys():
+            if "thirdcode_channel_id" in values or (
+                {"model", "res_id"} & values.keys()
+                and (self.sudo().thirdcode_channel_id or values.get("model") == "discuss.channel")
+            ):
                 raise AccessError(_("Messages cannot be moved between conversations."))
         return super().write(values)
 
@@ -321,6 +344,8 @@ class CompanyDiscussBus(models.Model):
             ids = set()
             if isinstance(payload.get("channel"), dict) and payload["channel"].get("id"):
                 ids.add(payload["channel"]["id"])
+            if isinstance(payload.get("channelId"), int):
+                ids.add(payload["channelId"])
             if kind.startswith("discuss.channel/") or payload.get("model") == "discuss.channel":
                 if isinstance(payload.get("id"), int):
                     ids.add(payload["id"])
@@ -358,11 +383,15 @@ class CompanyDiscussAttachment(models.Model):
         self.sudo().thirdcode_channel_id._assert_company_access()
         return super()._to_http_stream()
 
+    def _read_format(self, fnames, load="_classic_read"):
+        self.sudo().thirdcode_channel_id._assert_company_access()
+        return super()._read_format(fnames, load=load)
+
     @api.model_create_multi
     def create(self, values_list):
         if self.env.uid != SUPERUSER_ID:
             for values in values_list:
-                if "thirdcode_channel_id" in values:
+                if "thirdcode_channel_id" in values or self.env.context.get("default_thirdcode_channel_id"):
                     raise AccessError(_("Conversation links are assigned by the system."))
                 if values.get("res_model", self.env.context.get("default_res_model")) == "discuss.channel":
                     self.env["discuss.channel"].browse(values.get("res_id", self.env.context.get("default_res_id")))._assert_company_access()
@@ -378,3 +407,37 @@ class CompanyDiscussAttachment(models.Model):
                     if values.get("res_model", attachment.res_model) == "discuss.channel":
                         self.env["discuss.channel"].browse(values.get("res_id", attachment.res_id))._assert_company_access()
         return super().write(values)
+
+
+class CompanyDiscussRtc(models.Model):
+    _inherit = "discuss.channel.rtc.session"
+
+    def _notify_peers(self, notifications):
+        self.channel_id._assert_company_access()
+        for ids, _content in notifications:
+            targets = self.env[self._name].sudo().browse(ids).exists()
+            if targets.channel_id - self.channel_id:
+                raise AccessError(_("Calls cannot connect to another conversation."))
+        return super()._notify_peers(notifications)
+
+    def _update_and_broadcast(self, values):
+        self.channel_id._assert_company_access()
+        return super()._update_and_broadcast(values)
+
+    def _to_store(self, store, extra=False):
+        self.channel_id._assert_company_access()
+        return super()._to_store(store, extra=extra)
+
+
+class CompanyDiscussPartner(models.Model):
+    _inherit = "res.partner"
+
+    @api.model
+    def im_search(self, name, limit=20, excluded_ids=None):
+        general = self.env["discuss.channel"].search([
+            ("thirdcode_general_company_id", "=", self.env.company.id)], limit=1)
+        eligible = general._eligible_partners() if general else self.browse()
+        partners = self.search([("id", "in", eligible.ids), ("name", "ilike", name),
+                                ("id", "not in", list(excluded_ids or []) + self.env.user.partner_id.ids)],
+                               order="name, id", limit=limit)
+        return Store(partners).get_result()
