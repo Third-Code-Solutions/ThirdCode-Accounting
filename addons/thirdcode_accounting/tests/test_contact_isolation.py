@@ -226,12 +226,32 @@ class TestContactIsolation(TransactionCase):
             "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ub)]})
         message = self.env["mail.message"].create({"model": "discuss.channel", "res_id": channel.id,
             "body": "Contact boundary test", "author_id": self.ub.partner_id.id,
-            "email_from": self.ub.email, "message_type": "comment"})
+            "email_from": self.ub.email, "message_type": "comment",
+            "partner_ids": [Command.set((self.ua.partner_id | self.ub.partner_id).ids)]})
         readable = message.with_user(self.ua).with_context(allowed_company_ids=self.a.ids)
         readable.check_access("read")
         direct = Store(readable).get_result()
         self.assertNotIn(self.ub.email, json.dumps(direct))
         self.assertFalse(direct["mail.message"][0]["author"])
+        for load in ["_classic_read", None]:
+            row = readable.read(["author_id", "email_from", "partner_ids", "body"], load=load)[0]
+            self.assertFalse(row["author_id"])
+            self.assertFalse(row["email_from"])
+            self.assertEqual(row["partner_ids"], self.ua.partner_id.ids)
+            self.assertIn("Contact boundary test", row["body"])
+        searched = readable.search_read([("id", "=", message.id)], ["author_id", "email_from"])
+        self.assertFalse(searched[0]["email_from"])
+        web = readable.web_read({"author_id": {"fields": {"name": {}}}, "email_from": {}})
+        self.assertFalse(web[0]["author_id"])
+        # Nested exports call this ORM hook without the top-level mail gate.
+        with self.assertRaises(AccessError):
+            readable._export_rows([["email_from"]], _is_toplevel_call=False)
+        self.assertIn("Contact boundary test", readable._export_rows([["body"]], _is_toplevel_call=False)[0][0])
+        for user, companies in [(self.owner, self.owner.company_ids), (self.multi, self.a | self.b)]:
+            allowed = message.with_user(user).with_context(allowed_company_ids=companies.ids)
+            self.assertEqual(allowed.sudo().read(["email_from"])[0]["email_from"], self.ub.email)
+        self.assertEqual(message.email_from, self.ub.email)
+
         # Build the actual native sender Store, then poll as each receiver.
         sender_store = Store(self.ua.partner_id | self.ub.partner_id, fields=["name", "email"])
         message._author_to_store(sender_store)

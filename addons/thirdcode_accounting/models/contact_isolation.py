@@ -368,6 +368,36 @@ class ContactScopedChannel(models.Model):
 class ContactScopedMessage(models.Model):
     _inherit = "mail.message"
 
+    def _thirdcode_hidden_message_partners(self):
+        actor = self.sudo(False)
+        if not self.env.uid or is_platform_owner(self.env) or not actor.env.user.has_group("base.group_user"):
+            return set()
+        contacts = self.sudo().author_id | self.sudo().partner_ids
+        visible = actor.env["res.partner"].with_context(active_test=False).search([("id", "in", contacts.ids)])
+        return set(contacts.ids) - set(visible.ids)
+
+    def _read_format(self, fnames, load="_classic_read"):
+        rows = super()._read_format(fnames, load=load)
+        hidden = self._thirdcode_hidden_message_partners()
+        if not hidden:
+            return rows
+        authors = {message.id: message.author_id.id for message in self.sudo()}
+        for row in rows:
+            if authors[row["id"]] in hidden:
+                for field in ("author_id", "email_from"):
+                    if field in row:
+                        row[field] = False
+            if "partner_ids" in row:
+                row["partner_ids"] = [partner_id for partner_id in row["partner_ids"] if partner_id not in hidden]
+        return rows
+
+    def _export_rows(self, fields, *, _is_toplevel_call=True):
+        # Nested document/message exports bypass mail.message.export_data.
+        if any(path and path[0] in {"author_id", "email_from", "partner_ids"} for path in fields):
+            if self._thirdcode_hidden_message_partners():
+                raise AccessError(_("This export includes contact details outside your active companies."))
+        return super()._export_rows(fields, _is_toplevel_call=_is_toplevel_call)
+
     def _author_to_store(self, store):
         result = super()._author_to_store(store)
         actor = self.sudo(False)
