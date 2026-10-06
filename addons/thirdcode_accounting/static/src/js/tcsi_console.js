@@ -29,7 +29,7 @@ class PlatformConsole extends Component {
         const params = this.props.action?.params || {};
         this.state = useState({
             tab: params.tab || "overview", companyId: params.company_id || false,
-            data: null, analytics: null, monitoring: null, orgs: EMPTY_PAGE(), people: EMPTY_PAGE(), audit: EMPTY_PAGE(),
+            data: null, denied: false, analytics: null, monitoring: null, orgs: EMPTY_PAGE(), people: EMPTY_PAGE(), audit: EMPTY_PAGE(),
             publications: [], publicationPage: 0, publicationTotal: 0, loading: false, busy: false, error: "", formError: "", query: "", status: "", days: 30,
             auditSource: "platform", createOpen: false, options: { countries: [], currencies: [] },
             org: this.emptyOrg(), draft: this.emptyDraft(), editorId: false, revision: false,
@@ -37,7 +37,7 @@ class PlatformConsole extends Component {
         onWillStart(() => this.load());
         onMounted(() => {
             this.timer = setInterval(() => {
-                if (!this.state.busy && !this.state.createOpen && this.state.tab !== "website") this.load(false);
+                if (!this.state.denied && !this.state.busy && !this.state.createOpen && this.state.tab !== "website") this.load(false);
             }, 60000);
         });
         onWillUnmount(() => clearInterval(this.timer));
@@ -54,6 +54,7 @@ class PlatformConsole extends Component {
     }
     message(error) {
         const data = error?.data;
+        if (data?.name === "odoo.exceptions.AccessError") return "This console is reserved for the TCSI platform owner.";
         return data?.name === "odoo.exceptions.UserError" ? String(data.message).slice(0,240)
             : "Request could not be completed. Check your owner session and try again.";
     }
@@ -63,9 +64,11 @@ class PlatformConsole extends Component {
         if (showLoading) this.state.error = "";
         try {
             this.state.data = await this.orm.call(MODEL, "get_console_data", []);
+            this.state.denied = false;
             await this.loadTab();
             this.state.error = "";
         } catch (error) {
+            this.state.denied = error?.data?.name === "odoo.exceptions.AccessError";
             this.state.error = this.message(error);
             // Never leave privileged data displayed after authorization expires.
             this.state.data = null;

@@ -3,6 +3,7 @@
 from odoo import http
 from odoo.http import request
 from odoo.addons.web.controllers.home import Home
+from ..models.platform_access import is_platform_owner
 import re
 
 
@@ -71,6 +72,24 @@ class TCSIWebClient(Home):
     )
     def workspace(self, s_action=None, **kw):
         return super().web_client(s_action=s_action, **kw)
+
+    @http.route(
+        ["/workspace/console", "/workspace/console/<path:subpath>"],
+        type="http", auth="user", readonly=False,
+    )
+    def platform_console(self, **kw):
+        """Reject company accounts before serving the owner workspace shell."""
+        if not is_platform_owner(request.env):
+            return request.make_response(
+                "<!doctype html><html lang='en'><head><title>Access denied</title></head>"
+                "<body><main><h1>Access denied</h1>"
+                "<p>This console is reserved for the TCSI platform owner.</p>"
+                "<a href='/workspace'>Return to your workspace</a></main></body></html>",
+                status=403,
+                headers=[("Content-Type", "text/html; charset=utf-8"),
+                         ("Cache-Control", "no-store"), ("X-Content-Type-Options", "nosniff")],
+            )
+        return super().web_client(**kw)
 
     @http.route("/dashboards", type="http", auth="none", readonly=False)
     def dashboards_alias(self, **kw):

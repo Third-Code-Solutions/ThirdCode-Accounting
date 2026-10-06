@@ -81,3 +81,27 @@ test("Publishing a refreshed list still checks the editor's original revision", 
   await confirm();
   assert.equal(app.state.revision, 1);
 });
+
+test("Denied session clears all loaded owner data and shows an explicit refusal", async () => {
+  const app = makeConsole();
+  Object.assign(app.state, { data: { organizations: [1] }, analytics: {}, monitoring: {},
+    orgs: { rows: [1] }, people: { rows: [2] }, audit: { rows: [3] } });
+  app.orm = { call: async () => { throw { data: { name: "odoo.exceptions.AccessError" } }; } };
+  await app.load();
+  assert.equal(app.state.denied, true);
+  assert.match(app.state.error, /reserved for the TCSI platform owner/);
+  for (const key of ["data", "analytics", "monitoring"]) assert.equal(app.state[key], null);
+  for (const key of ["orgs", "people", "audit"]) assert.equal(app.state[key].rows.length, 0);
+  assert.equal(app.state.publications.length, 0);
+  assert.equal(app.state.loading, false);
+});
+
+test("Verified owner data restores the console after an earlier refusal", async () => {
+  const app = makeConsole();
+  app.state.denied = true;
+  app.orm = { call: async () => ({ organizations: [] }) };
+  await app.load();
+  assert.equal(app.state.denied, false);
+  assert.ok(app.state.data);
+  assert.equal(app.state.error, "");
+});
