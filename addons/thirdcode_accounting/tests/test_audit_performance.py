@@ -6,7 +6,7 @@ from unittest.mock import patch
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 from odoo.addons.auditlog.models.log import AuditlogLogLine as NativeAuditLogLine
 from odoo.addons.auditlog.models.rule import AuditlogRule as NativeAuditLogRule
 
@@ -143,8 +143,8 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         self.assertEqual(detail.log_id.thirdcode_company_ids, self.company)
         self.assertTrue(detail.log_id.create_date)
         self.assertTrue(detail.log_id.with_user(self.actor).read(["method"]))
-        other_company = self.env["res.company"].create({"name": "Audit metadata other company"})
-        other_reader = self.env["res.users"].create({
+        other_company = self.env["res.company"].sudo().create({"name": "Audit metadata other company"})
+        other_reader = self.env["res.users"].sudo().create({
             "name": "Audit metadata other reader", "login": "audit-metadata-other-reader",
             "company_id": other_company.id, "company_ids": [Command.set(other_company.ids)],
             "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_readonly").ids)],

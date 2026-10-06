@@ -1,7 +1,7 @@
 from odoo import SUPERUSER_ID, Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 
 
 @tagged("post_install", "-at_install")

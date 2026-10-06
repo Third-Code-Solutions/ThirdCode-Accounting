@@ -32,6 +32,7 @@
              platform-owner accounts (base.group_system holders); never to tenants. -->
         <record id="group_thirdcode_platform_console" model="res.groups">
             <field name="name">TCSI Platform Console</field>
+            <field name="implied_ids" eval="[Command.link(ref('base.group_partner_manager'))]"/>
             <field name="category_id" ref="base.module_category_hidden"/>
         </record>
     </data>

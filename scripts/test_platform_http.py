@@ -47,6 +47,31 @@ def verify_platform(port, owner_cookie, database):
         kwargs={"context": {"tcsi_setup_token_ok": True}}, denied=True)
     rpc("_provision_user", cookie=tenant_cookie, model="thirdcode.setup.service", denied=True)
 
+    # Same HTTP endpoints used by Directory and customer/vendor selection.
+    second_payload = dict(payload, request_id=str(uuid.uuid4()), name="Hosted contact client B",
+                          admin_login="contact-b-ci@example.invalid")
+    second = rpc("create_organization", [second_payload])
+    session_b, cookie_b = request("/web/session/authenticate", {"jsonrpc": "2.0", "params": {
+        "db": database, "login": second_payload["admin_login"], "password": second_payload["admin_password"]}})
+    assert session_b.get("result", {}).get("uid") and cookie_b
+    own_a = rpc("create", [{"name": "HTTP contact A", "company_id": False, "customer_rank": 1}],
+                cookie=tenant_cookie, model="res.partner")
+    own_b = rpc("create", [{"name": "HTTP contact B", "supplier_rank": 1}], cookie=cookie_b, model="res.partner")
+    ambiguous = rpc("create", [{"name": "HTTP unassigned review", "company_id": False}], model="res.partner")
+    for cookie, own, foreign, company_id in [(tenant_cookie, own_a, own_b, company["id"]),
+                                            (cookie_b, own_b, own_a, second["id"])]:
+        rows = rpc("search_read", [[]], cookie=cookie, model="res.partner", kwargs={"fields": ["id", "name", "company_id"]})
+        ids = {row["id"] for row in rows}
+        assert own in ids and foreign not in ids and ambiguous not in ids
+        assert next(row for row in rows if row["id"] == own)["company_id"][0] == company_id
+        error = rpc("read", [[foreign], ["name", "email"]], cookie=cookie, model="res.partner", denied=True)
+        assert error["data"]["name"] == "odoo.exceptions.AccessError"
+        choices = rpc("name_search", [], cookie=cookie, model="res.partner", kwargs={"name": "HTTP contact"})
+        assert own in {row[0] for row in choices} and foreign not in {row[0] for row in choices}
+    owner_rows = rpc("read", [[own_a, own_b, ambiguous], ["name"]], model="res.partner")
+    assert len(owner_rows) == 3
+    print("Contact HTTP: two-company Directory search, dropdown search, direct read denial, scoped creation and owner access passed")
+
     public_path = "/thirdcode_accounting/public/website"
     assert request(public_path)[0] == {"seo": None, "releases": []}
     values = {"kind": "seo", "title": "Hosted SEO title", "description": "Public snapshot test",

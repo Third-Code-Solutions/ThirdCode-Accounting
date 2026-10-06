@@ -91,15 +91,14 @@
             <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
         </record>
-        <!-- Scoped user visibility: role users only see accounts that belong
-             to companies they are members of, so trial organizations can
-             never read each other's user records (names, logins). -->
+        <!-- res.users delegates contact fields; all internal identities need the
+             same tenant boundary, regardless of optional business-role groups. -->
         <record id="rule_thirdcode_res_users_company" model="ir.rule">
             <field name="name">Users: within own companies (TCSI tenants)</field>
             <field name="model_id" ref="base.model_res_users"/>
-            <field name="global" eval="False"/>
-            <field name="groups" eval="[(4, ref('group_thirdcode_readonly')), (4, ref('group_thirdcode_encoder')), (4, ref('group_thirdcode_accountant')), (4, ref('group_thirdcode_administrator'))]"/>
-            <field name="domain_force">['|', ('id', '=', user.id), '&amp;', ('company_ids', 'in', company_ids), ('thirdcode_platform_owner', '=', False)]</field>
+            <field name="groups" eval="[Command.clear()]"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">[] if user._thirdcode_is_contact_owner() else ['|', ('id', '=', user.id), '&amp;', ('company_ids', 'in', company_ids), ('thirdcode_platform_owner', '=', False)]</field>
         </record>
         <record id="rule_audit_log_company" model="ir.rule">
             <field name="name">Audit evidence: recorded company scope</field>
@@ -116,5 +115,20 @@
         <record id="rule_cash_allocation_company" model="ir.rule"><field name="name">Cash flow allocation company scope</field><field name="model_id" ref="model_thirdcode_cash_flow_allocation"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
         <record id="rule_tax_summary_company" model="ir.rule"><field name="name">Tax summary company scope</field><field name="model_id" ref="model_thirdcode_tax_summary_wizard"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
         <record id="rule_migration_archive_company" model="ir.rule"><field name="name">Source history company scope</field><field name="model_id" ref="model_thirdcode_migration_archive_entry"/><field name="domain_force">[('company_id', 'in', company_ids)]</field><field name="global" eval="True"/></record>
+        <record id="rule_contact_modify_scope" model="ir.rule">
+            <field name="name">Contacts: shared access does not grant editing</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">user._thirdcode_contact_domain(company_ids, write=True)</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="global" eval="True"/>
+        </record>
+        <record id="rule_contact_bank_modify_scope" model="ir.rule">
+            <field name="name">Contact banks: company-owned modifications</field>
+            <field name="model_id" ref="base.model_res_partner_bank"/>
+            <field name="domain_force">user._thirdcode_contact_domain(company_ids, write=True, bank=True)</field>
+            <field name="perm_read" eval="False"/>
+            <field name="global" eval="True"/>
+        </record>
     </data>
 </odoo>

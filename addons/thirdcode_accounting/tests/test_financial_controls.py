@@ -4,8 +4,8 @@ from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tools import date_utils
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
-from odoo.addons.hr_expense.tests.common import TestExpenseCommon
+from .common import AccountTestInvoicingCommon
+from .common import TestExpenseCommon
 
 
 @tagged("post_install", "-at_install")
@@ -13,6 +13,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        (cls.partner_a | cls.partner_b).write({"company_id": cls.env.company.id})
         cls.company = cls.company_data["company"]
         cls.other_company = cls.env["res.company"].sudo().create(
             {"name": "Financial controls isolated company"}
@@ -700,7 +701,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         users = [self.accountant]
         for index, company in enumerate(companies[1:], start=2):
             users.append(
-                self.env["res.users"].create(
+                self.env["res.users"].sudo().create(
                     {
                         "name": f"Trial isolation accountant {index}",
                         "login": f"trial-isolation-accountant-{index}",
@@ -1073,7 +1074,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             details.sudo().unlink()
         scoped = details[-1].log_id.with_user(self.accountant)
         self.assertTrue(scoped.read(["method"]))
-        other_user = self.env["res.users"].create({
+        other_user = self.env["res.users"].sudo().create({
             "name": "Other audit reader", "login": "other-audit-reader",
             "company_id": self.other_company.id, "company_ids": [Command.set(self.other_company.ids)],
             "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_readonly").ids)],

@@ -6,7 +6,7 @@ from unittest.mock import patch
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 
 from ..models.cutover_math import build_cutover_plan, CutoverPolicyError
 
@@ -16,6 +16,7 @@ class TestAccountingCompletion(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        (cls.partner_a | cls.partner_b).write({"company_id": cls.env.company.id})
         cls.company = cls.company_data["company"]
         cls.admin = cls.env["res.users"].create({"name": "Completion administrator", "login": "completion-admin",
             "company_id": cls.company.id, "company_ids": [Command.set(cls.company.ids)],
