@@ -479,33 +479,6 @@ body.tcsi-shell-active {
     .o_view_nocontent { color: var(--tcsi-route-muted); font-size: 13px; }
     .o_view_nocontent .o_view_nocontent_smiling_face { color: var(--tcsi-route-ink); font-size: 20px; font-weight: 600; }
 
-    .o_base_settings_view .o_form_renderer {
-        background: var(--tcsi-route-page);
-        .o_setting_container { min-width: 0; }
-        .settings_tab {
-            padding: 12px 8px;
-            color: var(--tcsi-route-text);
-            background: var(--tcsi-route-surface);
-            border-right: 1px solid var(--tcsi-route-line);
-            .tab { padding: 10px 12px; margin-bottom: 4px; border-radius: 4px; font-size: 12px; }
-            .tab:hover { background: var(--tcsi-route-surface-hover); }
-            .tab.selected { color: var(--tcsi-route-purple-deep); background: var(--tcsi-route-accent-soft); box-shadow: none; }
-        }
-        .settings { min-width: 0; background: var(--tcsi-route-page); }
-        .settings > .app_settings_block :is(h2, .h2, h3, .h3) {
-            margin: 0;
-            padding: 16px 24px;
-            color: var(--tcsi-route-ink);
-            background: var(--tcsi-route-surface-soft);
-            border-bottom: 1px solid var(--tcsi-route-line);
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .o_settings_container { margin: 0; padding: 8px 12px; }
-        .o_setting_box { margin: 0; padding: 16px 12px; }
-        .o_setting_right_pane { border-color: var(--tcsi-route-line); }
-    }
-
     // OCA reconciliation has its own field renderers outside normal notebooks.
     .o_account_reconcile_oca {
         .o_account_reconcile_oca_selector, .o_account_reconcile_oca_info { min-width: 0; }
@@ -592,7 +565,6 @@ body.tcsi-shell-active .tcsi-console-password-controls .btn { flex: 0 0 auto; }
         .o_control_panel .o_searchview { min-width: 0; width: 100%; }
         .o_form_view .o_form_sheet { --formView-sheet-padding-x: 16px; padding: 16px; }
         .o_form_view .o_form_sheet h1 { font-size: 22px; }
-        .o_base_settings_view .o_form_renderer .settings_tab { padding-block: 0; }
         .tcsi-form-sections { grid-template-columns: minmax(0, 1fr); gap: 24px; }
         .o-mail-ChatterContainer { padding: 0 16px 24px; }
         .o_notebook .nav-tabs { gap: 12px; flex-wrap: nowrap; overflow-x: auto; }
@@ -632,4 +604,179 @@ body.tcsi-shell-active .tcsi-console.tcsi-operations .tcsi-console-shell {
     color: var(--tcsi-route-muted, #67647c);
     font-size: 11px;
     line-height: 1.5;
+}
+
+// Settings: preserve native fields and actions inside a task-oriented layout.
+body.tcsi-shell-active .o_base_settings_view {
+    .o_control_panel {
+        padding: 16px 24px !important;
+        background: var(--tcsi-route-surface);
+        border-bottom: 1px solid var(--tcsi-route-line);
+        .o_control_panel_main { align-items: center !important; gap: 16px !important; }
+        .o_control_panel_breadcrumbs { flex-wrap: wrap; gap: 12px !important; }
+        .o_form_buttons_edit { order: 2 !important; gap: 8px !important; }
+        .o_breadcrumb { margin-right: 12px; }
+        .o_control_panel_actions { flex: 1 1 240px; max-width: 360px !important; margin-left: auto; }
+        .o_cp_searchview { min-width: 0; }
+        .o_control_panel_navigation:empty, .o_control_panel_breadcrumbs > .me-auto:empty { display: none !important; }
+        .o_searchview {
+            min-height: 38px;
+            border: 1px solid var(--tcsi-route-line-strong);
+            border-radius: var(--tcsi-route-radius-sm);
+            background: var(--tcsi-route-surface-soft);
+            &:focus-within { border-color: var(--tcsi-route-accent); box-shadow: 0 0 0 2px var(--tcsi-route-accent-soft); }
+        }
+        .o_searchview_input {
+            min-height: 28px !important;
+            height: auto;
+            padding: 0 !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            background: transparent !important;
+        }
+        .o_dirty_warning {
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--tcsi-route-ink) !important;
+            background: var(--tcsi-route-accent-soft);
+            font-size: 11px;
+        }
+    }
+    .o_form_renderer { background: var(--tcsi-route-page); }
+    .tcsi-settings-layout { min-width: 0; min-height: 0; }
+    .tcsi-settings-navigation {
+        position: relative !important;
+        width: 196px;
+        min-width: 196px;
+        padding: 16px 12px;
+        overflow-y: auto;
+        background: var(--tcsi-route-surface);
+        border-right: 1px solid var(--tcsi-route-line);
+        .settings_tab {
+            width: 100%;
+            height: auto !important;
+            padding: 0 0 16px;
+            border: 0 !important;
+            background: transparent;
+            .tab {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 40px;
+                padding: 8px 12px;
+                margin: 0 0 4px;
+                border-radius: 6px;
+                color: var(--tcsi-route-muted);
+                font-size: 12px;
+                .icon { display: none !important; }
+                &.selected, &:hover { color: var(--tcsi-route-ink) !important; background: var(--tcsi-route-accent-soft) !important; box-shadow: none; }
+                &:focus-visible { outline: 2px solid var(--tcsi-route-accent); outline-offset: -2px; }
+            }
+        }
+    }
+    .tcsi-settings-nav-label {
+        margin: 0 12px 8px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--tcsi-route-muted);
+        font-weight: 650;
+    }
+    .tcsi-settings-outline {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        button {
+            min-height: 34px;
+            padding: 7px 12px;
+            border: 0;
+            border-left: 2px solid transparent;
+            border-radius: 0 4px 4px 0;
+            background: transparent;
+            color: var(--tcsi-route-muted);
+            text-align: left;
+            font-size: 12px;
+            line-height: 1.4;
+            &:hover { color: var(--tcsi-route-ink); background: var(--tcsi-route-surface-hover); }
+            &.is-current { border-left-color: var(--tcsi-route-accent); background: var(--tcsi-route-accent-soft); color: var(--tcsi-route-ink); font-weight: 600; }
+            &:focus-visible { outline: 2px solid var(--tcsi-route-accent); outline-offset: -2px; }
+        }
+    }
+    .tcsi-settings-nav-help { margin: 20px 12px 0; padding-top: 16px; border-top: 1px solid var(--tcsi-route-line); color: var(--tcsi-route-muted); font-size: 11px; line-height: 1.6; }
+    .tcsi-settings-jump { display: none; }
+    .o_form_renderer .tcsi-settings-layout .settings {
+        min-width: 0;
+        padding: 28px 32px 48px;
+        background: var(--tcsi-route-page);
+        scroll-behavior: auto;
+        > .app_settings_block, > .tcsi-settings-intro { max-width: 1120px; margin-inline: auto; }
+        .app_settings_block > :is(h2, div > h2) { scroll-margin-top: 16px; }
+        .app_settings_block h2 {
+            margin: 28px 0 12px !important;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--tcsi-route-ink);
+            font-size: 16px;
+            font-weight: 650;
+            letter-spacing: -.01em;
+            &:focus { outline: none; }
+            &:focus-visible { outline: 2px solid var(--tcsi-route-accent); outline-offset: 4px; }
+        }
+        .o_setting_tip { margin: -4px 0 12px; padding: 0; font-size: 12px; color: var(--tcsi-route-muted); background: transparent; }
+        .o_settings_container {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin: 0;
+            padding: 0;
+            border: 1px solid var(--tcsi-route-line);
+            border-radius: 8px;
+            background: var(--tcsi-route-surface);
+            overflow: visible;
+        }
+        .o_setting_box {
+            width: 100%;
+            min-width: 0;
+            margin: 0;
+            padding: 20px;
+            border-bottom: 1px solid var(--tcsi-route-line);
+            &:last-child { border-bottom: 0; }
+            .o_setting_left_pane { width: 24px; }
+            .o_setting_right_pane { min-width: 0; margin-left: 28px; padding-left: 0; border: 0; }
+            .o_setting_right_pane > .mt16 { margin-top: 0 !important; }
+            .o_form_label { color: var(--tcsi-route-ink); font-size: 13px; font-weight: 600; }
+            .text-muted { color: var(--tcsi-route-muted) !important; font-size: 12px; line-height: 1.6; }
+            .btn-link { min-height: 32px; padding: 4px 0; border: 0 !important; background: transparent !important; box-shadow: none !important; font-size: 12px; font-weight: 600; text-align: left; white-space: normal; }
+            .o_field_widget { max-width: 100%; }
+            .o_field_widget:not(.o_field_boolean) input { min-width: 0; }
+            .o_web_settings_invite { margin-left: 8px; padding-inline: 12px; }
+            .o_user_emails { min-width: 0; margin-top: 0 !important; }
+            .badge { max-width: 100%; overflow-wrap: anywhere; white-space: normal; margin: 2px 4px 2px 0; }
+        }
+        .settingSearchHeader { margin: 24px 0 12px; padding: 8px 0; border-bottom: 1px solid var(--tcsi-route-line); color: var(--tcsi-route-ink); }
+    }
+    .tcsi-settings-intro {
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--tcsi-route-line);
+        h1 { margin: 8px 0; font-size: 28px; letter-spacing: -.03em; font-weight: 650; color: var(--tcsi-route-ink); }
+        > p { margin: 0; color: var(--tcsi-route-muted); font-size: 13px; line-height: 1.6; }
+    }
+    .tcsi-settings-eyebrow { display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: .07em; font-size: 10px; font-weight: 650; color: var(--tcsi-route-muted); .fa { color: var(--tcsi-route-accent); font-size: 14px; } }
+    .tcsi-settings-save-help { display: flex; align-items: baseline; gap: 8px; margin-top: 16px; font-size: 12px; line-height: 1.6; color: var(--tcsi-route-muted); }
+    @media (max-width: 1199px) {
+        .o_form_renderer .tcsi-settings-layout .settings { padding: 24px; .o_settings_container { grid-template-columns: minmax(0, 1fr); } }
+    }
+    @media (max-width: 767px) {
+        .o_control_panel { padding: 12px !important; .o_control_panel_actions { max-width: none !important; } .o_breadcrumb { margin-right: auto; } }
+        .tcsi-settings-navigation {
+            width: 100%; min-width: 0; padding: 0 12px 12px; overflow: visible;
+            border-right: 0; border-bottom: 1px solid var(--tcsi-route-line);
+            .settings_tab { display: flex; height: 44px !important; padding: 0; overflow-x: auto; .tab { flex: 0 0 auto; margin: 0; padding: 0 12px; min-height: 40px; } }
+        }
+        .tcsi-settings-outline, .tcsi-settings-nav-help { display: none; }
+        .tcsi-settings-jump { display: flex; align-items: center; gap: 12px; label { color: var(--tcsi-route-muted); font-size: 11px; white-space: nowrap; } select { min-width: 0; width: 100%; min-height: 36px; border: 1px solid var(--tcsi-route-line-strong); border-radius: 6px; background: var(--tcsi-route-surface); color: var(--tcsi-route-ink); padding: 6px 8px; font-size: 12px; } }
+        .o_form_renderer .tcsi-settings-layout .settings { padding: 20px 16px 40px; .o_setting_box { padding: 16px 12px; } }
+        .tcsi-settings-intro h1 { font-size: 24px; }
+    }
 }

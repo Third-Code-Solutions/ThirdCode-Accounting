@@ -126,6 +126,7 @@ jobs:
           node --test scripts/test-apps.mjs
           node --test scripts/test-design-tokens.mjs
           node --test scripts/test-platform-console.mjs
+          node --test scripts/test-settings.mjs
           python scripts/test-branding.py
 
       - name: Lint
