@@ -256,3 +256,25 @@ test("Failed menu navigation clears the pending tab and releases its lock", asyn
   assert.equal(service.busy, false);
   assert.equal(service.takeInitialTab(), "overview");
 });
+
+
+test("user creation requires an organization and passes its scope to the native wizard", async () => {
+  const app = makeConsole();
+  const calls = [];
+  app.action = { doAction: async (...args) => calls.push(args) };
+  app.state.companyId = false;
+  await app.createPerson();
+  assert.equal(calls.length, 0);
+  app.state.companyId = "42";
+  app.state.loading = true;
+  await app.createPerson();
+  assert.equal(calls.length, 0);
+  app.state.loading = false;
+  await app.createPerson();
+  assert.equal(calls[0][0], "thirdcode_accounting.action_thirdcode_employee_wizard");
+  assert.equal(calls[0][1].additionalContext.default_company_id, 42);
+  let reloads = 0;
+  app.load = async () => { reloads++; };
+  await calls[0][1].onClose();
+  assert.equal(reloads, 1);
+});

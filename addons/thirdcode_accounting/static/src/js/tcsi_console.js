@@ -195,7 +195,8 @@ class PlatformConsole extends Component {
         finally { this.state.busy = false; this.navigation.notify(); }
     }
     createPerson() {
-        this.action.doAction("thirdcode_accounting.action_thirdcode_employee_wizard", {
+        if (this.busy || !this.state.companyId) return;
+        return this.action.doAction("thirdcode_accounting.action_thirdcode_employee_wizard", {
             additionalContext: { default_company_id: Number(this.state.companyId) }, onClose: () => this.load(),
         });
     }
