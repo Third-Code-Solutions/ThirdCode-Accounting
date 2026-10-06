@@ -54,6 +54,19 @@ class TestPlatformOperations(TransactionCase):
             if sudo:service=service.sudo()
             with self.assertRaises(AccessError):
                 service.with_context(tcsi_setup_token_ok=True).dispatch("status")
+        # The entry sentinel is an in-process object: importing it is not
+        # enough. Only the token-checked controller enters inside the
+        # superuser environment, so even a genuine owner session cannot call
+        # the service directly.
+        from odoo.addons.thirdcode_accounting.models.setup_service import (
+            SETUP_ENTRY_CONTEXT_KEY,
+            SETUP_ENTRY_SENTINEL,
+        )
+        owner_service = self.env["thirdcode.setup.service"].with_user(self.owner)
+        with self.assertRaises(AccessError):
+            owner_service.with_context(
+                {SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL}
+            ).dispatch("status")
 
     def test_owner_is_outside_customer_membership_and_lists(self):
         self.assertEqual(self.owner.company_ids,self.home)

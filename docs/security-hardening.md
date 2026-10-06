@@ -95,3 +95,48 @@ instance; CI installs with `--no-http`, so it cannot assert it there.
 
 Portal checks: `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
 in the repository root.
+
+## RBAC audit remediation — 6 October 2026
+
+Source: a principal-QA RBAC audit of the addon (static evidence over the addon,
+native Odoo 18 and the vendored OCA modules, run in a separate session; the
+report itself is intentionally not committed). This change set covers the
+audit's full "top 5 fixes to do now": C1, C2, C3, H2+H3 and H7. Everything is
+engine-only and takes effect with the addon upgrade; the runtime tests are
+`tests/test_rbac_hardening.py` plus the updated `tests/test_trial_mode.py` and
+`tests/test_platform_operations.py`.
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| C1 | The setup service was gated on a context flag a web request can set itself (`call_kw` accepts arbitrary `kwargs.context`), and its methods were public: any logged-in user could provision users with any group, list every tenant and terminate database sessions. | `models/setup_service.py` now requires the superuser environment plus a module-level sentinel (`SETUP_ENTRY_SENTINEL`) that no RPC caller can carry; `dispatch` and `_provision_user` are `@api.private`; the token-checked `/tcsi/setup` controller is the only caller that enters with both. Operators keep using the endpoint, never direct RPC calls. |
+| C2 | Every business role implied native `auditlog.group_auditlog_user`, exposing `auditlog.http.session` (raw `session.sid` per user) and `auditlog.http.request` across tenants; those models also had no company rules. | Roles now imply `group_thirdcode_audit_reader` — read-only on `auditlog.log` / `auditlog.log.line` only — so HTTP session and request metadata is tenant-invisible. `auditlog.http.session.current_http_session` stores a database-scoped SHA-256 digest instead of the raw sid; migration `18.0.2.15.0` hashes already-stored values and strips the native group from tenant users (Odoo adds newly implied groups on upgrade but never removes withdrawn ones). |
+| C3 | An Encoder could arm `auto_post`/`auto_post_until`/`checked` on their own draft and the nightly auto-post cron (running as root) posted it, with the audit trail naming OdooBot instead of the Encoder. | `models/account_move.py` refuses Encoder writes that arm automatic posting (turning it off stays allowed), and `_autopost_draft_entries` demotes any auto-post draft last written by an Encoder before the native job can post it, leaving a chatter note. |
+| H2 | One user could change a vendor's bank account, post the bill and pay it: the Accountant role carried full partner-bank CRUD and no role held the bank-account validation group, so the trusted-account check never really applied. | The Administrator role now implies `account.group_validate_bank_account`, so only an administrator (or platform staff) can mark an account Trusted — and a trusted account's number/partner are locked natively. `account.payment.action_post` refuses an outbound bank-journal payment whose recipient account is not trusted. |
+| H3 | Batch approval applied only when a threshold was enabled (off by default), an Administrator could approve their own batch, and the native register-payment wizard bypassed batches entirely. | `action_approve` refuses the batch creator. When a company enables `thirdcode_payment_approval_enabled`, any payment above the threshold can only post through a batch an administrator approved: the batch path enters with an unforgeable in-process `PAYMENT_APPROVAL_TOKEN`, every other path is refused at `action_post`. |
+| H7 | An Administrator could reset the password of, or disable, any user sharing at least one company — including users who also belong to another organization, and peer Administrators. | `models/org_users.py` requires the target's companies to be a subset of the administrator's companies, and blocks tenant management of peer Administrators and of the platform owner; those stay with the platform owner (`base.group_system`). |
+
+### Operator steps after deploying this change
+
+1. The version bump (`18.0.2.15.0`) runs the module upgrade; migration
+   `18.0.2.15.0/post-migrate.py` rewrites stored session identifiers in place
+   and removes the native audit group from tenant accounts. Confirm the log
+   lines `Audit session digests: N stored session identifiers replaced` and
+   `Audit access: native audit group removed from N tenant accounts`.
+2. Rotate the session-signing secret so no pre-fix browser session stays
+   usable: Settings → Technical → System Parameters → set `database.secret` to
+   a fresh random value (Odoo initialises it with a UUID at database creation;
+   it signs the session token and has no other core consumer). Every user
+   signs in again. Verify with a previously open tab.
+3. Existing trial organizations keep working; their Administrators gain the
+   bank-validation ability and lose the raw audit session pages, as designed.
+
+### Deliberately left open (need a business decision; same source report)
+
+- Whether Encoders may read the general ledger / run reports (M2), export
+  rights per role (L1), and whether Read-only users may file their own
+  expenses (M4).
+- A role-change wizard for Administrators (M5), a second-approver flow for
+  Administrator targets (H7 residual), turning payment approval on by default
+  (H3 residual) and who verifies vendor banks (H2 residual).
+- The remaining table items H1 (payment create-state), H4/H5 (expense
+  approvals), H6 (Administrator accounting menus), M1/M3/M6/M7 and L2/L3.

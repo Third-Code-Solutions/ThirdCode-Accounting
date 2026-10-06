@@ -23,6 +23,26 @@ ROLE_SELECTION = [
 MIN_PASSWORD_LENGTH = 8
 
 
+def _thirdcode_admin_may_manage(actor, target):
+    """Tenant administrators manage accounts fully inside their own companies.
+
+    A target whose memberships reach outside the administrator's companies
+    would let a password reset leak a login into another organization, and a
+    peer administrator (or the platform owner) is never tenant-managed: those
+    stay with the platform owner.
+    """
+    if target.id == actor.id:
+        return True
+    if (
+        target.has_group(SYSTEM_GROUP)
+        or target.has_group(ADMIN_GROUP)
+        or target.thirdcode_platform_owner
+    ):
+        return False
+    target_companies = set(target.company_ids.ids)
+    return bool(target_companies) and target_companies <= set(actor.company_ids.ids)
+
+
 class ThirdcodeEmployeeWizard(models.TransientModel):
     _name = "thirdcode.employee.wizard"
     _description = "Create an employee account"
@@ -89,10 +109,12 @@ class ThirdcodeEmployeePasswordWizard(models.TransientModel):
         if not self.env.user.has_group(SYSTEM_GROUP):
             if not self.env.user.has_group(ADMIN_GROUP):
                 raise AccessError(_("Only company administrators can reset passwords."))
-            if target.has_group(SYSTEM_GROUP) or not (
-                set(target.company_ids.ids) & set(self.env.user.company_ids.ids)
-            ):
-                raise AccessError(_("You can only manage accounts of your own company."))
+            if not _thirdcode_admin_may_manage(self.env.user, target):
+                raise AccessError(
+                    _(
+                        "Administrator accounts, and accounts whose companies are not all inside your companies, can only be managed by the platform owner."
+                    )
+                )
         if len((self.new_password or "").strip()) < MIN_PASSWORD_LENGTH:
             raise UserError(_("Use a password with at least %s characters.") % MIN_PASSWORD_LENGTH)
         target.sudo().write({"password": self.new_password})
@@ -128,10 +150,12 @@ class ResUsers(models.Model):
                     raise AccessError(_("Only company administrators can enable or disable accounts."))
                 if user.id == self.env.user.id:
                     raise UserError(_("You cannot disable your own account."))
-                if user.has_group(SYSTEM_GROUP) or not (
-                    set(user.company_ids.ids) & set(self.env.user.company_ids.ids)
-                ):
-                    raise AccessError(_("You can only manage accounts of your own company."))
+                if not _thirdcode_admin_may_manage(self.env.user, user):
+                    raise AccessError(
+                        _(
+                            "Administrator accounts, and accounts whose companies are not all inside your companies, can only be managed by the platform owner."
+                        )
+                    )
             user.sudo().write({"active": not user.active})
         return True
 
