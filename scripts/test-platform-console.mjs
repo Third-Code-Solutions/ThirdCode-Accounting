@@ -81,3 +81,55 @@ test("Publishing a refreshed list still checks the editor's original revision", 
   await confirm();
   assert.equal(app.state.revision, 1);
 });
+
+test("Denied session clears all loaded owner data and shows an explicit refusal", async () => {
+  const app = makeConsole();
+  Object.assign(app.state, { data: { organizations: [1] }, analytics: {}, monitoring: {},
+    orgs: { rows: [1] }, people: { rows: [2] }, audit: { rows: [3] } });
+  app.orm = { call: async () => { throw { data: { name: "odoo.exceptions.AccessError" } }; } };
+  await app.load();
+  assert.equal(app.state.denied, true);
+  assert.match(app.state.error, /reserved for the TCSI platform owner/);
+  for (const key of ["data", "analytics", "monitoring"]) assert.equal(app.state[key], null);
+  for (const key of ["orgs", "people", "audit"]) assert.equal(app.state[key].rows.length, 0);
+  assert.equal(app.state.publications.length, 0);
+  assert.equal(app.state.loading, false);
+});
+
+test("Verified owner data restores the console after an earlier refusal", async () => {
+  const app = makeConsole();
+  app.state.denied = true;
+  app.orm = { call: async () => ({ organizations: [] }) };
+  await app.load();
+  assert.equal(app.state.denied, false);
+  assert.ok(app.state.data);
+  assert.equal(app.state.error, "");
+});
+
+for (const operation of [app => app.run("suspend_company", [4], "Done"),
+  app => app.newOrganization(), app => app.createOrganization(), app => app.saveDraft()]) {
+  test(`Owner authority revoked during ${operation.toString()} closes owner controls`, async () => {
+    const app = makeConsole();
+    app.state.data = { organizations: [1] };
+    app.state.org = { admin_password: "Unsaved-secret" };
+    let closed = false;
+    app.removeCreateDialog = () => { closed = true; };
+    app.orm = { call: async () => { throw { data: { name: "odoo.exceptions.AccessError" } }; } };
+    await operation(app);
+    assert.equal(app.state.denied, true);
+    assert.equal(app.state.data, null);
+    assert.equal(app.state.org.admin_password, "");
+    assert.equal(app.state.draft.title, "");
+    assert.equal(closed, true);
+  });
+}
+
+test("Business validation failure keeps owner editor and exposes error", async () => {
+  const app = makeConsole();
+  app.state.data = { organizations: [] };
+  app.orm = { call: async () => { throw { data: { name: "odoo.exceptions.UserError", message: "Revision changed" } }; } };
+  await app.saveDraft();
+  assert.equal(app.state.error, "Revision changed");
+  assert.ok(app.state.data);
+  assert.equal(app.state.draft.title, a.title);
+});

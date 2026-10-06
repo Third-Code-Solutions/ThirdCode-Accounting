@@ -19,12 +19,30 @@ Read-only production review found 87 contacts, including 69 without company owne
 
 The one-time migration adds read grants from existing invoice, journal line and payment references, including parent ancestors. It does not assign ownership, share siblings, delete contacts or infer ownership from names/email addresses. Re-running an upgrade does not restore revoked grants or grant access from later documents.
 
-## Verification status
+## Verification
 
-Implementation and independent review are complete; final CI remains pending. Two-company ORM tests cover search, direct read, export, dropdowns, identity changes, bank records, owner access, sharing revocation, forged defaults and accounting reference boundaries. Accounting regressions include shared-vendor bills/invoices, refunds, reconciliation and company bank selection. Hosted HTTP tests provision disposable organizations and exercise native RPC isolation.
+Independent security and native-mail reviews completed with no remaining source blockers. Final candidate `7f9829ce629fc99266c81c1de44dec6f2719d734` passed [CI37394563884](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37394563884): 161 native tests and 59 integration checks, zero failures/errors; hosted HTTP, coordinated-recovery and web quality gates also passed. The integration checks overlap native test coverage and are not 59 additional unique business cases.
 
-Fresh encrypted database/filestore capture completed before deployment. The isolated upgrade passed on runtime revision `7d0fc53`, preserving the original eight selected accounting/contact/company table projections; this is a limited conservation check, not a claim that every database table or filestore byte is unchanged. Current fresh capture has not been verified off-host.
+Tests cover two-company search/read/export/dropdown denial, identity changes, sharing/revocation, forged defaults, bank references, owner/multi-company access, shared-contact invoice/bill posting, refunds and reconciliation. Native mail tests cover Store responses, recipient WebSocket payloads, raw metadata reads and real nested exports. Nested `web_read` expansion of a foreign contact correctly raises `AccessError`; permitted message body reads remain available.
 
-Production deployment and live verification are not yet complete. Final revision, CI results and live counts will be recorded here after they are observed.
+Fresh encrypted database/filestore capture completed before deployment (77,404,734 bytes; 1,320 manifest files). Current fresh capture has not been verified off-host. Initial 14.0-to-14.1 upgrade and final runtime re-upgrade both passed in an existing neutralized restored database. Conservation evidence covers only eight listed table projections, excluding partner/company write timestamps, added fields, other tables and filestore. See `isolated-upgrade.json`.
 
-Native run [37392179294](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37392179294) reached 161 tests: no assertion failures, one remaining foreign-user fixture provisioning error. All contact/mail and shared-accounting cases passed. The remaining fixture now provisions its unrelated-company reader under installer access; its negative read and audit immutability assertions retain the original user. No runtime code changed after the successful isolated rehearsal.
+[PR18](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/pull/18) merged as `772208cb9eb6c525f7a0a98b37840e1f4719f102` at 2026-10-06 00:39:45 UTC. Railway deployment `3e081eb8-4417-4fc5-94cd-17a1c2e03770` is active. Production API confirms addon `18.0.2.14.1`. Container digest: `sha256:9459d08d1ff181cf787dac2578d2e6948260f097cbfe1a15e3a7ebd5ecdf76a3`.
+
+
+## Live verification, 2026-10-06
+
+Read-only production checks at 00:43 UTC passed:
+
+| Account scope | Contacts before | Contacts after | Own contact reads | Foreign direct reads denied | Foreign dropdown matches |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Company 4 accountant | 70 | 9 | 3 | 5 | 0 |
+| Company 5 accountant | 69 | 7 | 2 | 6 | 0 |
+
+Every visible contact had explicit ownership, identity membership or an approved grant for the requesting company. Both accounts had zero visible partner-bank records; live bank isolation is therefore an empty-set check, with positive/negative bank behavior covered by native regression tests.
+
+Platform owner could retrieve all 87 active/archived contacts. All 71 active contacts captured by the pre-deployment API snapshot remain present with unchanged company and parent links. The broader 87-contact preservation check belongs to the isolated upgrade rehearsal, not this 71-record live comparison. Historical company-less business contacts 89 and 90 have grants only for company 1. No ownership reassignment or record deletion was performed.
+
+Native browser verification as the company 4 accountant confirmed Directory shows 9 contacts, comprising its own identities and customer records. The unsaved invoice customer and bill vendor selectors returned no existing match for `Trial Client 02`, while all three own `Trial E2E Customer` entries remained searchable. Both unsaved forms were discarded. No invoice or bill was saved or posted during production verification. Evidence payload: `live-verification.json`. Screenshots remain private under `/Users/hoon/tcsi-private/` (`contact-directory-before.png`, `contact-directory-after.png`, `contact-customer-foreign-search.png`, `contact-customer-own-search.png`, `contact-vendor-foreign-search.png`).
+
+Accounting posting, reversal and reconciliation were exercised in isolated automated tests, not by creating financial transactions in production. Security review and CI establish the tested boundaries; they are not a claim that every possible attack or accounting workflow has been tested.

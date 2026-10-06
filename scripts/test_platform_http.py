@@ -29,6 +29,17 @@ def verify_platform(port, owner_cookie, database):
         assert "error" not in data, (model, method, data.get("error"))
         return data["result"]
 
+    def console_page(cookie=None, path="/workspace/console"):
+        connection = HTTPConnection("127.0.0.1", port, timeout=90)
+        headers = {"X-Forwarded-Proto": "https"}
+        if cookie:
+            headers["Cookie"] = cookie.split(";", 1)[0]
+        connection.request("GET", path, headers=headers)
+        response = connection.getresponse()
+        result = (response.status, response.read().decode(), response.getheader("Cache-Control"))
+        connection.close()
+        return result
+
     # Exercise actual chart/journal/admin creation, not a mocked baseline.
     payload = {"request_id": str(uuid.uuid4()), "name": "Hosted platform client", "country": "PH",
                "currency": "PHP", "admin_name": "Hosted client admin", "admin_login": "platform-ci@example.invalid",
@@ -40,6 +51,12 @@ def verify_platform(port, owner_cookie, database):
     session, tenant_cookie = request("/web/session/authenticate", {"jsonrpc": "2.0", "params": {
         "db": database, "login": payload["admin_login"], "password": payload["admin_password"]}})
     assert session.get("result", {}).get("uid") and tenant_cookie
+    assert console_page(owner_cookie)[0] == 200
+    for path in ("/workspace/console", "/workspace/console/", "/workspace/console/organizations"):
+        status, body, cache = console_page(tenant_cookie, path)
+        assert status == 403 and "Access denied" in body and cache == "no-store", (path, status)
+        assert "Create organization" not in body
+    assert console_page()[0] in (302, 303)
     for method in ["get_console_data", "get_people", "get_audit", "get_monitoring", "get_publications"]:
         error = rpc(method, cookie=tenant_cookie, denied=True)
         assert error["data"]["name"] == "odoo.exceptions.AccessError", error
