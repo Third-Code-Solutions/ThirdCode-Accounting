@@ -41,10 +41,11 @@
     .tcsi-console-bar span { font-size: 10px; color: var(--console-muted); white-space: nowrap; }
 
     .tcsi-console-alerts h2 { margin-bottom: 10px; }
-    .tcsi-console-alert { padding: 10px 14px; margin-bottom: 8px; background: var(--console-surface); border: 1px solid var(--console-line); border-left-width: 3px; border-radius: 6px; }
-    .tcsi-console-alert.is-critical { border-left-color: #b42318; }
-    .tcsi-console-alert.is-warning { border-left-color: #b54708; }
-    .tcsi-console-alert.is-info { border-left-color: #175cd3; }
+    .tcsi-console-alert { padding: 10px 14px; margin-bottom: 8px; background: var(--console-surface); border: 1px solid var(--console-line); border-radius: 6px; }
+    .tcsi-console-alert .tcsi-console-badge { padding: 0; margin-right: 8px; border: 0; border-radius: 0; background: transparent; }
+    .tcsi-console-alert.is-critical .tcsi-console-badge,
+    .tcsi-console-alert.is-warning .tcsi-console-badge { color: var(--tcsi-alert-warning-text, #b42318); }
+    .tcsi-console-alert.is-info .tcsi-console-badge { color: var(--tcsi-alert-info-text, #175cd3); }
     .tcsi-console-alert-title { margin: 0; font-weight: 600; }
     .tcsi-console-alert-org { font-weight: 400; color: var(--console-muted); }
     .tcsi-console-alert-detail { margin: 2px 0 0; color: var(--console-muted); }
@@ -178,4 +179,9 @@
         .tcsi-console-bar span { font-size: 8px; }
     }
     .tcsi-console-form-row { grid-template-columns: 1fr; }
+}
+
+html[data-tcsi-theme="dark"] .tcsi-console {
+    --tcsi-alert-warning-text: #fda29b;
+    --tcsi-alert-info-text: #84adff;
 }
