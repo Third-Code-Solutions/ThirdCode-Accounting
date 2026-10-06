@@ -241,8 +241,10 @@ class TestContactIsolation(TransactionCase):
             self.assertIn("Contact boundary test", row["body"])
         searched = readable.search_read([("id", "=", message.id)], ["author_id", "email_from"])
         self.assertFalse(searched[0]["email_from"])
-        web = readable.web_read({"author_id": {"fields": {"name": {}}}, "email_from": {}})
-        self.assertFalse(web[0]["author_id"])
+        # Native web_read expands the actual ORM relation, independently of
+        # formatted rows. The partner rule must deny that foreign expansion.
+        with self.assertRaises(AccessError):
+            readable.web_read({"author_id": {"fields": {"name": {}}}, "email_from": {}})
         # Nested exports call this ORM hook without the top-level mail gate.
         with self.assertRaises(AccessError):
             readable._export_rows([["email_from"]], _is_toplevel_call=False)

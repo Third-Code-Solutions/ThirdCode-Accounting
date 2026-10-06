@@ -31,5 +31,25 @@
     "res_company": 13
   },
   "neutralized": true,
-  "fresh_restore_performed": false
+  "fresh_restore_performed": false,
+  "final_runtime_recheck": {
+    "revision": "db34ee7a89d8a3a50f1c49143605970d101875a8",
+    "source_version": "18.0.2.14.1",
+    "target_version": "18.0.2.14.1",
+    "status": "CONTACT_UPGRADE_VERIFIED",
+    "selected_business_projection_preserved": true,
+    "selected_production_projection_preserved": true,
+    "contact_count": 87,
+    "shared_grants": [
+      [
+        89,
+        1
+      ],
+      [
+        90,
+        1
+      ]
+    ],
+    "fresh_restore_performed": false
+  }
 }
