@@ -245,10 +245,13 @@ class TestContactIsolation(TransactionCase):
         # formatted rows. The partner rule must deny that foreign expansion.
         with self.assertRaises(AccessError):
             readable.web_read({"author_id": {"fields": {"name": {}}}, "email_from": {}})
-        # Nested exports call this ORM hook without the top-level mail gate.
+        # Exercise native parent export initialization and nested message rows.
+        # The top-level mail.message export gate is not involved in this path.
+        readable_channel = channel.with_user(self.ua).with_context(allowed_company_ids=self.a.ids)
         with self.assertRaises(AccessError):
-            readable._export_rows([["email_from"]], _is_toplevel_call=False)
-        self.assertIn("Contact boundary test", readable._export_rows([["body"]], _is_toplevel_call=False)[0][0])
+            readable_channel.export_data(["message_ids/email_from"])
+        exported = readable_channel.export_data(["message_ids/body"])
+        self.assertIn("Contact boundary test", json.dumps(exported))
         for user, companies in [(self.owner, self.owner.company_ids), (self.multi, self.a | self.b)]:
             allowed = message.with_user(user).with_context(allowed_company_ids=companies.ids)
             self.assertEqual(allowed.sudo().read(["email_from"])[0]["email_from"], self.ub.email)
