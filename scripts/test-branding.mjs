@@ -82,6 +82,27 @@ test("warning fallback keeps the real validation reason when arguments are missi
 
 const source = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/tcsi_brand.js", import.meta.url), "utf8");
 
+test("workspace picker removes only Insights and People and preserves Dashboard's authorized target", () => {
+    const context = {
+        TCSI_APP_XMLID: "thirdcode_accounting.menu_thirdcode_accounting_root",
+        DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
+        brandedLabel: name => name,
+    };
+    runInNewContext(source.slice(source.indexOf("function workspaceAppLabel"), source.indexOf("function makeAppButton")), context);
+    const dashboard = { id: 7, name: "TCSI Accounting", xmlid: context.TCSI_APP_XMLID };
+    const revenue = { id: 8, name: "Revenue", xmlid: "account.menu_finance" };
+    const apps = [dashboard, revenue,
+        { id: 9, xmlid: context.DASHBOARDS_APP_XMLID }, { id: 10, xmlid: "hr.menu_hr_root" }];
+    const filtered = context.workspaceApps({ getApps: () => apps });
+    assert.equal(filtered.length, 2);
+    assert.equal(filtered[0], dashboard);
+    assert.equal(filtered[1], revenue);
+    assert.equal(context.workspaceAppLabel(dashboard), "Dashboard");
+    assert.equal(context.workspaceAppLabel(revenue), "Revenue");
+    assert.equal(context.workspaceApps({ getApps: () => [] }).length, 0);
+    assert.equal(apps.length, 4);
+});
+
 test("workspace router brands root, query, fragment and record links", () => {
     const router = { stateToUrl: (value) => value, urlToState: (url) => url.href };
     const start = source.indexOf("const frameworkStateToUrl");

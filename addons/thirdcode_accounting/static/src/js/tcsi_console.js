@@ -8,11 +8,37 @@ import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_d
 const MODEL = "thirdcode.platform.console";
 const EMPTY_PAGE = () => ({ rows: [], total: 0, page: 0, page_size: 25 });
 
+function generateInitialPassword() {
+    // 64 symbols divide the byte range evenly; no modulo bias or weak fallback.
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const bytes = new Uint8Array(24);
+    let password;
+    do {
+        crypto.getRandomValues(bytes);
+        password = Array.from(bytes, byte => alphabet[byte & 63]).join("");
+    } while (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[-_]/.test(password));
+    return password;
+}
+
 class CreateOrganizationDialog extends Component {
     static template = "thirdcode_accounting.CreateOrganizationDialog";
     static components = { Dialog };
     static props = ["controller", "close"];
-    setup() { this.state = useState(this.props.controller.state); }
+    setup() {
+        this.state = useState(this.props.controller.state);
+        this.password = useState({ visible: false, error: "" });
+    }
+    generatePassword() {
+        if (this.state.busy) return;
+        try {
+            this.state.org.admin_password = generateInitialPassword();
+            this.password.visible = true;
+            this.password.error = "";
+        } catch {
+            this.password.error = "Secure password generation is unavailable. Enter a password manually or retry in a secure browser.";
+        }
+    }
+    togglePassword() { this.password.visible = !this.password.visible; }
     closeCreate() { this.props.controller.closeCreate(); }
     createOrganization() { return this.props.controller.createOrganization(); }
 }

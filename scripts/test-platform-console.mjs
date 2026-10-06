@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import test from "node:test";
+import { webcrypto } from "node:crypto";
 
 // Execute the production controller with service doubles; native rendering is
 // covered separately. Deferred requests reproduce real cross-editor races.
@@ -132,4 +133,52 @@ test("Business validation failure keeps owner editor and exposes error", async (
   assert.equal(app.state.error, "Revision changed");
   assert.ok(app.state.data);
   assert.equal(app.state.draft.title, a.title);
+});
+
+function passwordDialog(crypto = webcrypto) {
+  const context = {
+    crypto, Component: class {}, Dialog: class {}, useState: state => state,
+  };
+  vm.runInNewContext(source.slice(0, source.indexOf("class PlatformConsole")) +
+    ";this.CreateDialog = CreateOrganizationDialog;", context);
+  const dialog = new context.CreateDialog();
+  dialog.props = { controller: { state: { busy: false, org: { admin_password: "" } } } };
+  dialog.setup();
+  return dialog;
+}
+
+test("Generated credentials meet initial-password policy and can be revealed or hidden", () => {
+  const dialog = passwordDialog();
+  const passwords = new Set();
+  assert.equal(dialog.password.visible, false);
+  for (let i = 0; i < 100; i++) {
+    dialog.generatePassword();
+    const value = dialog.state.org.admin_password;
+    assert.equal(value.length, 24);
+    for (const pattern of [/^[A-Za-z0-9_-]+$/, /[A-Z]/, /[a-z]/, /[0-9]/, /[-_]/]) assert.match(value, pattern);
+    passwords.add(value);
+  }
+  assert.equal(passwords.size, 100);
+  assert.equal(dialog.password.visible, true);
+  const value = dialog.state.org.admin_password;
+  dialog.togglePassword();
+  assert.equal(dialog.password.visible, false);
+  assert.equal(dialog.state.org.admin_password, value);
+});
+
+test("Generation cannot replace credentials during submission", () => {
+  const dialog = passwordDialog({ getRandomValues() { assert.fail("Must not generate while busy"); } });
+  dialog.state.org.admin_password = "Manually-entered-secret";
+  dialog.state.busy = true;
+  dialog.generatePassword();
+  assert.equal(dialog.state.org.admin_password, "Manually-entered-secret");
+});
+
+test("Unavailable cryptographic randomness preserves manual input and reports failure", () => {
+  const dialog = passwordDialog({ getRandomValues() { throw new Error("unavailable"); } });
+  dialog.state.org.admin_password = "Manually-entered-secret";
+  dialog.generatePassword();
+  assert.equal(dialog.state.org.admin_password, "Manually-entered-secret");
+  assert.match(dialog.password.error, /Secure password generation is unavailable/);
+  assert.equal(dialog.password.visible, false);
 });

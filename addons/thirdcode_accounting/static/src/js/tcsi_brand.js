@@ -890,8 +890,18 @@ function makeSectionHeading(label) {
     return heading;
 }
 
+function workspaceAppLabel(app) {
+    return app.xmlid === TCSI_APP_XMLID ? "Dashboard" : brandedLabel(app.name);
+}
+
+function workspaceApps(menuService) {
+    return menuService.getApps().filter(app => ![
+        DASHBOARDS_APP_XMLID, "hr.menu_hr_root",
+    ].includes(app.xmlid));
+}
+
 function makeAppButton(app, menuService, currentApp) {
-    const displayName = brandedLabel(app.name);
+    const displayName = workspaceAppLabel(app);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "tcsi-app-switcher-item";
@@ -944,7 +954,7 @@ function renderSidebar(sidebar, menuService) {
         return;
     }
 
-    currentLabel.textContent = brandedLabel(selectedApp.name);
+    currentLabel.textContent = workspaceAppLabel(selectedApp);
     nav.replaceChildren();
 
     const overview = document.createElement("button");
@@ -972,7 +982,7 @@ function renderSidebar(sidebar, menuService) {
         sidebar.classList.remove("is-apps-open");
         appSwitcher.hidden = true;
         sidebar.querySelector(".tcsi-sidebar-app-switcher")?.setAttribute("aria-expanded", "false");
-        for (const app of menuService.getApps()) {
+        for (const app of workspaceApps(menuService)) {
             appSwitcher.append(makeAppButton(app, menuService, selectedApp));
         }
     }
@@ -1010,7 +1020,7 @@ function mountWorkspaceNavigation(env) {
         </div>
         <button class="tcsi-sidebar-app-switcher" type="button" aria-expanded="false" aria-controls="tcsi-app-switcher">
             <span class="tcsi-sidebar-app-switcher-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span>
-            <span class="tcsi-sidebar-app-copy"><small>Current workspace</small><strong class="tcsi-sidebar-app-name">TCSI Accounting</strong></span>
+            <span class="tcsi-sidebar-app-copy"><small>Current workspace</small><strong class="tcsi-sidebar-app-name">Dashboard</strong></span>
             <span class="tcsi-sidebar-chevron" aria-hidden="true">⌄</span>
         </button>
         <div class="tcsi-app-switcher-list" id="tcsi-app-switcher" hidden></div>
