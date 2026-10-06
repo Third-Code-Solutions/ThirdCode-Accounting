@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+        <record id="group_thirdcode_platform_support" model="res.groups">
+            <field name="name">TCSI Platform Support and Moderation</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+            <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+        </record>
         <!-- Business roles are mapped to native Odoo capabilities. Auditlog
              access is read-only here; the model override below prevents
              application users from editing or purging retained entries. -->

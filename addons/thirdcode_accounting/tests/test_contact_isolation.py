@@ -193,7 +193,7 @@ class TestContactIsolation(TransactionCase):
     def test_automatic_channel_membership_scopes_candidate_contacts(self):
         group = self.env["res.groups"].create({"name": "Contact test subscription"})
         (self.ua | self.ub).write({"groups_id": [Command.link(group.id)]})
-        channel = self.env["discuss.channel"].create({"name": "Contact subscription test", "channel_type": "channel"})
+        channel = self.env["discuss.channel"].create({"name": "Contact subscription test", "channel_type": "channel", "thirdcode_company_id": self.a.id})
         # Set the group without invoking subscription yet, so both are candidates.
         with patch.object(type(channel), "_subscribe_users_automatically", return_value=None):
             channel.write({"group_ids": [Command.link(group.id)]})
@@ -211,20 +211,19 @@ class TestContactIsolation(TransactionCase):
         owner_data = Store((self.pa | self.pb).with_user(self.owner), fields=["name"]).get_result()
         self.assertEqual({row["id"] for row in owner_data["res.partner"]}, {self.pa.id, self.pb.id})
 
-    def test_channel_member_api_scopes_existing_shared_channel(self):
+    def test_channel_member_api_denies_unassigned_legacy_channel(self):
         channel = self.env["discuss.channel"].create({"name": "Legacy shared channel", "channel_type": "channel",
             "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ub)]})
-        for user, foreign in [(self.ua, self.ub), (self.ub, self.ua)]:
-            data = channel.with_user(user).with_context(allowed_company_ids=user.company_id.ids)._load_more_members([])
-            ids = {row["id"] for row in data.get("res.partner", [])}
-            self.assertIn(user.partner_id.id, ids)
-            self.assertNotIn(foreign.partner_id.id, ids)
+        for user in (self.ua | self.ub | self.owner):
+            with self.assertRaises(AccessError):
+                channel.with_user(user).with_context(allowed_company_ids=user.company_id.ids)._load_more_members([])
 
     def test_message_author_email_and_bus_payload_are_receiver_scoped(self):
         self.ub.email = "foreign-contact-marker@example.invalid"
-        channel = self.env["discuss.channel"].create({"name": "Shared message test", "channel_type": "channel",
-            "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ub)]})
-        message = self.env["mail.message"].create({"model": "discuss.channel", "res_id": channel.id,
+        # Business chatter still needs author redaction. Shared Discuss history
+        # is now denied outright by test_discuss_isolation.
+        channel = self.pa
+        message = self.env["mail.message"].create({"model": "res.partner", "res_id": channel.id,
             "body": "Contact boundary test", "author_id": self.ub.partner_id.id,
             "email_from": self.ub.email, "message_type": "comment",
             "partner_ids": [Command.set((self.ua.partner_id | self.ub.partner_id).ids)]})
@@ -262,16 +261,15 @@ class TestContactIsolation(TransactionCase):
         message._author_to_store(sender_store)
         data = sender_store.get_result()
         notifications = [
-            {"id": 101, "message": {"type": "discuss.channel/new_message", "payload": {"id": 1, "data": data}}},
             {"id": 102, "message": {"type": "mail.record/insert", "payload": data}},
             {"id": 103, "message": {"type": "unrelated/test", "payload": {"value": "unchanged"}}},
         ]
         with patch.object(ImBus, "_poll", return_value=notifications):
             for user, own, foreign in [(self.ua, self.ua, self.ub), (self.ub, self.ub, self.ua)]:
                 result = self.env["bus.bus"].with_user(user).with_context(allowed_company_ids=user.company_id.ids)._poll([])
-                self.assertEqual([item["id"] for item in result], [101, 102, 103])
-                self.assertEqual(result[2], notifications[2])
-                for store_data in [result[0]["message"]["payload"]["data"], result[1]["message"]["payload"]]:
+                self.assertEqual([item["id"] for item in result], [102, 103])
+                self.assertEqual(result[1], notifications[1])
+                for store_data in [result[0]["message"]["payload"]]:
                     ids = {row["id"] for row in store_data["res.partner"]}
                     self.assertIn(own.partner_id.id, ids)
                     self.assertNotIn(foreign.partner_id.id, ids)

@@ -43,3 +43,4 @@ from . import platform_incident
 from . import platform_publication
 
 from . import contact_isolation
+from . import discuss_isolation
