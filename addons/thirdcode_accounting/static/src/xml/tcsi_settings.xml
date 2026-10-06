@@ -3,6 +3,7 @@
     <t t-name="thirdcode_accounting.SettingsPage" t-inherit="web.SettingsPage" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('o_setting_container')]" position="attributes">
             <attribute name="class" add="tcsi-settings-layout" separator=" "/>
+            <attribute name="t-att-data-tcsi-settings-section">tcsiOutline.active</attribute>
         </xpath>
         <xpath expr="//div[hasclass('settings_tab')]/.." position="attributes">
             <attribute name="class" add="tcsi-settings-navigation" separator=" "/>

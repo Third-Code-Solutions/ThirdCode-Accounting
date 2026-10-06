@@ -2,6 +2,29 @@
 import { onMounted, onWillUnmount, useState } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { SettingsPage } from "@web/webclient/settings_form_view/settings/settings_page";
+import { registry } from "@web/core/registry";
+
+export const settingsNavigationService = {
+    start(env) {
+        let page = null;
+        const notify = (structure = false) => env.bus.trigger("TCSI:SETTINGS-NAVIGATION", { structure });
+        return {
+            get active() { return Boolean(page); },
+            get sections() { return page?.tcsiOutline.sections || []; },
+            get modules() { return page?.props.modules.filter(module => !module.isVisible) || []; },
+            get selectedModule() { return page?.state.selectedTab; },
+            get activeSection() { return page?.tcsiOutline.active; },
+            attach(current) { page = current; notify(true); },
+            detach(current) { if (page === current) { page = null; notify(true); } },
+            notify,
+            selectModule(key) {
+                if (page?.props.modules.some(module => module.key === key)) page.onSettingTabClick(key);
+            },
+            openSection(id) { page?.tcsiJumpToSection(id); },
+        };
+    },
+};
+registry.category("services").add("tcsi_settings_navigation", settingsNavigationService);
 
 let pageSequence = 0;
 let sectionSequence = 0;
@@ -27,6 +50,7 @@ patch(SettingsPage.prototype, {
         onMounted(() => {
             const root = this.settingsRef.el;
             if (!root) return;
+            this.env.services.tcsi_settings_navigation.attach(this);
             this.tcsiSyncSections();
             this.tcsiOnScroll = () => this.tcsiSyncActiveSection();
             root.addEventListener("scroll", this.tcsiOnScroll, { passive: true });
@@ -42,6 +66,7 @@ patch(SettingsPage.prototype, {
             });
         });
         onWillUnmount(() => {
+            this.env.services.tcsi_settings_navigation.detach(this);
             this.tcsiObserver?.disconnect();
             this.settingsRef.el?.removeEventListener("scroll", this.tcsiOnScroll);
             if (this.tcsiFrame) cancelAnimationFrame(this.tcsiFrame);
@@ -56,6 +81,11 @@ patch(SettingsPage.prototype, {
         if (JSON.stringify(items) !== JSON.stringify(this.tcsiOutline.sections)) {
             this.tcsiOutline.sections = items;
         }
+        const navigationKey = JSON.stringify([items, this.state.selectedTab]);
+        if (navigationKey !== this.tcsiNavigationKey) {
+            this.tcsiNavigationKey = navigationKey;
+            this.env.services.tcsi_settings_navigation.notify(true);
+        }
         this.tcsiSyncActiveSection();
     },
     tcsiSyncActiveSection() {
@@ -66,7 +96,13 @@ patch(SettingsPage.prototype, {
         for (const { id } of this.tcsiOutline.sections) {
             if (this.tcsiTargets.get(id)?.getBoundingClientRect().top <= top) active = id;
         }
-        if (this.tcsiOutline.active !== active) this.tcsiOutline.active = active;
+        if (root.scrollTop > 0 && root.scrollTop + root.clientHeight >= root.scrollHeight - 2) {
+            active = this.tcsiOutline.sections.at(-1)?.id || "";
+        }
+        if (this.tcsiOutline.active !== active) {
+            this.tcsiOutline.active = active;
+            this.env.services.tcsi_settings_navigation.notify();
+        }
     },
     tcsiJumpToSection(id) {
         const root = this.settingsRef.el;
@@ -77,6 +113,7 @@ patch(SettingsPage.prototype, {
             behavior: "auto",
         });
         this.tcsiOutline.active = id;
+        this.env.services.tcsi_settings_navigation.notify();
         target.focus({ preventScroll: true });
     },
 });

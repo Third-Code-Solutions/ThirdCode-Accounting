@@ -780,3 +780,13 @@ body.tcsi-shell-active .o_base_settings_view {
         .tcsi-settings-intro h1 { font-size: 24px; }
     }
 }
+
+// The shared workspace sidebar owns Settings navigation, including its mobile drawer.
+body.tcsi-settings-in-main-sidebar {
+    .o_base_settings_view .tcsi-settings-navigation { display: none !important; }
+    .tcsi-sidebar-settings-module[aria-pressed="true"] {
+        background: var(--tcsi-route-accent-soft);
+        color: var(--tcsi-route-ink);
+        font-weight: 600;
+    }
+}

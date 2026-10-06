@@ -499,7 +499,7 @@ function updateNavbarContext() {
     }
 }
 
-function syncSidebarActiveState() {
+function syncSidebarActiveState(settingsSection) {
     const sidebar = document.querySelector(".tcsi-workspace-sidebar");
     if (!sidebar) {
         return;
@@ -522,7 +522,10 @@ function syncSidebarActiveState() {
     const links = [...sidebar.querySelectorAll(".tcsi-sidebar-link[data-tcsi-menu-name]")];
     let activeLink = null;
     const consoleTab = document.querySelector(".tcsi-console")?.dataset.tcsiConsoleTab;
-    if (consoleTab) {
+    settingsSection ??= document.querySelector(".tcsi-settings-layout")?.dataset.tcsiSettingsSection;
+    if (settingsSection) {
+        activeLink = [...sidebar.querySelectorAll("[data-tcsi-settings-section]")].find(link => link.dataset.tcsiSettingsSection === settingsSection);
+    } else if (consoleTab) {
         activeLink = [...sidebar.querySelectorAll("[data-tcsi-console-tab]")].find(link => link.dataset.tcsiConsoleTab === consoleTab);
     } else if (route === "tcsi-route-dashboard" || route === "tcsi-route-accounting-dashboard") {
         activeLink = sidebar.querySelector(".tcsi-sidebar-overview");
@@ -538,7 +541,7 @@ function syncSidebarActiveState() {
     sidebar.querySelectorAll(".tcsi-sidebar-link").forEach((link) => {
         link.classList.toggle("is-active", link === activeLink);
         if (link === activeLink) {
-            link.setAttribute("aria-current", "page");
+            link.setAttribute("aria-current", link.dataset.tcsiSettingsSection ? "location" : "page");
         } else {
             link.removeAttribute("aria-current");
         }
@@ -936,7 +939,7 @@ function getTCSIApp(menuService) {
     return menuService.getApps().find((app) => app.xmlid === TCSI_APP_XMLID) || menuService.getCurrentApp();
 }
 
-function renderSidebar(sidebar, menuService, navigation) {
+function renderSidebar(sidebar, menuService, navigation, settingsNavigation = null) {
     const tcsiApp = getTCSIApp(menuService);
     const currentApp = menuService.getCurrentApp();
     // The native dashboards app ("Insights") is a second entry point to the
@@ -953,7 +956,7 @@ function renderSidebar(sidebar, menuService, navigation) {
         `${TCSI_WEB_PREFIX}/action-408`,
         `${INTERNAL_WEB_PREFIX}/action-408`,
     ].includes(homePath);
-    const selectedApp = !navigation.active && !onWorkspaceHome && currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
+    const selectedApp = settingsNavigation?.active ? menuService.getApps().find(app => app.xmlid === "base.menu_administration") || currentApp : !navigation.active && !onWorkspaceHome && currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
     const nav = sidebar.querySelector(".tcsi-sidebar-nav");
     const appSwitcher = sidebar.querySelector(".tcsi-app-switcher-list");
     const currentLabel = sidebar.querySelector(".tcsi-sidebar-app-name");
@@ -962,6 +965,7 @@ function renderSidebar(sidebar, menuService, navigation) {
     }
 
     currentLabel.textContent = workspaceAppLabel(selectedApp);
+    document.body.classList.toggle("tcsi-settings-in-main-sidebar", Boolean(settingsNavigation?.active));
     nav.replaceChildren();
 
     const overview = document.createElement("button");
@@ -975,7 +979,7 @@ function renderSidebar(sidebar, menuService, navigation) {
     overviewLabel.textContent = "Overview";
     overview.append(overviewLabel);
     overview.addEventListener("click", () => navigation.isOwner ? navigation.open() : menuService.selectMenu(tcsiApp));
-    const ownerDashboard = navigation.isOwner && selectedApp.id === tcsiApp.id;
+    const ownerDashboard = !settingsNavigation?.active && navigation.isOwner && selectedApp.id === tcsiApp.id;
     if (ownerDashboard) {
         for (const [heading, tabs] of navigation.sections) {
             nav.append(makeSectionHeading(heading));
@@ -1005,6 +1009,31 @@ function renderSidebar(sidebar, menuService, navigation) {
         if (settingsApp) {
             nav.append(makeSidebarLink(settingsApp, menuService));
         }
+    } else if (settingsNavigation?.active) {
+        nav.append(overview, makeSectionHeading("Settings"));
+        for (const module of settingsNavigation.modules) {
+            const link = document.createElement("button");
+            link.type = "button";
+            link.className = "tcsi-sidebar-link tcsi-sidebar-settings-module";
+            link.textContent = module.string;
+            link.setAttribute("aria-pressed", String(module.key === settingsNavigation.selectedModule));
+            link.addEventListener("click", () => settingsNavigation.selectModule(module.key));
+            nav.append(link);
+        }
+        nav.append(makeSectionHeading("On this page"));
+        for (const section of settingsNavigation.sections) {
+            const link = document.createElement("button");
+            link.type = "button";
+            link.className = "tcsi-sidebar-link";
+            link.dataset.tcsiSettingsSection = section.id;
+            link.textContent = section.label;
+            link.addEventListener("click", () => {
+                settingsNavigation.openSection(section.id);
+                document.body.classList.remove("tcsi-sidebar-mobile-open");
+            });
+            nav.append(link);
+        }
+        nav.append(makeSectionHeading("Administration"));
     } else {
         nav.append(overview, makeSectionHeading("Workspace"));
     }
@@ -1012,6 +1041,7 @@ function renderSidebar(sidebar, menuService, navigation) {
     const tree = menuService.getMenuAsTree(selectedApp.id);
     for (const menu of tree.childrenTree || []) {
         if (ownerDashboard && menu.xmlid === "thirdcode_accounting.menu_thirdcode_platform_console") continue;
+        if (settingsNavigation?.active && menu.xmlid === "base_setup.menu_config") continue;
         nav.append(makeSidebarGroup(menu, menuService));
     }
 
@@ -1021,7 +1051,7 @@ function renderSidebar(sidebar, menuService, navigation) {
         note.textContent = "Private owner workspace. System oversight, separate from every customer organization.";
         nav.append(note);
     }
-    syncSidebarActiveState();
+    syncSidebarActiveState(settingsNavigation?.activeSection);
 
     if (appSwitcher) {
         appSwitcher.replaceChildren();
@@ -1152,11 +1182,11 @@ function mountWorkspaceNavigation(env) {
     document.body.prepend(sidebar);
     document.body.classList.add("tcsi-shell-active");
     syncThemeButtons();
-    renderSidebar(sidebar, menuService, env.services.tcsi_console_navigation);
+    renderSidebar(sidebar, menuService, env.services.tcsi_console_navigation, env.services.tcsi_settings_navigation);
 }
 
 const tcsiBrandingService = {
-    dependencies: ["menu", "tcsi_console_navigation"],
+    dependencies: ["menu", "tcsi_console_navigation", "tcsi_settings_navigation"],
 
     start(env) {
         let routeContextFrame = 0;
@@ -1187,7 +1217,7 @@ const tcsiBrandingService = {
         const refreshSidebar = () => {
             const sidebar = document.querySelector(".tcsi-workspace-sidebar");
             if (sidebar) {
-                renderSidebar(sidebar, env.services.menu, env.services.tcsi_console_navigation);
+                renderSidebar(sidebar, env.services.menu, env.services.tcsi_console_navigation, env.services.tcsi_settings_navigation);
                 filterSidebarNavigation(sidebar, sidebar.querySelector(".tcsi-sidebar-search-input")?.value || "");
             }
         };
@@ -1209,6 +1239,10 @@ const tcsiBrandingService = {
             });
         };
         env.bus.addEventListener("TCSI:CONSOLE-NAVIGATION", onConsoleNavigation);
+        env.bus.addEventListener("TCSI:SETTINGS-NAVIGATION", (event) => {
+            if (event.detail.structure) refreshSidebar();
+            syncSidebarActiveState(env.services.tcsi_settings_navigation.activeSection);
+        });
         apply();
         env.bus.addEventListener("MENUS:APP-CHANGED", onAppChanged);
         const runObserverPass = () => {
