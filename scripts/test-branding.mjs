@@ -82,7 +82,7 @@ test("warning fallback keeps the real validation reason when arguments are missi
 
 const source = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/tcsi_brand.js", import.meta.url), "utf8");
 
-test("workspace picker removes only Insights and People and preserves Dashboard's authorized target", () => {
+test("workspace picker removes Insights, People and Settings and preserves Dashboard's authorized target", () => {
     const context = {
         TCSI_APP_XMLID: "thirdcode_accounting.menu_thirdcode_accounting_root",
         DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
@@ -92,7 +92,7 @@ test("workspace picker removes only Insights and People and preserves Dashboard'
     const dashboard = { id: 7, name: "TCSI Accounting", xmlid: context.TCSI_APP_XMLID };
     const revenue = { id: 8, name: "Revenue", xmlid: "account.menu_finance" };
     const apps = [dashboard, revenue,
-        { id: 9, xmlid: context.DASHBOARDS_APP_XMLID }, { id: 10, xmlid: "hr.menu_hr_root" }];
+        { id: 9, xmlid: context.DASHBOARDS_APP_XMLID }, { id: 10, xmlid: "hr.menu_hr_root" }, { id: 11, xmlid: "base.menu_administration" }];
     const filtered = context.workspaceApps({ getApps: () => apps });
     assert.equal(filtered.length, 2);
     assert.equal(filtered[0], dashboard);
@@ -100,7 +100,7 @@ test("workspace picker removes only Insights and People and preserves Dashboard'
     assert.equal(context.workspaceAppLabel(dashboard), "Dashboard");
     assert.equal(context.workspaceAppLabel(revenue), "Revenue");
     assert.equal(context.workspaceApps({ getApps: () => [] }).length, 0);
-    assert.equal(apps.length, 4);
+    assert.equal(apps.length, 5);
 });
 
 test("workspace router brands root, query, fragment and record links", () => {
@@ -323,6 +323,8 @@ test("native form titles prefer the actual record heading over the field label",
 test("owner console exposes a working Settings link only when the native Settings app is allowed", async () => {
     const root = { id: 10, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root", name: "TCSI Accounting" };
     const settings = { id: 20, xmlid: "base.menu_administration", name: "Settings" };
+    const general = { id: 21, xmlid: "base_setup.menu_config", name: "General Settings", actionID: 99 };
+    const organization = { id: 30, xmlid: "thirdcode_accounting.menu_thirdcode_organization", name: "Organization" };
     function element() {
         return {
             dataset: {}, children: [], events: {},
@@ -341,8 +343,8 @@ test("owner console exposes a working Settings link only when the native Setting
         const menu = {
             getApps: () => allowed ? [root, settings] : [root],
             getCurrentApp: () => root,
-            getMenuAsTree: () => ({ childrenTree: [] }),
-            selectMenu: async item => selected.push(item),
+            getMenuAsTree: id => ({ childrenTree: id === settings.id ? [general] : [organization] }),
+            selectMenu: async item => { if (item.actionID) selected.push(item); },
         };
         const context = {
             document: { createElement: element, body: element() },
@@ -353,12 +355,19 @@ test("owner console exposes a working Settings link only when the native Setting
         };
         runInNewContext(source.slice(source.indexOf("function makeSidebarLink"), source.indexOf("function filterSidebarNavigation")), context);
         context.renderSidebar(sidebar, menu, { isOwner: true, active: true, sections: [] });
-        const link = nav.children.find(child => child.dataset.tcsiMenuXmlid === settings.xmlid);
+        const link = nav.children.find(child => child.dataset.tcsiMenuXmlid === general.xmlid);
+        assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === organization.xmlid), false);
         assert.equal(Boolean(link), allowed);
         if (allowed) {
             await link.events.click();
-            assert.deepEqual(selected, [settings], "use native menu selection, retaining access and routing");
+            assert.equal(link.title, "Settings");
+            assert.deepEqual(selected, [general], "select the actionable settings leaf even when its app has no action");
+            general.actionID = false;
+            assert.equal(context.getSettingsMenu(menu), null, "do not show a dead or unauthorized settings link");
+            general.actionID = 99;
         }
+        context.renderSidebar(sidebar, menu, { isOwner: false, active: false, sections: [] });
+        assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === organization.xmlid), true, "customer organization tools remain accessible");
     }
 });
 

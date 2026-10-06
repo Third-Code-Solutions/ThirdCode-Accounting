@@ -825,8 +825,7 @@ function normalizeInternalLinks() {
     });
 }
 
-function makeSidebarLink(menu, menuService) {
-    const displayName = brandedLabel(menu.name);
+function makeSidebarLink(menu, menuService, displayName = brandedLabel(menu.name)) {
     const link = document.createElement("button");
     link.type = "button";
     link.className = "tcsi-sidebar-link";
@@ -902,7 +901,7 @@ function workspaceAppLabel(app) {
 
 function workspaceApps(menuService) {
     return menuService.getApps().filter(app => ![
-        DASHBOARDS_APP_XMLID, "hr.menu_hr_root",
+        DASHBOARDS_APP_XMLID, "hr.menu_hr_root", "base.menu_administration",
     ].includes(app.xmlid));
 }
 
@@ -937,6 +936,21 @@ function makeAppButton(app, menuService, currentApp, navigation) {
 
 function getTCSIApp(menuService) {
     return menuService.getApps().find((app) => app.xmlid === TCSI_APP_XMLID) || menuService.getCurrentApp();
+}
+
+function getSettingsMenu(menuService) {
+    const app = menuService.getApps().find(item => item.xmlid === "base.menu_administration");
+    if (!app) return null;
+    const find = menu => {
+        if (menu.xmlid === "base_setup.menu_config" && menu.actionID) return menu;
+        for (const child of menu.childrenTree || []) {
+            const match = find(child);
+            if (match) return match;
+        }
+        return null;
+    };
+    // App containers can lack an action; select the permission-filtered leaf.
+    return find(menuService.getMenuAsTree(app.id));
 }
 
 function renderSidebar(sidebar, menuService, navigation, settingsNavigation = null) {
@@ -1004,10 +1018,10 @@ function renderSidebar(sidebar, menuService, navigation, settingsNavigation = nu
                 nav.append(link);
             }
         }
-        nav.append(makeSectionHeading("Workspace settings"));
-        const settingsApp = menuService.getApps().find(app => app.xmlid === "base.menu_administration");
-        if (settingsApp) {
-            nav.append(makeSidebarLink(settingsApp, menuService));
+        const settingsMenu = getSettingsMenu(menuService);
+        if (settingsMenu) {
+            nav.append(makeSectionHeading("Workspace settings"));
+            nav.append(makeSidebarLink(settingsMenu, menuService, "Settings"));
         }
     } else if (settingsNavigation?.active) {
         nav.append(overview, makeSectionHeading("Settings"));
@@ -1040,7 +1054,10 @@ function renderSidebar(sidebar, menuService, navigation, settingsNavigation = nu
 
     const tree = menuService.getMenuAsTree(selectedApp.id);
     for (const menu of tree.childrenTree || []) {
-        if (ownerDashboard && menu.xmlid === "thirdcode_accounting.menu_thirdcode_platform_console") continue;
+        if (ownerDashboard && [
+            "thirdcode_accounting.menu_thirdcode_platform_console",
+            "thirdcode_accounting.menu_thirdcode_organization",
+        ].includes(menu.xmlid)) continue;
         if (settingsNavigation?.active && menu.xmlid === "base_setup.menu_config") continue;
         nav.append(makeSidebarGroup(menu, menuService));
     }

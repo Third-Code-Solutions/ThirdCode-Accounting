@@ -63,3 +63,12 @@
 - Remedy: global contact/user/bank scope plus explicit shared grants; narrowly elevated automatic-membership lookup intersected with actor-visible contacts; actor-scoped Store serialization and recipient-scoped bus metadata filtering. Preserve message rows/IDs and prune dependent hidden call references.
 - Prevention: two-company direct-read/search/export/dropdown, archived-identity, shared-accounting, native Store and receiver-bus regressions. Foreign-company test fixtures provision as installer; business assertions retain tenant users.
 - Evidence: CI37392179294 contact/mail/shared-accounting cases passed; isolated 14.0-to-14.1 upgrade preserved selected business projections. Final full-suite/deployment status is tracked in `docs/contact-isolation-evidence/README.md`.
+
+
+## Settings initialization through the hosted proxy — 7 October 2026
+
+- Trigger: owner Settings click stayed on the console; browser reported `ConnectionLostError` for `/base_setup/data`.
+- Cause: the native Settings initialization RPC prefix was absent from the portal rewrite and middleware bypass; its POST received portal HTML.
+- Remedy: register `base_setup` with accounting routes and exclude it from portal middleware. Preserve private/no-store response headers.
+- Prevention: explicit `/base_setup/data` rewrite, POST passthrough and no-cache regressions in `apps/web/proxy.test.ts`; verify Settings by clicking from the live console.
+- Evidence: pre-fix browser error plus HTTP HTML response; 49 proxy tests pass locally. Live release verification recorded in `docs/console-navigation-fix-2026-10-07.md`.

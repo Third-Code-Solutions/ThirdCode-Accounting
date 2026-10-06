@@ -23,11 +23,22 @@ describe("hosted pilot boundary", () => {
     expect(getRewrittenUrl(response)).toBe(`https://tcsi-accounting-production.up.railway.app/${prefix}/test?lang=en_US`);
     expect(response.headers.get("x-vercel-enable-rewrite-caching")).toBe("0");
   });
-  it.each(["/web/login", "/web/session/authenticate", "/workspace/action-408", "/report/pdf/test/1", "/mail/data", "/websocket", "/thirdcode_accounting/static/src/img/tcsi-mark.svg"])("passes accounting route %s to the origin rewrite", async (path) => {
+  it.each(["/base_setup/data", "/web/login", "/web/session/authenticate", "/workspace/action-408", "/report/pdf/test/1", "/mail/data", "/websocket", "/thirdcode_accounting/static/src/img/tcsi-mark.svg"])("passes accounting route %s to the origin rewrite", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`));
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(response.headers.get("location")).toBeNull();
+  });
+  it("routes Settings initialization to the engine as a private JSON RPC request", async () => {
+    vi.stubEnv("VERCEL", "1");
+    const url = "https://portal.example/base_setup/data";
+    expect(unstable_doesMiddlewareMatch({ config, url, nextConfig })).toBe(false);
+    const response = await unstable_getResponseFromNextConfig({ url, nextConfig });
+    expect(getRewrittenUrl(response)).toBe("https://tcsi-accounting-production.up.railway.app/base_setup/data");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    const passthrough = await proxy(new NextRequest(url, { method: "POST" }));
+    expect(passthrough.headers.get("location")).toBeNull();
+    expect(passthrough.headers.get("Content-Security-Policy")).toBeNull();
   });
   it("fails closed on Vercel when a preview has no portal flag", async () => {
     vi.stubEnv("VERCEL", "1");
