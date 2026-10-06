@@ -100,6 +100,16 @@ class TestCompanyDiscuss(TransactionCase):
             with self.assertRaises(AccessError):
                 self.as_user(self.env["discuss.channel"], user).channel_get(peer.partner_id.ids)
 
+    def test_verified_invitation_preserves_same_company_private_join(self):
+        channel = self.as_user(self.env["discuss.channel"], self.ua).create({"name": "Private A", "channel_type": "group"})
+        partner, guest = self.as_user(channel, self.ua2).sudo()._find_or_create_persona_for_channel(
+            None, None, None, post_joined_message=False)
+        self.assertEqual(partner, self.ua2.partner_id)
+        self.assertFalse(guest)
+        self.assertIn(self.ua2.partner_id, channel.sudo().channel_partner_ids)
+        with self.assertRaises(AccessError):
+            self.as_user(channel, self.ub).sudo()._find_or_create_persona_for_channel(None, None, None)
+
     def test_chat_picker_only_suggests_company_colleagues(self):
         for user, peer, foreign in [(self.ua, self.ua2, self.ub | self.owner | self.staff),
                                     (self.owner, self.staff, self.ua | self.ua2 | self.ub),

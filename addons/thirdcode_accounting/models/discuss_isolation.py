@@ -13,6 +13,7 @@ from .platform_access import is_platform_owner, require_platform_owner
 STAFF_GROUP = "thirdcode_accounting.group_thirdcode_platform_support"
 READY = "thirdcode.discuss_isolation_ready"
 SCOPE_FIELDS = {"thirdcode_company_id", "thirdcode_quarantined", "thirdcode_general_company_id"}
+_VALIDATED_INVITATION = object()
 
 
 def scoped_companies(env, company_ids):
@@ -163,11 +164,17 @@ class CompanyDiscussChannel(models.Model):
         # Native group-wide broadcast would disclose the channel to other companies.
 
     def _find_or_create_persona_for_channel(self, *args, **kwargs):
-        self._assert_company_access()
-        return super()._find_or_create_persona_for_channel(*args, **kwargs)
+        # Native invitation controller has validated the channel token before
+        # calling this private method. Preserve same-company private invitations.
+        self._assert_company_scope()
+        invited = self.with_context(thirdcode_discuss_invitation=_VALIDATED_INVITATION)
+        return super(CompanyDiscussChannel, invited)._find_or_create_persona_for_channel(*args, **kwargs)
 
     def _add_members(self, **kwargs):
-        self._assert_company_access()
+        if self.env.context.get("thirdcode_discuss_invitation") is _VALIDATED_INVITATION:
+            self._assert_company_scope()
+        else:
+            self._assert_company_access()
         partners = kwargs.get("partners") or self.env["res.partner"]
         users = kwargs.get("users") or self.env["res.users"]
         self._assert_participants((partners | users.sudo().partner_id).ids, kwargs.get("guests"))
