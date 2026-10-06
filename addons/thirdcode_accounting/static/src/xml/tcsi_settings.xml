@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="thirdcode_accounting.SettingsPage" t-inherit="web.SettingsPage" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_setting_container')]" position="attributes">
+            <attribute name="class" add="tcsi-settings-layout" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('settings_tab')]/.." position="attributes">
+            <attribute name="class" add="tcsi-settings-navigation" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('settings_tab')]" position="attributes">
+            <attribute name="role">tablist</attribute>
+            <attribute name="aria-label">Settings applications</attribute>
+        </xpath>
+        <xpath expr="//a[@role='tab']" position="attributes">
+            <attribute name="t-att-aria-selected">state.selectedTab === module.key and state.search.value.length === 0 ? 'true' : 'false'</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('settings_tab')]" position="after">
+            <nav class="tcsi-settings-outline" aria-label="Settings sections" t-if="tcsiOutline.sections.length">
+                <p class="tcsi-settings-nav-label">On this page</p>
+                <button t-foreach="tcsiOutline.sections" t-as="section" t-key="section.id" type="button"
+                    t-att-class="tcsiOutline.active === section.id ? 'is-current' : ''"
+                    t-att-aria-current="tcsiOutline.active === section.id ? 'location' : undefined"
+                    t-on-click="() => this.tcsiJumpToSection(section.id)"><t t-esc="section.label"/></button>
+            </nav>
+            <div class="tcsi-settings-jump" t-if="tcsiOutline.sections.length">
+                <label t-att-for="tcsiHeadingPrefix + '-jump'">Jump to section</label>
+                <select t-att-id="tcsiHeadingPrefix + '-jump'" t-on-change="(event) => this.tcsiJumpToSection(event.target.value)">
+                    <option t-foreach="tcsiOutline.sections" t-as="section" t-key="section.id" t-att-value="section.id"
+                        t-att-selected="tcsiOutline.active === section.id"><t t-esc="section.label"/></option>
+                </select>
+            </div>
+            <p class="tcsi-settings-nav-help">Use search to find a setting across all applications.</p>
+        </xpath>
+        <xpath expr="//div[@t-ref='settings']/t[1]" position="before">
+            <header class="tcsi-settings-intro">
+                <span class="tcsi-settings-eyebrow"><i class="fa fa-sliders" aria-hidden="true"/> Workspace administration</span>
+                <h1>Settings</h1>
+                <p>Manage your organization, communication, access, and connected services.</p>
+                <div class="tcsi-settings-save-help"><i class="fa fa-info-circle" aria-hidden="true"/> Review your changes, then choose Save changes. Use Discard to undo unsaved edits.</div>
+            </header>
+        </xpath>
+    </t>
+    <t t-name="thirdcode_accounting.SettingsSearch" t-inherit="web.SettingsFormView" t-inherit-mode="extension">
+        <xpath expr="//input[@t-model='searchState.value']" position="attributes">
+            <attribute name="placeholder">Search settings…</attribute>
+            <attribute name="aria-label">Search settings</attribute>
+        </xpath>
+    </t>
+    <t t-name="thirdcode_accounting.SettingsButtons" t-inherit="web.SettingsFormView.Buttons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('o_form_button_save')]" position="inside"><span class="tcsi-settings-save-label"> changes</span></xpath>
+    </t>
+</templates>
