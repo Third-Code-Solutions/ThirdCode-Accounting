@@ -58,6 +58,26 @@ class PlatformConsole extends Component {
         return data?.name === "odoo.exceptions.UserError" ? String(data.message).slice(0,240)
             : "Request could not be completed. Check your owner session and try again.";
     }
+    clearData() {
+        this.state.data = null;
+        this.state.analytics = null;
+        this.state.monitoring = null;
+        this.state.orgs = EMPTY_PAGE(); this.state.people = EMPTY_PAGE(); this.state.audit = EMPTY_PAGE();
+        this.state.publications = [];
+    }
+    handleError(error) {
+        this.state.error = this.message(error);
+        if (error?.data?.name === "odoo.exceptions.AccessError") {
+            this.state.denied = true;
+            this.clearData();
+            this.removeCreateDialog?.();
+            this.state.createOpen = false;
+            this.state.org = this.emptyOrg(); this.state.draft = this.emptyDraft();
+            this.state.options = { countries: [], currencies: [] };
+            this.state.editorId = false; this.state.revision = false;
+        }
+        return this.state.error;
+    }
     async load(showLoading = true) {
         if (this.state.loading) return;
         this.state.loading = true;
@@ -68,14 +88,9 @@ class PlatformConsole extends Component {
             await this.loadTab();
             this.state.error = "";
         } catch (error) {
-            this.state.denied = error?.data?.name === "odoo.exceptions.AccessError";
-            this.state.error = this.message(error);
+            this.handleError(error);
             // Never leave privileged data displayed after authorization expires.
-            this.state.data = null;
-            this.state.analytics = null;
-            this.state.monitoring = null;
-            this.state.orgs = EMPTY_PAGE(); this.state.people = EMPTY_PAGE(); this.state.audit = EMPTY_PAGE();
-            this.state.publications = [];
+            this.clearData();
         } finally { this.state.loading = false; }
     }
     async loadTab() {
@@ -105,7 +120,7 @@ class PlatformConsole extends Component {
             this.notification.add(success, { type: "success" });
             await this.load();
             return true;
-        } catch (error) { this.state.error = this.message(error); return false; }
+        } catch (error) { this.handleError(error); return false; }
         finally { this.state.busy = false; }
     }
     confirm(title, body, method, args, success) {
@@ -132,7 +147,7 @@ class PlatformConsole extends Component {
             this.removeCreateDialog = this.dialog.add(CreateOrganizationDialog, { controller: this }, {
                 onClose: () => { this.state.createOpen = false; this.state.org = this.emptyOrg(); },
             });
-        } catch (error) { this.state.error = this.message(error); }
+        } catch (error) { this.handleError(error); }
     }
     closeCreate() { if (!this.state.busy) this.removeCreateDialog?.(); }
     async createOrganization() {
@@ -144,7 +159,7 @@ class PlatformConsole extends Component {
             this.state.tab = "organizations"; this.state.orgs.page = 0;
             this.notification.add(`${result.name} created. Give its administrator their initial credentials privately.`, { type: "success", sticky: true });
             await this.load();
-        } catch(error) { this.state.formError = this.message(error); }
+        } catch(error) { this.state.formError = this.handleError(error); }
         finally { this.state.busy = false; }
     }
     createPerson() {
@@ -176,7 +191,7 @@ class PlatformConsole extends Component {
             if (!this.state.editorId) this.state.publicationPage = 0;
             this.state.editorId = result.id; this.state.revision = result.revision;
             await this.loadTab(); this.notification.add("Draft saved. Public pages are unchanged.",{type:"success"});
-        } catch(error) { this.state.error = this.message(error); }
+        } catch(error) { this.handleError(error); }
         finally { this.state.busy = false; }
     }
     publish(action) {

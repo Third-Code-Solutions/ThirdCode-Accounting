@@ -105,3 +105,31 @@ test("Verified owner data restores the console after an earlier refusal", async 
   assert.ok(app.state.data);
   assert.equal(app.state.error, "");
 });
+
+for (const operation of [app => app.run("suspend_company", [4], "Done"),
+  app => app.newOrganization(), app => app.createOrganization(), app => app.saveDraft()]) {
+  test(`Owner authority revoked during ${operation.toString()} closes owner controls`, async () => {
+    const app = makeConsole();
+    app.state.data = { organizations: [1] };
+    app.state.org = { admin_password: "Unsaved-secret" };
+    let closed = false;
+    app.removeCreateDialog = () => { closed = true; };
+    app.orm = { call: async () => { throw { data: { name: "odoo.exceptions.AccessError" } }; } };
+    await operation(app);
+    assert.equal(app.state.denied, true);
+    assert.equal(app.state.data, null);
+    assert.equal(app.state.org.admin_password, "");
+    assert.equal(app.state.draft.title, "");
+    assert.equal(closed, true);
+  });
+}
+
+test("Business validation failure keeps owner editor and exposes error", async () => {
+  const app = makeConsole();
+  app.state.data = { organizations: [] };
+  app.orm = { call: async () => { throw { data: { name: "odoo.exceptions.UserError", message: "Revision changed" } }; } };
+  await app.saveDraft();
+  assert.equal(app.state.error, "Revision changed");
+  assert.ok(app.state.data);
+  assert.equal(app.state.draft.title, a.title);
+});

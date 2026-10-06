@@ -19,6 +19,7 @@
         <div><p class="tcsi-console-kicker">TCSI ACCOUNTING / PLATFORM OPERATIONS</p><h1 id="tcsi-console-title" t-esc="currentTitle"/><p class="tcsi-console-sub">Understand activity. Resolve issues. Keep every organization moving.</p></div>
         <div class="tcsi-console-head-actions"><button class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="busy"><i class="fa fa-refresh" aria-hidden="true"/> Refresh</button><button class="btn btn-primary" t-on-click="newOrganization" t-att-disabled="busy">Create organization</button></div>
       </header>
+      <div t-if="state.error" class="tcsi-console-error" role="alert"><p t-esc="state.error"/><button class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="busy">Retry</button></div>
       <t t-if="state.data">
         <div class="tcsi-console-freshness"><span><i class="fa fa-clock-o" aria-hidden="true"/> Updated <t t-esc="state.data.generated_at"/> UTC</span><span>Auto-refresh every minute · customer data only</span></div>
         <t t-if="state.tab === 'overview' and state.analytics">
