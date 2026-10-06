@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 <t t-name="thirdcode_accounting.PlatformConsole">
-<main class="tcsi-console tcsi-operations" aria-labelledby="tcsi-console-title">
+<main class="tcsi-console tcsi-operations" aria-labelledby="tcsi-console-title" t-att-data-tcsi-console-tab="state.denied ? undefined : state.tab">
   <section t-if="!state.data" class="tcsi-console-panel" role="status">
     <h1 id="tcsi-console-title" t-esc="state.denied ? 'Access denied' : 'Platform console'"/>
     <p t-esc="state.error || 'Checking platform access…'"/>
@@ -9,11 +9,6 @@
     <button t-if="state.error and !state.denied" class="btn btn-secondary" t-on-click="() => this.load()" t-att-disabled="busy">Retry</button>
   </section>
   <div t-else="" class="tcsi-console-shell">
-    <aside class="tcsi-console-nav" aria-label="Platform navigation">
-      <div class="tcsi-console-brand"><span class="tcsi-console-mark">TC</span><div><strong>Platform</strong><small>OWNER OPERATIONS</small></div></div>
-      <nav><button t-foreach="tabs" t-as="tab" t-key="tab[0]" type="button" t-att-class="state.tab === tab[0] ? 'is-selected' : ''" t-att-aria-current="state.tab === tab[0] ? 'page' : undefined" t-on-click="() => this.selectTab(tab[0])" t-att-disabled="busy"><i t-att-class="'fa ' + tab[2]" aria-hidden="true"/><t t-esc="tab[1]"/></button></nav>
-      <div class="tcsi-console-owner-note"><i class="fa fa-lock" aria-hidden="true"/><strong>Private owner workspace</strong><p>System oversight. Separate from every customer organization.</p></div>
-    </aside>
     <div class="tcsi-console-content">
       <header class="tcsi-console-head">
         <div><p class="tcsi-console-kicker">TCSI ACCOUNTING / PLATFORM OPERATIONS</p><h1 id="tcsi-console-title" t-esc="currentTitle"/><p class="tcsi-console-sub">Understand activity. Resolve issues. Keep every organization moving.</p></div>

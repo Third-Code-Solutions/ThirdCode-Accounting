@@ -21,6 +21,7 @@ function makeConsole() {
     draft: {}, publicationPage: 0, publications: [a] };
   app.editPublication(a);
   app.notification = { add() {} };
+  app.navigation = { notify() {} };
   app.loadTab = async () => {};
   return app;
 }
@@ -181,4 +182,77 @@ test("Unavailable cryptographic randomness preserves manual input and reports fa
   assert.equal(dialog.state.org.admin_password, "Manually-entered-secret");
   assert.match(dialog.password.error, /Secure password generation is unavailable/);
   assert.equal(dialog.password.visible, false);
+});
+
+const navigationSource = fs.readFileSync("addons/thirdcode_accounting/static/src/js/tcsi_console_navigation.js", "utf8")
+  .replace(/^import .*;\n/gm, "").replace(/^export /gm, "");
+function makeNavigation(owner = true, select = async () => {}) {
+  let definition;
+  const events = [];
+  vm.runInNewContext(navigationSource, {
+    session: { tcsi_platform_owner: owner },
+    registry: { category: () => ({ add: (_name, service) => { definition = service; } }) },
+  });
+  const menu = {
+    getApps: () => [{ id: 10, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root" }],
+    getMenuAsTree: () => ({ childrenTree: [{ id: 20, xmlid: "thirdcode_accounting.menu_thirdcode_platform_console" }] }),
+    selectMenu: select,
+  };
+  return { service: definition.start({ bus: { trigger: (_name, detail) => events.push(detail) } }, { menu }), events, menu };
+}
+
+test("Owner Dashboard opens the native console menu; customer navigation cannot open it", async () => {
+  const selected = [];
+  for (const owner of [true, false, null]) {
+    const { service } = makeNavigation(owner, async menu => selected.push(menu.id));
+    await service.open();
+  }
+  assert.deepEqual(selected, [20]);
+});
+
+test("Opening a sidebar section carries its tab through console mount and blocks duplicate navigation", async () => {
+  let finish;
+  let navigation;
+  let calls = 0;
+  const { service } = makeNavigation(true, async () => {
+    calls++;
+    assert.equal(navigation.takeInitialTab(), "audit");
+    await new Promise(resolve => { finish = resolve; });
+  });
+  navigation = service;
+  const opening = service.open("audit");
+  assert.equal(service.busy, true);
+  await service.open("people");
+  assert.equal(calls, 1);
+  finish();
+  await opening;
+  assert.equal(service.busy, false);
+  assert.equal(service.takeInitialTab(), "overview");
+});
+
+test("Mounted console switches sections in place and respects a pending operation", async () => {
+  const { service } = makeNavigation();
+  const current = { state: { tab: "overview" }, busy: false, async selectTab(tab) { this.state.tab = tab; } };
+  service.attach(current);
+  await service.open("people");
+  assert.equal(service.activeTab, "people");
+  current.busy = true;
+  await service.open("audit");
+  assert.equal(service.activeTab, "people");
+  current.busy = false;
+  await service.open("invalid");
+  assert.equal(service.activeTab, "people");
+  service.detach({});
+  assert.equal(service.active, true);
+  current.state.denied = true;
+  assert.equal(service.activeTab, null);
+  service.detach(current);
+  assert.equal(service.active, false);
+});
+
+test("Failed menu navigation clears the pending tab and releases its lock", async () => {
+  const { service } = makeNavigation(true, async () => { throw new Error("navigation failed"); });
+  await assert.rejects(service.open("sentry"), /navigation failed/);
+  assert.equal(service.busy, false);
+  assert.equal(service.takeInitialTab(), "overview");
 });

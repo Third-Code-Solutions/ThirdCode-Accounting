@@ -36,6 +36,7 @@
             "thirdcode_accounting/static/src/scss/tcsi_apps.scss",
             "thirdcode_accounting/static/src/scss/tcsi_brand.scss",
             "thirdcode_accounting/static/src/scss/tcsi_chat.scss",
+            "thirdcode_accounting/static/src/js/tcsi_console_navigation.js",
             "thirdcode_accounting/static/src/js/tcsi_brand.js",
             "thirdcode_accounting/static/src/js/tcsi_error_branding.js",
             "thirdcode_accounting/static/src/xml/tcsi_error_dialogs.xml",

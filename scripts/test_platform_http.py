@@ -40,6 +40,9 @@ def verify_platform(port, owner_cookie, database):
         connection.close()
         return result
 
+    owner_session, _ = request("/web/session/get_session_info", {"jsonrpc": "2.0", "params": {}}, owner_cookie)
+    assert owner_session["result"]["tcsi_platform_owner"] is True
+
     # Exercise actual chart/journal/admin creation, not a mocked baseline.
     payload = {"request_id": str(uuid.uuid4()), "name": "Hosted platform client", "country": "PH",
                "currency": "PHP", "admin_name": "Hosted client admin", "admin_login": "platform-ci@example.invalid",
@@ -51,6 +54,7 @@ def verify_platform(port, owner_cookie, database):
     session, tenant_cookie = request("/web/session/authenticate", {"jsonrpc": "2.0", "params": {
         "db": database, "login": payload["admin_login"], "password": payload["admin_password"]}})
     assert session.get("result", {}).get("uid") and tenant_cookie
+    assert session["result"]["tcsi_platform_owner"] is False
     assert console_page(owner_cookie)[0] == 200
     for path in ("/workspace/console", "/workspace/console/", "/workspace/console/organizations"):
         status, body, cache = console_page(tenant_cookie, path)
