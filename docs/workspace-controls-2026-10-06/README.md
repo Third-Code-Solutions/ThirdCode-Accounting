@@ -23,3 +23,7 @@ Screenshots: `menu-light.jpg`, `password-light.jpg`, `password-dark-desktop.jpg`
 ## Remaining boundary
 
 Implementation and local verification are complete. No push, merge, production deployment, full native Odoo test suite, or live organization submission is claimed. The user's primary checkout and pre-existing local documents were preserved; changes are on `codex/password-workspace-menu` in the attached worktree.
+
+## Deployment checkpoint
+
+User authorized production deployment. PR #21 contains the verified UI changes. The first CI run (37452848968) passed the build and functional checks in the verify job but failed its production dependency audit for GHSA-68fv-2mgg-jv7q. The lockfile now selects source-map-js 1.2.2; the production audit passes locally. Full CI will run again before merge and deployment. No accounting schema or server-side business behavior is changed.
