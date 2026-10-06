@@ -1,0 +1,61 @@
+{
+  "checked_at": "2026-10-06T00:43:22.709364+00:00",
+  "module_version": "18.0.2.14.1",
+  "owner_contact_count": 87,
+  "baseline_contacts_preserved": 71,
+  "ownership_and_hierarchy_preserved": true,
+  "shared_business_grants": {
+    "89": [
+      1
+    ],
+    "90": [
+      1
+    ]
+  },
+  "tenants": [
+    {
+      "visible_bank_count": 0,
+      "company_id": 4,
+      "user_id": 12,
+      "visible_count": 9,
+      "own_reads": 3,
+      "foreign_direct_reads_denied": 5,
+      "foreign_dropdown_matches": 0,
+      "visible_ids": [
+        79,
+        14,
+        16,
+        15,
+        17,
+        18,
+        74,
+        71,
+        66
+      ],
+      "before_visible_count": 70
+    },
+    {
+      "visible_bank_count": 0,
+      "company_id": 5,
+      "user_id": 16,
+      "visible_count": 7,
+      "own_reads": 2,
+      "foreign_direct_reads_denied": 6,
+      "foreign_dropdown_matches": 0,
+      "visible_ids": [
+        19,
+        21,
+        20,
+        22,
+        23,
+        75,
+        76
+      ],
+      "before_visible_count": 69
+    }
+  ],
+  "baseline_contacts_preserved_scope": "71 active records in the pre-deployment API snapshot; owner post-deployment count includes 87 active and archived records.",
+  "deployment_id": "3e081eb8-4417-4fc5-94cd-17a1c2e03770",
+  "deployed_commit": "772208cb9eb6c525f7a0a98b37840e1f4719f102",
+  "image_digest": "sha256:9459d08d1ff181cf787dac2578d2e6948260f097cbfe1a15e3a7ebd5ecdf76a3"
+}
