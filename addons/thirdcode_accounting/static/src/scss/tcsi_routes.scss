@@ -550,6 +550,25 @@ body.tcsi-shell-active {
     .tcsi-report-wizard .alert { margin-bottom: 24px; padding: 12px 16px; font-size: 12px; line-height: 1.5; }
 }
 
+// Give workspace names room without widening the persistent navigation rail.
+body.tcsi-shell-active .tcsi-workspace-sidebar.is-apps-open { overflow: visible; }
+body.tcsi-shell-active .tcsi-workspace-sidebar .tcsi-app-switcher-list {
+    right: auto;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+}
+body.tcsi-shell-active.tcsi-sidebar-collapsed .tcsi-workspace-sidebar .tcsi-app-switcher-list {
+    max-width: calc(100vw - 72px);
+}
+body.tcsi-shell-active .tcsi-app-switcher-item span:last-child {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+body.tcsi-shell-active .tcsi-console-password-field { display: flex; flex-direction: column; gap: 6px; }
+body.tcsi-shell-active .tcsi-console-password-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+body.tcsi-shell-active .tcsi-console-password-controls input { flex: 1 1 240px; width: auto; min-width: 0; }
+body.tcsi-shell-active .tcsi-console-password-controls .btn { flex: 0 0 auto; }
+
 // Respect the width Odoo reserves for chatter; never widen it at laptop sizes.
 @media (min-width: 1400px) {
     body.tcsi-shell-active .o_form_renderer > .o-mail-ChatterContainer.o-aside {
