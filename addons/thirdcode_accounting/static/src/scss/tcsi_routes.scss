@@ -610,3 +610,26 @@ body.tcsi-shell-active .tcsi-console-password-controls .btn { flex: 0 0 auto; }
         .o_form_view .o_form_statusbar, .o-mail-ChatterContainer { display: none !important; }
     }
 }
+
+// Platform navigation lives in the workspace sidebar; the console uses the full canvas.
+body.tcsi-shell-active .tcsi-console.tcsi-operations .tcsi-console-shell {
+    grid-template-columns: minmax(0, 1fr);
+}
+.tcsi-sidebar-link[data-tcsi-console-tab] > .fa {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.tcsi-sidebar-link[data-tcsi-console-tab]:disabled {
+    cursor: progress;
+    opacity: 0.65;
+}
+
+.tcsi-sidebar-owner-note {
+    margin: 18px 8px 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--tcsi-route-line, #e4e1ee);
+    color: var(--tcsi-route-muted, #67647c);
+    font-size: 11px;
+    line-height: 1.5;
+}

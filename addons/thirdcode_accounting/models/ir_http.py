@@ -22,6 +22,8 @@ from odoo.http import Response, request
 from odoo.addons.bus.websocket import UpgradeRequired
 from werkzeug.exceptions import HTTPException, NotFound
 
+from .platform_access import is_platform_owner
+
 _logger = logging.getLogger(__name__)
 
 DB_MANAGER_PREFIX = "/web/database"
@@ -40,6 +42,11 @@ SECURITY_HEADERS = (
 
 class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
+
+    def session_info(self):
+        info = super().session_info()
+        info["tcsi_platform_owner"] = is_platform_owner(self.env)
+        return info
 
     # ------------------------------------------------------------------
     # Helpers

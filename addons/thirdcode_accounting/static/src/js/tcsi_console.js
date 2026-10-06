@@ -48,13 +48,14 @@ class PlatformConsole extends Component {
     static props = ["*"];
 
     setup() {
+        this.navigation = useService("tcsi_console_navigation");
         this.orm = useService("orm");
         this.action = useService("action");
         this.dialog = useService("dialog");
         this.notification = useService("notification");
         const params = this.props.action?.params || {};
         this.state = useState({
-            tab: params.tab || "overview", companyId: params.company_id || false,
+            tab: params.tab || this.navigation.takeInitialTab(), companyId: params.company_id || false,
             data: null, denied: false, analytics: null, monitoring: null, orgs: EMPTY_PAGE(), people: EMPTY_PAGE(), audit: EMPTY_PAGE(),
             publications: [], publicationPage: 0, publicationTotal: 0, loading: false, busy: false, error: "", formError: "", query: "", status: "", days: 30,
             auditSource: "platform", createOpen: false, options: { countries: [], currencies: [] },
@@ -62,11 +63,15 @@ class PlatformConsole extends Component {
         });
         onWillStart(() => this.load());
         onMounted(() => {
+            this.navigation.attach(this);
             this.timer = setInterval(() => {
                 if (!this.state.denied && !this.state.busy && !this.state.createOpen && this.state.tab !== "website") this.load(false);
             }, 60000);
         });
-        onWillUnmount(() => clearInterval(this.timer));
+        onWillUnmount(() => {
+            clearInterval(this.timer);
+            this.navigation.detach(this);
+        });
     }
 
     emptyOrg() { return { request_id: "", name: "", country: "PH", currency: "PHP", admin_name: "", admin_login: "", admin_password: "" }; }
@@ -107,6 +112,7 @@ class PlatformConsole extends Component {
     async load(showLoading = true) {
         if (this.state.loading) return;
         this.state.loading = true;
+        this.navigation.notify();
         if (showLoading) this.state.error = "";
         try {
             this.state.data = await this.orm.call(MODEL, "get_console_data", []);
@@ -117,7 +123,7 @@ class PlatformConsole extends Component {
             this.handleError(error);
             // Never leave privileged data displayed after authorization expires.
             this.clearData();
-        } finally { this.state.loading = false; }
+        } finally { this.state.loading = false; this.navigation.notify(); }
     }
     async loadTab() {
         const s = this.state;
@@ -140,14 +146,14 @@ class PlatformConsole extends Component {
     async page(kind, delta) { this.state[kind].page += delta; await this.load(); }
     async run(method, args, success) {
         if (this.busy) return false;
-        this.state.busy = true; this.state.error = "";
+        this.state.busy = true; this.navigation.notify(); this.state.error = "";
         try {
             await this.orm.call(MODEL, method, args);
             this.notification.add(success, { type: "success" });
             await this.load();
             return true;
         } catch (error) { this.handleError(error); return false; }
-        finally { this.state.busy = false; }
+        finally { this.state.busy = false; this.navigation.notify(); }
     }
     confirm(title, body, method, args, success) {
         this.dialog.add(ConfirmationDialog, { title, body, confirmLabel: "Confirm", confirm: () => this.run(method,args,success) });
@@ -178,7 +184,7 @@ class PlatformConsole extends Component {
     closeCreate() { if (!this.state.busy) this.removeCreateDialog?.(); }
     async createOrganization() {
         if (this.state.busy) return;
-        this.state.busy = true; this.state.formError = "";
+        this.state.busy = true; this.navigation.notify(); this.state.formError = "";
         try {
             const result = await this.orm.call(MODEL,"create_organization",[{ ...this.state.org }]);
             this.removeCreateDialog?.();
@@ -186,7 +192,7 @@ class PlatformConsole extends Component {
             this.notification.add(`${result.name} created. Give its administrator their initial credentials privately.`, { type: "success", sticky: true });
             await this.load();
         } catch(error) { this.state.formError = this.handleError(error); }
-        finally { this.state.busy = false; }
+        finally { this.state.busy = false; this.navigation.notify(); }
     }
     createPerson() {
         this.action.doAction("thirdcode_accounting.action_thirdcode_employee_wizard", {
@@ -211,14 +217,14 @@ class PlatformConsole extends Component {
     }
     async saveDraft() {
         if (this.busy) return;
-        this.state.busy = true;
+        this.state.busy = true; this.navigation.notify();
         try {
             const result = await this.orm.call(MODEL,"save_publication",[{ ...this.state.draft },this.state.editorId,this.state.revision]);
             if (!this.state.editorId) this.state.publicationPage = 0;
             this.state.editorId = result.id; this.state.revision = result.revision;
             await this.loadTab(); this.notification.add("Draft saved. Public pages are unchanged.",{type:"success"});
         } catch(error) { this.handleError(error); }
-        finally { this.state.busy = false; }
+        finally { this.state.busy = false; this.navigation.notify(); }
     }
     publish(action) {
         const p = this.selectedPublication;

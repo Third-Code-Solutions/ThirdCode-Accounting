@@ -521,7 +521,10 @@ function syncSidebarActiveState() {
 
     const links = [...sidebar.querySelectorAll(".tcsi-sidebar-link[data-tcsi-menu-name]")];
     let activeLink = null;
-    if (route === "tcsi-route-dashboard" || route === "tcsi-route-accounting-dashboard") {
+    const consoleTab = document.querySelector(".tcsi-console")?.dataset.tcsiConsoleTab;
+    if (consoleTab) {
+        activeLink = [...sidebar.querySelectorAll("[data-tcsi-console-tab]")].find(link => link.dataset.tcsiConsoleTab === consoleTab);
+    } else if (route === "tcsi-route-dashboard" || route === "tcsi-route-accounting-dashboard") {
         activeLink = sidebar.querySelector(".tcsi-sidebar-overview");
     } else if (pageText) {
         activeLink = links.find((link) => {
@@ -900,7 +903,7 @@ function workspaceApps(menuService) {
     ].includes(app.xmlid));
 }
 
-function makeAppButton(app, menuService, currentApp) {
+function makeAppButton(app, menuService, currentApp, navigation) {
     const displayName = workspaceAppLabel(app);
     const button = document.createElement("button");
     button.type = "button";
@@ -920,7 +923,11 @@ function makeAppButton(app, menuService, currentApp) {
         if (appList) {
             appList.hidden = true;
         }
-        await menuService.selectMenu(app);
+        if (app.xmlid === TCSI_APP_XMLID && navigation.isOwner) {
+            await navigation.open();
+        } else {
+            await menuService.selectMenu(app);
+        }
     });
     return button;
 }
@@ -929,7 +936,7 @@ function getTCSIApp(menuService) {
     return menuService.getApps().find((app) => app.xmlid === TCSI_APP_XMLID) || menuService.getCurrentApp();
 }
 
-function renderSidebar(sidebar, menuService) {
+function renderSidebar(sidebar, menuService, navigation) {
     const tcsiApp = getTCSIApp(menuService);
     const currentApp = menuService.getCurrentApp();
     // The native dashboards app ("Insights") is a second entry point to the
@@ -946,7 +953,7 @@ function renderSidebar(sidebar, menuService) {
         `${TCSI_WEB_PREFIX}/action-408`,
         `${INTERNAL_WEB_PREFIX}/action-408`,
     ].includes(homePath);
-    const selectedApp = !onWorkspaceHome && currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
+    const selectedApp = !navigation.active && !onWorkspaceHome && currentApp && currentApp.xmlid !== DASHBOARDS_APP_XMLID ? currentApp : tcsiApp;
     const nav = sidebar.querySelector(".tcsi-sidebar-nav");
     const appSwitcher = sidebar.querySelector(".tcsi-app-switcher-list");
     const currentLabel = sidebar.querySelector(".tcsi-sidebar-app-name");
@@ -967,14 +974,49 @@ function renderSidebar(sidebar, menuService) {
     overviewLabel.className = "tcsi-sidebar-link-label";
     overviewLabel.textContent = "Overview";
     overview.append(overviewLabel);
-    overview.addEventListener("click", () => menuService.selectMenu(tcsiApp));
-    nav.append(overview, makeSectionHeading("Workspace"));
+    overview.addEventListener("click", () => navigation.isOwner ? navigation.open() : menuService.selectMenu(tcsiApp));
+    const ownerDashboard = navigation.isOwner && selectedApp.id === tcsiApp.id;
+    if (ownerDashboard) {
+        for (const [heading, tabs] of navigation.sections) {
+            nav.append(makeSectionHeading(heading));
+            for (const [tab, label, icon] of tabs) {
+                const link = document.createElement("button");
+                link.type = "button";
+                link.className = "tcsi-sidebar-link";
+                link.dataset.tcsiConsoleTab = tab;
+                link.dataset.tcsiSearchLabel = label.toLowerCase();
+                link.title = label;
+                const glyph = document.createElement("i");
+                glyph.className = `fa ${icon}`;
+                glyph.setAttribute("aria-hidden", "true");
+                const text = document.createElement("span");
+                text.className = "tcsi-sidebar-link-label";
+                text.textContent = label;
+                link.append(glyph, text);
+                link.addEventListener("click", async () => {
+                    await navigation.open(tab);
+                    document.body.classList.remove("tcsi-sidebar-mobile-open");
+                });
+                nav.append(link);
+            }
+        }
+        nav.append(makeSectionHeading("Workspace settings"));
+    } else {
+        nav.append(overview, makeSectionHeading("Workspace"));
+    }
 
     const tree = menuService.getMenuAsTree(selectedApp.id);
     for (const menu of tree.childrenTree || []) {
+        if (ownerDashboard && menu.xmlid === "thirdcode_accounting.menu_thirdcode_platform_console") continue;
         nav.append(makeSidebarGroup(menu, menuService));
     }
 
+    if (ownerDashboard) {
+        const note = document.createElement("p");
+        note.className = "tcsi-sidebar-owner-note";
+        note.textContent = "Private owner workspace. System oversight, separate from every customer organization.";
+        nav.append(note);
+    }
     syncSidebarActiveState();
 
     if (appSwitcher) {
@@ -983,7 +1025,7 @@ function renderSidebar(sidebar, menuService) {
         appSwitcher.hidden = true;
         sidebar.querySelector(".tcsi-sidebar-app-switcher")?.setAttribute("aria-expanded", "false");
         for (const app of workspaceApps(menuService)) {
-            appSwitcher.append(makeAppButton(app, menuService, selectedApp));
+            appSwitcher.append(makeAppButton(app, menuService, selectedApp, navigation));
         }
     }
 }
@@ -1106,11 +1148,11 @@ function mountWorkspaceNavigation(env) {
     document.body.prepend(sidebar);
     document.body.classList.add("tcsi-shell-active");
     syncThemeButtons();
-    renderSidebar(sidebar, menuService);
+    renderSidebar(sidebar, menuService, env.services.tcsi_console_navigation);
 }
 
 const tcsiBrandingService = {
-    dependencies: ["menu"],
+    dependencies: ["menu", "tcsi_console_navigation"],
 
     start(env) {
         let routeContextFrame = 0;
@@ -1141,7 +1183,7 @@ const tcsiBrandingService = {
         const refreshSidebar = () => {
             const sidebar = document.querySelector(".tcsi-workspace-sidebar");
             if (sidebar) {
-                renderSidebar(sidebar, env.services.menu);
+                renderSidebar(sidebar, env.services.menu, env.services.tcsi_console_navigation);
                 filterSidebarNavigation(sidebar, sidebar.querySelector(".tcsi-sidebar-search-input")?.value || "");
             }
         };
@@ -1151,6 +1193,18 @@ const tcsiBrandingService = {
             refreshSidebar();
         };
 
+        const onConsoleNavigation = (event) => {
+            if (event.detail.structure) refreshSidebar();
+            const navigation = env.services.tcsi_console_navigation;
+            document.querySelectorAll(".tcsi-sidebar-link[data-tcsi-console-tab]").forEach(link => {
+                link.disabled = navigation.busy;
+                const active = link.dataset.tcsiConsoleTab === navigation.activeTab;
+                link.classList.toggle("is-active", active);
+                if (active) link.setAttribute("aria-current", "page");
+                else link.removeAttribute("aria-current");
+            });
+        };
+        env.bus.addEventListener("TCSI:CONSOLE-NAVIGATION", onConsoleNavigation);
         apply();
         env.bus.addEventListener("MENUS:APP-CHANGED", onAppChanged);
         const runObserverPass = () => {
@@ -1199,6 +1253,7 @@ const tcsiBrandingService = {
         observer.observe(document.body, { childList: true, subtree: true });
         return () => {
             env.bus.removeEventListener("MENUS:APP-CHANGED", onAppChanged);
+            env.bus.removeEventListener("TCSI:CONSOLE-NAVIGATION", onConsoleNavigation);
             observer.disconnect();
             if (observerPassTimer) {
                 window.clearTimeout(observerPassTimer);
