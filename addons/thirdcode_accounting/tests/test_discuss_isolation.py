@@ -110,6 +110,9 @@ class TestCompanyDiscuss(TransactionCase):
             self.assertFalse(ids & set(foreign.partner_id.ids))
 
     def test_attachment_token_cannot_cross_company(self):
+        # Database storage exercises native Stream creation without depending on
+        # request.db, which is unavailable in an ORM TransactionCase.
+        self.env["ir.config_parameter"].set_param("ir_attachment.location", "db")
         attachment = self.env["ir.attachment"].create({"name": "private.txt", "raw": b"PRIVATE FILE", "mimetype": "text/plain",
             "res_model": "discuss.channel", "res_id": self.ca.id, "public": True})
         self.assertTrue(self.as_user(attachment, self.ua2)._to_http_stream())
@@ -142,6 +145,9 @@ class TestCompanyDiscuss(TransactionCase):
         self.assertNotIn(self.ua2.partner_id, self.cb.channel_partner_ids)
 
     def test_upgrade_preserves_mixed_history_without_exposing_it(self):
+        private = self.env["discuss.channel"].create({"name": "Legacy private", "channel_type": "group",
+            "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ua2)]})
+        private_message = private.message_post(body="PRIVATE RETAINED HISTORY", author_id=self.ua.partner_id.id)
         legacy = self.env["discuss.channel"].create({"name": "Legacy global", "channel_type": "channel",
             "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ub | self.owner)]})
         message = legacy.message_post(body="RETAINED MIXED HISTORY")
@@ -156,3 +162,6 @@ class TestCompanyDiscuss(TransactionCase):
             with self.assertRaises(AccessError):
                 self.as_user(message, user).read(["body"])
         self.assertEqual(message.res_id, legacy.id)
+        self.assertEqual(private.thirdcode_company_id, self.a)
+        self.assertTrue(private.active)
+        self.assertIn("PRIVATE RETAINED HISTORY", self.as_user(private_message, self.ua2).read(["body"])[0]["body"])

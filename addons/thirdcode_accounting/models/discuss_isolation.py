@@ -245,13 +245,38 @@ class CompanyDiscussChannel(models.Model):
             invalid.unlink()
 
     @api.model
+    def _legacy_company(self):
+        """Retain only history with one unambiguous organization of participants."""
+        self.ensure_one()
+        if self == self.env.ref("mail.channel_all_employees", raise_if_not_found=False):
+            return self.env["res.company"]
+        messages = self.env["mail.message"].search([("model", "=", "discuss.channel"), ("res_id", "=", self.id)])
+        if self.channel_member_ids.guest_id or messages.author_guest_id or messages.filtered(
+            lambda m: m.message_type == "comment" and not m.author_id
+        ):
+            return self.env["res.company"]
+        partners = (self.channel_partner_ids | messages.author_id | messages.partner_ids) - self.env.ref("base.partner_root")
+        companies = self.env["res.company"]
+        for partner in partners.with_context(active_test=False):
+            users = partner.user_ids
+            if not users or users.filtered("share") or any(len(u.company_ids) != 1 for u in users):
+                return self.env["res.company"]
+            companies |= users.company_ids
+        return companies if len(companies) == 1 else self.env["res.company"]
+
+    @api.model
     def _install_company_discuss(self):
         if self.env.uid != SUPERUSER_ID:
             raise AccessError(_("Only the trusted system operator may migrate Discuss."))
-        # Legacy conversations have no reliable company ownership. Preserve all
-        # history in a restricted archive; never guess which tenant owns a body.
+        # Never split shared history based only on an author's current company.
+        # Retain a private conversation only when members, authors and recipients
+        # all identify the same single organization; otherwise restrict it.
         legacy = self.with_context(active_test=False).search([("thirdcode_company_id", "=", False)])
         for channel in legacy:
+            company = channel._legacy_company()
+            if company:
+                channel.write({"thirdcode_company_id": company.id, "group_ids": [Command.clear()]})
+                continue
             channel.rtc_session_ids.unlink()
             for member in channel.channel_member_ids:
                 member._bus_send("discuss.channel/delete", {"id": channel.id})
