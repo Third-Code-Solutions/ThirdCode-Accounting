@@ -55,3 +55,11 @@
 - Remedy: flush incident rows before upsert and invalidate without another flush; flush publication revision before row locking. Require the full owner predicate before setup dispatch and keep internal user provisioning private to RPC.
 - Prevention: retain recurrence/revision regressions, tenant/group-only/public denial tests, and forged-context tests. The controller's trusted identity and token check remain separate boundaries.
 - Evidence: native CI 37381190163 passed 138 tests and 59 integration checks; hosted HTTP CI exercised owner/tenant denial, actual organization provisioning, snapshot publication isolation and capture after rollback.
+
+## Tenant contacts and native elevated serializers — 6 October 2026
+
+- Trigger: native partner rules exposed company-less contacts and internal-user identities; strict rules then uncovered automatic chat subscription assumptions.
+- Cause: native shared-contact exceptions apply to ORM searches, while mail persona serializers deliberately use elevated access. Shared-channel broadcasts are constructed once under the sender, so sender-only filtering cannot protect receivers.
+- Remedy: global contact/user/bank scope plus explicit shared grants; narrowly elevated automatic-membership lookup intersected with actor-visible contacts; actor-scoped Store serialization and recipient-scoped bus metadata filtering. Preserve message rows/IDs and prune dependent hidden call references.
+- Prevention: two-company direct-read/search/export/dropdown, archived-identity, shared-accounting, native Store and receiver-bus regressions. Foreign-company test fixtures provision as installer; business assertions retain tenant users.
+- Evidence: CI37392179294 contact/mail/shared-accounting cases passed; isolated 14.0-to-14.1 upgrade preserved selected business projections. Final full-suite/deployment status is tracked in `docs/contact-isolation-evidence/README.md`.

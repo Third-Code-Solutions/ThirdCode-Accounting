@@ -1,0 +1,35 @@
+{
+  "status": "CONTACT_UPGRADE_VERIFIED",
+  "revision": "7d0fc535d411415fa8d5574ebcd33d3ba13d2a66",
+  "source_version": "18.0.2.14.0",
+  "target_version": "18.0.2.14.1",
+  "selected_business_projection_preserved": true,
+  "selected_production_projection_preserved": true,
+  "projection_limitations": "Eight listed tables only; excludes partner/company write_uid/write_date, added columns, other tables and filestore",
+  "contact_counts": [
+    87,
+    69
+  ],
+  "shared_grants": [
+    [
+      89,
+      1
+    ],
+    [
+      90,
+      1
+    ]
+  ],
+  "table_counts": {
+    "account_move": 78,
+    "account_move_line": 123,
+    "account_payment": 20,
+    "account_partial_reconcile": 18,
+    "account_full_reconcile": 16,
+    "account_bank_statement_line": 0,
+    "res_partner": 87,
+    "res_company": 13
+  },
+  "neutralized": true,
+  "fresh_restore_performed": false
+}

@@ -21,8 +21,10 @@ The one-time migration adds read grants from existing invoice, journal line and 
 
 ## Verification status
 
-Implementation and independent review are in progress. Two-company ORM tests cover search, direct read, export, dropdowns, identity changes, bank records, owner access, sharing revocation, forged defaults and accounting reference boundaries. Accounting regressions include shared-vendor bills/invoices, refunds, reconciliation and company bank selection. Hosted HTTP tests provision disposable organizations and exercise native RPC isolation.
+Implementation and independent review are complete; final CI remains pending. Two-company ORM tests cover search, direct read, export, dropdowns, identity changes, bank records, owner access, sharing revocation, forged defaults and accounting reference boundaries. Accounting regressions include shared-vendor bills/invoices, refunds, reconciliation and company bank selection. Hosted HTTP tests provision disposable organizations and exercise native RPC isolation.
 
-Fresh encrypted database/filestore capture completed before deployment. An isolated upgrade will compare the original eight selected accounting/contact/company table projections; this is a limited conservation check, not a claim that every database table or filestore byte is unchanged. Current fresh capture has not been verified off-host.
+Fresh encrypted database/filestore capture completed before deployment. The isolated upgrade passed on runtime revision `7d0fc53`, preserving the original eight selected accounting/contact/company table projections; this is a limited conservation check, not a claim that every database table or filestore byte is unchanged. Current fresh capture has not been verified off-host.
 
 Production deployment and live verification are not yet complete. Final revision, CI results and live counts will be recorded here after they are observed.
+
+Native run [37392179294](https://github.com/Third-Code-Solutions/ThirdCode-Accounting/actions/runs/37392179294) reached 161 tests: no assertion failures, one remaining foreign-user fixture provisioning error. All contact/mail and shared-accounting cases passed. The remaining fixture now provisions its unrelated-company reader under installer access; its negative read and audit immutability assertions retain the original user. No runtime code changed after the successful isolated rehearsal.
