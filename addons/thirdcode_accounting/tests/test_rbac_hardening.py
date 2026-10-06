@@ -7,7 +7,7 @@ user-management scoping (H7). The setup-service entry gate (C1) is exercised in
 ``test_trial_mode`` and ``test_platform_operations``.
 """
 from odoo import Command, fields
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 
 from .common import AccountTestInvoicingCommon
@@ -147,7 +147,7 @@ class TestRbacHardening(AccountTestInvoicingCommon):
             "acc_number": "PH-1122334455",
         })
         self.assertFalse(bank.allow_out_payment)
-        with self.assertRaises((UserError, ValidationError)), self.cr.savepoint():
+        with self.assertRaises(UserError), self.cr.savepoint():
             bank.with_user(accountant).write({"allow_out_payment": True})
 
         payment = self.env["account.payment"].create({
@@ -255,8 +255,10 @@ class TestRbacHardening(AccountTestInvoicingCommon):
     def test_admin_cannot_manage_peer_admins_or_foreign_company_users(self):
         administrator = self.roles["administrator"]
         company_a = self.company
-        company_b = self.env["res.company"].create({"name": "Hardening foreign org"})
-        peer_admin = self.env["res.users"].create({
+        # Trusted fixture setup, like the role-matrix tests: the contact rules
+        # do not let a business user claim a brand-new company's contact.
+        company_b = self.env["res.company"].sudo().create({"name": "Hardening foreign org"})
+        peer_admin = self.env["res.users"].sudo().create({
             "name": "Hardening peer admin",
             "login": "hardening-peer-admin",
             "company_id": company_a.id,
@@ -268,7 +270,7 @@ class TestRbacHardening(AccountTestInvoicingCommon):
             ],
         })
         accountant = self.roles["accountant"]
-        shared = self.env["res.users"].create({
+        shared = self.env["res.users"].sudo().create({
             "name": "Hardening shared user",
             "login": "hardening-shared-user",
             "company_id": company_a.id,
