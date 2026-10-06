@@ -126,10 +126,16 @@ class TestCompanyDiscuss(TransactionCase):
         attachment = self.env["ir.attachment"].create({"name": "private.txt", "raw": b"PRIVATE FILE", "mimetype": "text/plain",
             "res_model": "discuss.channel", "res_id": self.ca.id, "public": True})
         self.assertTrue(self.as_user(attachment, self.ua2)._to_http_stream())
-        for user in [self.ub, self.owner, self.env.ref("base.public_user")]:
+        for user in [self.ub, self.owner]:
             with self.assertRaises(AccessError):
                 self.as_user(attachment, user).sudo()._to_http_stream()
             self.assertFalse(self.as_user(attachment, user).search([("id", "=", attachment.id)]))
+        public_attachment = self.as_user(attachment, self.env.ref("base.public_user"))
+        with self.assertRaises(AccessError):
+            public_attachment.sudo()._to_http_stream()
+        # Public users are denied by the native model ACL before record rules.
+        with self.assertRaises(AccessError):
+            public_attachment.search([("id", "=", attachment.id)])
 
     def test_realtime_drops_foreign_bodies_and_channel_members(self):
         message = self.as_user(self.ca, self.ua).message_post(body="PRIVATE REALTIME")
