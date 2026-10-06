@@ -34,8 +34,8 @@
         <xpath expr="//div[@t-ref='settings']/t[1]" position="before">
             <header class="tcsi-settings-intro">
                 <span class="tcsi-settings-eyebrow"><i class="fa fa-sliders" aria-hidden="true"/> Workspace administration</span>
-                <h1>Settings</h1>
-                <p>Manage your organization, communication, access, and connected services.</p>
+                <h1>TCSI Settings</h1>
+                <p>Manage your organization, documents, email, and account security.</p>
                 <div class="tcsi-settings-save-help"><i class="fa fa-info-circle" aria-hidden="true"/> Review your changes, then choose Save changes. Use Discard to undo unsaved edits.</div>
             </header>
         </xpath>
