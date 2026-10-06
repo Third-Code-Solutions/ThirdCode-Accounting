@@ -1001,6 +1001,10 @@ function renderSidebar(sidebar, menuService, navigation) {
             }
         }
         nav.append(makeSectionHeading("Workspace settings"));
+        const settingsApp = menuService.getApps().find(app => app.xmlid === "base.menu_administration");
+        if (settingsApp) {
+            nav.append(makeSidebarLink(settingsApp, menuService));
+        }
     } else {
         nav.append(overview, makeSectionHeading("Workspace"));
     }

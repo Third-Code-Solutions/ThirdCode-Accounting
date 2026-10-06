@@ -319,3 +319,45 @@ test("native form titles prefer the actual record heading over the field label",
     breadcrumb = "";
     assert.equal(context.getNativeRouteTitle(manager), "Company Name", "field label remains a final fallback");
 });
+
+test("owner console exposes a working Settings link only when the native Settings app is allowed", async () => {
+    const root = { id: 10, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root", name: "TCSI Accounting" };
+    const settings = { id: 20, xmlid: "base.menu_administration", name: "Settings" };
+    function element() {
+        return {
+            dataset: {}, children: [], events: {},
+            classList: { add() {}, remove() {}, toggle() {} },
+            append(...children) { this.children.push(...children); },
+            replaceChildren(...children) { this.children = children; },
+            addEventListener(name, handler) { this.events[name] = handler; },
+            setAttribute() {},
+        };
+    }
+    for (const allowed of [true, false]) {
+        const selected = [];
+        const nav = element();
+        const label = element();
+        const sidebar = { querySelector: selector => ({ ".tcsi-sidebar-nav": nav, ".tcsi-sidebar-app-name": label })[selector] || null };
+        const menu = {
+            getApps: () => allowed ? [root, settings] : [root],
+            getCurrentApp: () => root,
+            getMenuAsTree: () => ({ childrenTree: [] }),
+            selectMenu: async item => selected.push(item),
+        };
+        const context = {
+            document: { createElement: element },
+            window: { location: { pathname: "/workspace/console" } },
+            TCSI_APP_XMLID: root.xmlid, DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
+            TCSI_WEB_PREFIX: "/workspace", INTERNAL_WEB_PREFIX: "/odoo",
+            makeIcon: element, brandedLabel: text => text, syncSidebarActiveState() {},
+        };
+        runInNewContext(source.slice(source.indexOf("function makeSidebarLink"), source.indexOf("function filterSidebarNavigation")), context);
+        context.renderSidebar(sidebar, menu, { isOwner: true, active: true, sections: [] });
+        const link = nav.children.find(child => child.dataset.tcsiMenuXmlid === settings.xmlid);
+        assert.equal(Boolean(link), allowed);
+        if (allowed) {
+            await link.events.click();
+            assert.deepEqual(selected, [settings], "use native menu selection, retaining access and routing");
+        }
+    }
+});
