@@ -396,8 +396,8 @@ test("Settings sections replace the inner navigation in the main sidebar and res
     const link = nav.children.find(child => child.dataset.tcsiSettingsSection === "emails");
     assert.ok(link); link.events.click();
     assert.deepEqual(jumps, ["emails"]);
-    const module = nav.children.find(child => child.attributes["aria-pressed"] === "true");
-    module.events.click(); assert.deepEqual(modules, ["general_settings"]);
+    const moduleLink = nav.children.find(child => child.attributes["aria-pressed"] === "true");
+    moduleLink.events.click(); assert.deepEqual(modules, ["general_settings"]);
     assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === general.xmlid), false);
     assert.deepEqual(toggles.at(-1), ["tcsi-settings-in-main-sidebar", true]);
     settings.active = false;
