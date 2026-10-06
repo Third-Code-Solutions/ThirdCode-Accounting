@@ -135,7 +135,7 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
     def test_direct_report_rendering_rechecks_role_and_company(self):
         reader = self.roles["readonly"]
         encoder = self.roles["encoder"]
-        other = self.env["res.company"].create({"name": "Unselected report scope"})
+        other = self.env["res.company"].sudo().create({"name": "Unselected report scope"})
         context = {"allowed_company_ids": self.env.company.ids, "active_ids": self.partner_a.ids}
         for model in ("trial.balance.report.wizard", "general.ledger.report.wizard", "activity.statement.wizard"):
             wizard = self.env[model].with_user(reader).with_context(**context).create({"company_id": self.env.company.id})
@@ -158,7 +158,7 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
 
     def test_statement_export_rechecks_changed_company(self):
         wizard = self.env["activity.statement.wizard"].with_context(active_ids=self.partner_a.ids).create({"company_id": self.env.company.id})
-        wizard.company_id = self.env["res.company"].create({"name": "Unselected statement scope"})
+        wizard.company_id = self.env["res.company"].sudo().create({"name": "Unselected statement scope"})
         wizard = wizard.with_context(allowed_company_ids=self.env.company.ids)
         for method in (wizard.button_export_html, wizard.button_export_pdf, wizard.button_export_xlsx):
             with self.assertRaises(AccessError):
@@ -192,8 +192,13 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
             refund = move._reverse_moves([{"date": fields.Date.today()}])
             refund.action_post()
             lines = (move | refund).line_ids.filtered(lambda line: line.account_id.account_type in {"asset_receivable", "liability_payable"})
+            # Native reversal may already settle the pair. Exercise explicit
+            # removal and reconciliation under the accountant identity as well.
+            lines.remove_move_reconcile()
+            self.assertFalse(any(lines.mapped("reconciled")))
             lines.reconcile()
             self.assertEqual(move.amount_residual, 0)
+            self.assertEqual(refund.amount_residual, 0)
         journal = self.company_data["default_journal_bank"].with_user(self.roles["administrator"])
         journal.write({"bank_acc_number": "TEST-COMPANY-BANK-123"})
         self.assertEqual(journal.bank_account_id.partner_id, self.env.company.partner_id)

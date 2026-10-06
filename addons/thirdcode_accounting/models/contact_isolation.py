@@ -413,10 +413,31 @@ def scope_contact_store(env, data):
             row["email_from"] = False
     if "res.partner" in data:
         data["res.partner"] = [row for row in data["res.partner"] if row["id"] not in hidden]
+    members = data.get("discuss.channel.member", [])
+    hidden_members = {row["id"] for row in members if isinstance(row.get("persona"), dict)
+                      and row["persona"].get("type") == "partner" and row["persona"].get("id") in hidden}
     if "discuss.channel.member" in data:
-        data["discuss.channel.member"] = [row for row in data["discuss.channel.member"]
-            if not (isinstance(row.get("persona"), dict) and row["persona"].get("type") == "partner"
-                    and row["persona"].get("id") in hidden)]
+        data["discuss.channel.member"] = [row for row in members if row["id"] not in hidden_members]
+    sessions = data.get("discuss.channel.rtc.session", [])
+    hidden_sessions = {row["id"] for row in sessions if row.get("channelMember") in hidden_members}
+    if "discuss.channel.rtc.session" in data:
+        data["discuss.channel.rtc.session"] = [row for row in sessions if row["id"] not in hidden_sessions]
+
+    def prune_relation(value, removed):
+        if not isinstance(value, (list, tuple)):
+            return False if value in removed else value
+        result = []
+        for item in value:
+            if isinstance(item, (list, tuple)) and len(item) == 2 and item[0] in ("ADD", "DELETE"):
+                result.append([item[0], item[1] if item[0] == "DELETE" else [i for i in item[1] if i not in removed]])
+            elif item not in removed:
+                result.append(item)
+        return result
+    for channel in data.get("discuss.channel", []):
+        for key, removed in [("channelMembers", hidden_members), ("invitedMembers", hidden_members),
+                             ("rtcSessions", hidden_sessions), ("rtcInvitingSession", hidden_sessions)]:
+            if key in channel:
+                channel[key] = prune_relation(channel[key], removed)
     return clean(data)
 
 
@@ -425,7 +446,7 @@ class ContactScopedBus(models.Model):
 
     def _poll(self, channels, last=0, ignore_ids=None):
         notifications = super()._poll(channels, last=last, ignore_ids=ignore_ids)
-        if is_platform_owner(self.env) or not self.env.user.has_group("base.group_user"):
+        if not self.env.uid or is_platform_owner(self.env) or not self.env.user.has_group("base.group_user"):
             return notifications
         # Producers broadcast the same Store to every channel member. Scope it
         # per receiver; sender-side filtering alone leaks across legacy channels.

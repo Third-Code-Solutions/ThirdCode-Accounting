@@ -701,7 +701,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         users = [self.accountant]
         for index, company in enumerate(companies[1:], start=2):
             users.append(
-                self.env["res.users"].create(
+                self.env["res.users"].sudo().create(
                     {
                         "name": f"Trial isolation accountant {index}",
                         "login": f"trial-isolation-accountant-{index}",
@@ -1074,7 +1074,7 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             details.sudo().unlink()
         scoped = details[-1].log_id.with_user(self.accountant)
         self.assertTrue(scoped.read(["method"]))
-        other_user = self.env["res.users"].create({
+        other_user = self.env["res.users"].sudo().create({
             "name": "Other audit reader", "login": "other-audit-reader",
             "company_id": self.other_company.id, "company_ids": [Command.set(self.other_company.ids)],
             "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_readonly").ids)],

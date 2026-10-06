@@ -143,7 +143,7 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         self.assertEqual(detail.log_id.thirdcode_company_ids, self.company)
         self.assertTrue(detail.log_id.create_date)
         self.assertTrue(detail.log_id.with_user(self.actor).read(["method"]))
-        other_company = self.env["res.company"].create({"name": "Audit metadata other company"})
+        other_company = self.env["res.company"].sudo().create({"name": "Audit metadata other company"})
         other_reader = self.env["res.users"].create({
             "name": "Audit metadata other reader", "login": "audit-metadata-other-reader",
             "company_id": other_company.id, "company_ids": [Command.set(other_company.ids)],

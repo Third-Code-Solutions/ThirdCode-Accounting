@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from odoo.addons.bus.models.bus import ImBus
 
-from odoo import Command
+from odoo import Command, api
 from odoo.addons.mail.tools.discuss import Store
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
@@ -222,11 +222,14 @@ class TestContactIsolation(TransactionCase):
 
     def test_message_author_email_and_bus_payload_are_receiver_scoped(self):
         self.ub.email = "foreign-contact-marker@example.invalid"
-        message = self.env["mail.message"].create({"body": "Contact boundary test", "author_id": self.ub.partner_id.id,
+        channel = self.env["discuss.channel"].create({"name": "Shared message test", "channel_type": "channel",
+            "channel_member_ids": [Command.create({"partner_id": u.partner_id.id}) for u in (self.ua | self.ub)]})
+        message = self.env["mail.message"].create({"model": "discuss.channel", "res_id": channel.id,
+            "body": "Contact boundary test", "author_id": self.ub.partner_id.id,
             "email_from": self.ub.email, "message_type": "comment"})
-        store = Store()
-        message.with_user(self.ua).with_context(allowed_company_ids=self.a.ids)._author_to_store(store)
-        direct = store.get_result()
+        readable = message.with_user(self.ua).with_context(allowed_company_ids=self.a.ids)
+        readable.check_access("read")
+        direct = Store(readable).get_result()
         self.assertNotIn(self.ub.email, json.dumps(direct))
         self.assertFalse(direct["mail.message"][0]["author"])
         # Build the actual native sender Store, then poll as each receiver.
@@ -250,4 +253,22 @@ class TestContactIsolation(TransactionCase):
                 if user == self.ua:
                     self.assertNotIn(self.ub.email, json.dumps(result))
             self.assertEqual(self.env["bus.bus"].with_user(self.owner)._poll([]), notifications)
+            self.assertEqual(self.env["bus.bus"].with_user(self.multi).with_context(allowed_company_ids=(self.a | self.b).ids)._poll([]), notifications)
+            self.assertEqual(api.Environment(self.cr, None, {})["bus.bus"]._poll([]), notifications)
         self.assertIn(self.ub.email, json.dumps(notifications))
+
+    def test_hidden_member_call_dependencies_are_pruned(self):
+        from ..models.contact_isolation import scope_contact_store
+        data = {"res.partner": [{"id": self.ub.partner_id.id, "name": "Foreign"}],
+            "discuss.channel.member": [{"id": 20, "persona": {"id": self.ub.partner_id.id, "type": "partner"}}],
+            "discuss.channel.rtc.session": [{"id": 30, "channelMember": 20}],
+            "discuss.channel": [{"id": 5, "channelMembers": [20], "invitedMembers": [["ADD", [20]], ["DELETE", [20]]],
+                "rtcSessions": [["ADD", [30]]], "rtcInvitingSession": 30}]}
+        result = scope_contact_store(self.partners(self.ua).env, data)
+        self.assertFalse(result["discuss.channel.member"])
+        self.assertFalse(result["discuss.channel.rtc.session"])
+        channel = result["discuss.channel"][0]
+        self.assertEqual(channel["channelMembers"], [])
+        self.assertEqual(channel["invitedMembers"], [["ADD", []], ["DELETE", [20]]])
+        self.assertEqual(channel["rtcSessions"], [["ADD", []]])
+        self.assertFalse(channel["rtcInvitingSession"])
