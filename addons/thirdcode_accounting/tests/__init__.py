@@ -11,3 +11,5 @@ from . import test_audit_performance
 from . import test_platform_operations
 
 from . import test_contact_isolation
+
+from . import test_rbac_hardening
