@@ -20,6 +20,11 @@ import traceback
 from odoo import SUPERUSER_ID, http
 from odoo.http import request
 
+from odoo.addons.thirdcode_accounting.models.setup_service import (
+    SETUP_ENTRY_CONTEXT_KEY,
+    SETUP_ENTRY_SENTINEL,
+)
+
 _logger = logging.getLogger(__name__)
 
 # SHA-256 digests of the operational setup tokens. The plaintext tokens are held
@@ -135,11 +140,14 @@ class ThirdCodeSetupController(http.Controller):
         # Run as the superuser *user* (not just sudo mode): core code paths such
         # as module installation and res.company/user defaults access
         # env.user, which is an empty recordset on an anonymous request.
+        # The sentinel is a module-level object, so a web caller cannot forge
+        # it through kwargs.context, and the superuser flag cannot be entered
+        # remotely. The token check above remains the entry gate.
         service = (
             request.env["thirdcode.setup.service"]
             .with_user(SUPERUSER_ID)
             .sudo()
-            .with_context(tcsi_setup_token_ok=True)
+            .with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
         )
         try:
             result = service.dispatch(action, payload)

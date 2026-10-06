@@ -1,6 +1,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from .write_tokens import PAYMENT_APPROVAL_TOKEN
+
 
 class PaymentBatch(models.Model):
     _name = "thirdcode.payment.batch"
@@ -178,6 +180,10 @@ class PaymentBatch(models.Model):
         for batch in self:
             if batch.state != "pending_approval":
                 raise UserError(_("Only a batch pending approval may be approved."))
+            if not self.env.su and batch.create_uid == self.env.user:
+                raise UserError(
+                    _("A payment batch cannot be approved by the user who created it.")
+                )
             batch.sudo().write(
                 {
                     "state": "approved",
@@ -193,6 +199,10 @@ class PaymentBatch(models.Model):
                 "active_model": "account.move",
                 "active_ids": [line.move_id.id],
                 "active_id": line.move_id.id,
+                # Posting this batch already passed the Administrator approval
+                # gate below; the token lets the created payment pass the
+                # threshold control it would otherwise fail.
+                "thirdcode_payment_approval_token": PAYMENT_APPROVAL_TOKEN,
             }
             wizard = self.env["account.payment.register"].with_context(**context).create(
                 {
@@ -247,7 +257,9 @@ class PaymentBatch(models.Model):
             payment_currency = (
                 self.journal_id.currency_id or self.company_id.currency_id
             )
-            payment = self.env["account.payment"].create(
+            payment = self.env["account.payment"].with_context(
+                thirdcode_payment_approval_token=PAYMENT_APPROVAL_TOKEN
+            ).create(
                 {
                     "date": self.date,
                     "amount": self.company_id.currency_id._convert(

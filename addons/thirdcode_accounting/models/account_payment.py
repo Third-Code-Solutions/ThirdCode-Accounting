@@ -3,7 +3,7 @@ from num2words import num2words
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
-from .write_tokens import RECEIPT_NUMBER_TOKEN
+from .write_tokens import PAYMENT_APPROVAL_TOKEN, RECEIPT_NUMBER_TOKEN
 
 
 class AccountPayment(models.Model):
@@ -227,7 +227,58 @@ class AccountPayment(models.Model):
                 })
         return True
 
+    def _thirdcode_check_payment_controls(self):
+        """Server-side controls that must hold for every payment posting path.
+
+        * A payment above the company approval threshold only passes through a
+          batch an administrator approved (finding H3); the batch enters with
+          an unforgeable in-process token.
+        * An outbound bank payment may only reach a bank account an
+          administrator has verified (``allow_out_payment``), so changing a
+          vendor's bank details alone can no longer divert a payment
+          (finding H2).
+        """
+        if self.env.su:
+            return
+        for payment in self:
+            company = payment.company_id
+            if company.thirdcode_payment_approval_enabled:
+                amount = abs(payment.amount)
+                if payment.currency_id and payment.currency_id != company.currency_id:
+                    amount = payment.currency_id._convert(
+                        amount,
+                        company.currency_id,
+                        company,
+                        payment.date or fields.Date.context_today(payment),
+                    )
+                if (
+                    amount > company.thirdcode_payment_approval_threshold
+                    and self.env.context.get("thirdcode_payment_approval_token")
+                    is not PAYMENT_APPROVAL_TOKEN
+                ):
+                    raise UserError(
+                        _(
+                            "A payment above the %(threshold)s %(currency)s approval threshold must be posted through a payment batch an administrator approved.",
+                            threshold=company.thirdcode_payment_approval_threshold,
+                            currency=company.currency_id.name,
+                        )
+                    )
+            bank = payment.partner_bank_id
+            if (
+                payment.payment_type == "outbound"
+                and payment.journal_id.type == "bank"
+                and bank
+                and not bank.allow_out_payment
+            ):
+                raise UserError(
+                    _(
+                        "Payments may only be sent to a bank account an administrator has verified (marked Trusted). Review the bank account of %(partner)s before paying.",
+                        partner=payment.partner_id.display_name,
+                    )
+                )
+
     def action_post(self):
+        self._thirdcode_check_payment_controls()
         result = super().action_post()
         self._assign_thirdcode_receipt_number()
         return result

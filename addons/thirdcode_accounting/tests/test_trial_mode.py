@@ -1,7 +1,13 @@
 from odoo import SUPERUSER_ID, Command, fields
 from odoo.exceptions import AccessError, UserError
+from odoo.service.model import get_public_method
 from odoo.tests import tagged
 from .common import AccountTestInvoicingCommon
+
+from odoo.addons.thirdcode_accounting.models.setup_service import (
+    SETUP_ENTRY_CONTEXT_KEY,
+    SETUP_ENTRY_SENTINEL,
+)
 
 
 @tagged("post_install", "-at_install")
@@ -96,16 +102,27 @@ class TestTrialMode(AccountTestInvoicingCommon):
         with self.assertRaises(AccessError):
             service.dispatch("status", {})
 
-        result = service.with_context(tcsi_setup_token_ok=True).dispatch("status", {})
+        # The legacy context flag is forgeable through the web API and no
+        # longer authorizes anything.
+        with self.assertRaises(AccessError):
+            service.with_context(tcsi_setup_token_ok=True).dispatch("status", {})
+
+        # The entry point itself is out of reach for remote calls.
+        self.assertTrue(getattr(type(service), "dispatch")._api_private)
+        with self.assertRaises(AccessError):
+            get_public_method(service, "dispatch")
+
+        entered = service.with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
+        result = entered.dispatch("status", {})
         self.assertIn("companies", result)
         self.assertIn("users", result)
 
         with self.assertRaises(UserError):
-            service.with_context(tcsi_setup_token_ok=True).dispatch("not-an-action", {})
+            entered.dispatch("not-an-action", {})
 
     def test_setup_service_create_user_and_batch(self):
         company = self.env["res.company"].sudo().create({"name": "Trial service company"})
-        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
 
         result = service.dispatch(
             "create_user",
@@ -152,7 +169,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
     def test_setup_service_period_and_journal_helpers(self):
         company = self.env["res.company"].sudo().create({"name": "Trial period company"})
-        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
 
         journal_steps = service._ensure_journals(company)
         self.assertTrue(any("journals created" in step for step in journal_steps))
@@ -174,7 +191,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
         self.assertTrue(any("reused" in step for step in rerun_steps))
 
     def test_maintenance_locks_reports_backends(self):
-        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
         result = service._action_maintenance({"op": "locks"})
         self.assertIn("backends", result)
         self.assertIsInstance(result["backends"], list)

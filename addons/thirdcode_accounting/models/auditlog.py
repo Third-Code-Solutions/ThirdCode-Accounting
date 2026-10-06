@@ -2,7 +2,22 @@ import hashlib
 
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.http import request
 from odoo.addons.auditlog.models.rule import DictDiffer, FIELDS_BLACKLIST
+
+
+def session_digest(env, sid):
+    """Return the stored form of an HTTP session identifier.
+
+    The OCA audit log stores ``request.session.sid`` verbatim, so every role
+    with audit access can read live session secrets. Only a database-scoped
+    digest may be retained: it is stable inside one database (the lookup that
+    logs a session only once keeps working) and unusable anywhere else.
+    """
+    salt = env.cr.dbname or ""
+    return "sha256:" + hashlib.sha256(
+        ("tcsi.audit.session:%s:%s" % (salt, sid)).encode()
+    ).hexdigest()
 
 
 class AuditLog(models.Model):
@@ -153,6 +168,31 @@ class AuditLogRule(models.Model):
             values = dict(additional_log_values or {})
             values["thirdcode_company_ids"] = [(6, 0, sorted(companies))]
             super().create_logs(uid, res_model, [res_id], method, old_values, new_values, values)
+
+
+class AuditlogHTTPSession(models.Model):
+    _inherit = "auditlog.http.session"
+
+    @api.model
+    def current_http_session(self):
+        # Extended OCA behaviour: only the digest of the session identifier is
+        # persisted, never ``request.session.sid`` itself. The once-per-session
+        # lookup below mirrors the native implementation against the digest.
+        if not request:
+            return False
+        httpsession = request.session
+        sid = getattr(httpsession, "sid", None) if httpsession else None
+        if not sid:
+            return False
+        digest = session_digest(self.env, sid)
+        existing = self.sudo().search(
+            [("name", "=", digest), ("user_id", "=", request.uid)], limit=1
+        )
+        if existing:
+            return existing.id
+        record = self.sudo().create({"name": digest, "user_id": request.uid})
+        httpsession.auditlog_http_session_id = record.id
+        return record.id
 
 
 class AuditAttachmentDigest(models.Model):
