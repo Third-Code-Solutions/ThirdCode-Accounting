@@ -12,7 +12,7 @@
     <field name="name">Private platform company is not a customer organization</field>
     <field name="model_id" ref="base.model_res_company"/>
     <field name="global" eval="True"/>
-    <field name="domain_force">[] if user.thirdcode_platform_owner and user.has_group('base.group_system') else [('thirdcode_is_platform', '=', False)]</field>
+    <field name="domain_force">[] if user.thirdcode_platform_owner and user.has_group('base.group_system') else ['|', ('thirdcode_is_platform', '=', False), ('id', 'in', user.company_ids.ids if user.has_group('thirdcode_accounting.group_thirdcode_platform_support') else [])]</field>
   </record>
   <record id="rule_platform_event_owner" model="ir.rule">
     <field name="name">Platform event: owner only</field>
