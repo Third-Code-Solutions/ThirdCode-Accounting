@@ -338,6 +338,9 @@ class CompanyDiscussBus(models.Model):
         for notification in notifications:
             message = notification["message"]
             kind, payload = message["type"], message["payload"]
+            if not isinstance(payload, dict):
+                result.append(notification)
+                continue
             if kind == "discuss.channel/delete":
                 result.append(notification)
                 continue
@@ -346,12 +349,18 @@ class CompanyDiscussBus(models.Model):
                 ids.add(payload["channel"]["id"])
             if isinstance(payload.get("channelId"), int):
                 ids.add(payload["channelId"])
+            if isinstance(payload.get("channel_id"), int):
+                ids.add(payload["channel_id"])
             if kind.startswith("discuss.channel/") or payload.get("model") == "discuss.channel":
                 if isinstance(payload.get("id"), int):
                     ids.add(payload["id"])
             data = payload.get("data", payload)
             if isinstance(data, dict):
                 ids.update(row["id"] for row in data.get("discuss.channel", []) if "id" in row)
+                for row in data.get("mail.message", []):
+                    thread = row.get("thread")
+                    if isinstance(thread, dict) and thread.get("model") == "discuss.channel":
+                        ids.add(thread["id"])
                 for model, relation in [("mail.message", "thirdcode_channel_id"),
                                          ("discuss.channel.member", "channel_id"),
                                          ("discuss.channel.rtc.session", "channel_id")]:
