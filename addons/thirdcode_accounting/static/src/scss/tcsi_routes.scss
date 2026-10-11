@@ -217,6 +217,7 @@ body.tcsi-shell-active {
         }
         .o_form_label, .o_form_label.o_form_label_readonly, .oe_title .o_form_label {
             color: var(--tcsi-route-muted);
+            opacity: 1;
             font-size: 12px;
             font-weight: 500;
             letter-spacing: 0;

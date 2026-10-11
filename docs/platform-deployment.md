@@ -225,6 +225,17 @@ accepts a company demo request and writes only a `new` website lead. The
 separate `/login` route is the Supabase platform-owner sign-in; `/web/login`
 remains the customer accounting-engine sign-in.
 
+The database normalizes public lead addresses and caps one address at three
+submissions per rolling hour, including direct Data API inserts. Field-length
+checks apply to new rows without rejecting older rows during migration. This
+limits repeat abuse; provider-edge throttling remains necessary for attacks
+that rotate addresses.
+
+The future standalone dashboard's limited receivables metric is the gross open
+balance of issued or partially paid PHP sales invoices. It excludes drafts,
+paid/void documents, purchases, credit/debit notes, and foreign currencies; it
+is not a net accounts-receivable ledger or an FX conversion.
+
 Platform ownership is deliberately singleton and server-enforced. The
 `platform_owner_access` table can contain one assigned Supabase user, and the
 analytics RPCs require that authenticated user before returning cross-tenant
@@ -347,17 +358,52 @@ Set:
 
 Railway should probe `/health`, restart on failure, and keep `/ready` private
 or protected by the platform network. The worker refuses to start in
-production when its Supabase secrets are missing. Scheduled accounting jobs
-must claim a unique `(job_name, run_key)` before writing any business record;
-retries must treat a duplicate key as an already-claimed run.
+production when its Supabase secrets are missing. `/ready` probes database
+access with a 2.5-second timeout and no retries; it returns 503 on missing or
+invalid configuration, dependency failure, or `scheduler_disabled`. There are
+no released Node job handlers, so a reachable database is not enough to report
+readiness. The former logging-only scheduler has been removed; the poll interval
+setting is retained for configuration compatibility but currently does no work.
+Odoo continues to own recurring accounting. Additional Node job actions,
+schedules/timezones, company scope and destinations must be specified only if
+the future standalone product acquires a requirement that Odoo does not already
+serve. The current pilot requires no additional Node jobs; do not duplicate its
+accounting schedules in this service.
+
+Job claims use unique `(workspace_id, job_name, run_key)` values, with NULL
+workspace IDs treated as one global scope. Retries must treat a duplicate key
+in the same scope as an already-claimed run. Apply the job-claim migration
+before deploying any future worker that uses this contract.
+
+### Automation ownership for the current pilot
+
+| Work | Owner and schedule | Scope and destination |
+| --- | --- | --- |
+| Configured recurring journals, customer invoices and supplier bills | Odoo's `Third Code: run recurring entries and invoices`, daily. Its actual next execution is the installed `ir.cron.nextcall`; the source does not promise a fixed local hour. | Active, due definitions; generated documents stay in each definition's company ledger. Existing accountant/administrator configuration and posting controls apply. No automatic customer email is added. |
+| Grouped operational incident retention | Odoo's `TCSI Sentry: 90-day incident retention`, daily. | Removes expired diagnostic groups only; financial and operator audit records are retained. |
+| Coordinated encrypted database and attachment backup | Existing `scripts/hosted_backup.py`, run by an external operator scheduler after recovery configuration. | Complete engine recovery bundle to a separate approved storage destination. Requires encryption certificate, storage, retention, operator/deputy and a maintenance window. A second ledger worker cannot capture the engine's filestore/process state safely. |
+| Failed/missed backup and engine outage monitoring | Existing recovery monitor plus an independent external monitor. | Operator alert channel. The alert recipient and provider configuration are required; a process on the failed engine cannot establish that the engine is down. |
+
+The hosted launcher enables one Odoo cron thread. The configured UTC timestamp
+and scheduler user's timezone must be inspected in the deployed instance before
+asserting a local execution hour. Recurrence intervals and due dates remain
+definition-specific; no new templates, payments, reminders, tax submissions or
+automatic period closes are created by this decision.
+
+This resolves the worker-scope question for the current pilot. It does not prove
+that hosted cron or external recovery jobs are enabled and running. Verify actual
+job state, last/next runs, failures, recovery receipts and a failed-run alert at
+release. A passing worker health endpoint is not evidence of those operations.
 
 ## CI and release gates
 
 `.github/workflows/ci.yml` runs install, lint, typecheck, tests, migration
-structure validation, web/worker builds, and high-severity dependency audit.
+structure validation, the complete migration chain plus RLS/intake behavior in
+disposable PostgreSQL, web/worker builds, and high-severity dependency audit.
 Store deployment tokens only in provider/GitHub secret stores. A release is
-not accepted until the deployed web health route, worker health route, auth
-flow, tenant isolation, responsive journeys, and migration status are checked.
+not accepted until health/readiness for every deployed service, auth flow,
+tenant isolation, responsive journeys, scheduled-job state and migration status
+are checked. The intentionally undeployed Node worker is not a pilot service.
 
 ## Still required before client cutover
 

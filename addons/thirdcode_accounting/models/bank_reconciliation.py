@@ -164,6 +164,8 @@ class BankReconciliation(models.Model):
                 raise UserError(_("Attach the paper/PDF statement before sign-off."))
             if not record.definition and not record.company_id.thirdcode_reconciliation_definition:
                 raise UserError(_("Define the approved monthly reconciliation procedure before sign-off."))
+            if any(not line.is_reconciled for line in record.bank_statement_line_ids):
+                raise UserError(_("Match every attached bank statement line before sign-off."))
             if record.currency_id.compare_amounts(
                 record.ledger_balance, record._posted_ledger_balance()
             ) != 0:

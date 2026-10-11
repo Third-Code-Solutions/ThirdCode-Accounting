@@ -4,7 +4,7 @@ import vm from "node:vm";
 import test from "node:test";
 
 const source = readFileSync("addons/thirdcode_accounting/static/src/js/tcsi_settings.js", "utf8")
-    .replace(/^import .*;\n/gm, "").replace(/^export /gm, "");
+    .replace(/^import .*;\r?\n/gm, "").replace(/^export /gm, "");
 function harness(headings = []) {
     const mounted = [], unmounted = [], frames = new Map();
     let extension, observer, nextFrame = 0;

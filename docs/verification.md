@@ -308,3 +308,195 @@ from this workspace.
 
 - Final report-access expansion adds direct HTML/PDF/XLSX rendering and Statement of Account scope checks. The actual report-action context is applied in XLSX tests, matching the web client. A further representative-copy upgrade at `d376b23` took35.605seconds and preserved the original fingerprint. Live report evidence now includes25 PDFs, including an existing partner SOA.
 - Hosted HTTP tests exposed Odoo18's `UpgradeRequired.get_headers` signature incompatibility with its installed Werkzeug. The WSGI error path now preserves426/body/`Sec-WebSocket-Version` directly; native and real-hosted regression gates retain assertions for this behavior. Final CI/deployment results remain pending.
+
+## QA audit remediation — 11 October 2026 (local only)
+
+The 10 October audit was against main `9e116d2bb988`. This working tree upgrades
+the addon to `18.0.2.15.1`; no commit, push, hosted migration or deployment was
+performed during remediation.
+
+- F01–F08: tenant administrators lose global throttle access; workflow creation
+  validates context defaults; payment lines cannot enter approved batches or
+  inject payment links; concurrent child edits force stale batch submissions to
+  retry; posted year-end closes cannot be deleted; repeated suspension preserves
+  the recovery snapshot; blocked unknown logins skip password hashing; auth
+  confirmation accepts only same-origin redirect targets.
+- F09–F10, F12: native saved-account buttons use readable light/dark colors;
+  Windows CRLF imports work in both JavaScript harnesses; README links are relative.
+- L01–L03: standalone invoice totals aggregate all eligible open PHP sales
+  invoices under RLS, with currency-correct activity labels; job claims are scoped
+  by workspace and job; worker readiness performs a bounded database probe and
+  honestly reports that scheduling is disabled.
+- G02–G03: CI applies every migration and checks final privileges and behavior;
+  the pilot page boundary now uses an explicit allowlist.
+- G01 is partially addressed: database constraints, normalized email limits and
+  server-owned timestamps protect direct intake inserts. Rotating-email abuse
+  still requires a trusted ingestion boundary and provider configuration. The
+  current web client has public anonymous credentials; revoking its insert grant
+  without that replacement would break intake. Do not add a service-role key to
+  Vercel to bypass this design requirement.
+- F11 remains blocked upstream: `braces` has no published patched version for
+  GHSA-vfj7-8cjw-p6xm. Full dependency audit still fails with five high-severity
+  nodes in one development-tool chain. The suggested forced downgrade to Next 14
+  lint tooling was not applied; the audit gate remains enabled.
+- G04 scope resolved after tracing the current accounting workflows: no additional
+  Node jobs are required for the Odoo pilot. Existing Odoo schedules own recurring
+  accounting and incident retention; recovery capture/monitoring belongs to the
+  existing operator tooling and an independent scheduler. The Node worker stays
+  disabled and remains unreleased groundwork for a future standalone product.
+  Hosted job activation and recovery configuration still require verification.
+
+Current verification:
+
+| Check | Result | Evidence and limits |
+| --- | --- | --- |
+| Lint, types, production build | **PASSED** | Repository lint scope; contracts, web and worker typechecks/builds. |
+| Platform tests | **PASSED** | 85 tests: 4 contracts, 7 worker, 74 web. |
+| Native JavaScript harnesses | **PASSED** | 67 tests, including the repaired Windows harnesses. |
+| Migration execution | **PASSED** | All 10 migrations on disposable PostgreSQL; final self-provisioning revoke, RLS, 75-invoice totals, type/status/currency exclusions, direct intake caps/timestamp spoofing, tenant/global job-key uniqueness. Supabase provider deployment is not covered. |
+| Python checks | **PASSED** | 32 portable tests; 3 Linux runtime-supervision tests; 22 Linux recovery tests with real PostgreSQL 18.6, no skips. An initial PG18 dump → PG16 restore failed due to `transaction_timeout`; the matching PG18 run passed. |
+| Package and styles | **PASSED** | 67 manifest resources; portal SCSS compiled with native libsass. |
+| Login presentation | **PASSED** | Actual local Odoo assets and native saved-account markup: light/dark desktop and 390px mobile, no horizontal overflow; dark buttons use light text on dark surfaces. Native admin sign-in succeeds; platform console correctly denies an account without platform-owner authority. This is not a full authenticated UI sweep. |
+| Production dependency audit | **PASSED** | Zero reported production dependency vulnerabilities. |
+| Full dependency audit | **FAILED** | Unpatched development-tool advisory above; not suppressed. |
+| Native Odoo regressions | **PASSED after fixture correction** | Initial full run: 180 passed, one new concurrency fixture blocked on the parent test transaction. Relocated that test into its own TransactionCase; final focused run passes all 41 tests (40 financial controls and one real two-cursor concurrency regression), zero failures/errors. Fresh submission sees the committed child edit after serialization retry. The other 140 full-suite cases were unchanged and passed. |
+| Hosted rollout and client acceptance | **NOT RUN** | No live changes. Current provider configuration, operational ownership/RPO/RTO, representative load, client mappings/report approvals and parallel-month acceptance remain separate release gates. Historical restore evidence above remains valid. |
+
+Release order: apply and verify the three new Supabase migrations before deploying
+the matching web/worker code; upgrade the Odoo addon to apply the ACL and workflow
+changes; rebuild assets; then repeat hosted auth, role, tenant and accounting
+journeys. This local evidence does not certify production readiness.
+
+### Automation follow-up — 11 October 2026
+
+After the user asked us to determine the required jobs, source and native runtime
+inspection established that Odoo already owns the pilot's scheduled accounting.
+The separate Node worker is not required for this release. The automation
+ownership table in `platform-deployment.md` records existing jobs and distinguishes
+them from external recovery scheduling that still needs provider configuration.
+
+Four additional defects were reproduced during the automation follow-up:
+
+- The installed daily cron runs as Odoo's root user, but the custom recurring
+  action rejected that user's lack of a business role. The check now admits only
+  the actual root user or the existing authorized business roles; using sudo as
+  an ordinary user does not grant the root exemption.
+- One invalid recurrence aborted the combined journal/invoice job, rolling back
+  earlier work and skipping subsequent definitions. Expected business errors now
+  roll back only that definition's catch-up. Its error/timestamp are visible and
+  protected against manual/context forgery; its due date is unchanged. Successful
+  scheduled or manual retries clear the error. Permission, unexpected and database
+  exceptions still propagate through native error/retry handling.
+- Recurring definitions accepted inaccessible company-less contacts by ID.
+  Definition writes now reuse existing contact-reference validation. Before a
+  scheduled document is posted, its selected, commercial, shipping, bank-owner
+  and journal-line contacts are checked against the existing company access rule,
+  including reused drafts and grants revoked after setup.
+- Recurring links and run dates on accounting documents were only read-only in
+  the UI. A native reproducer showed an encoder attaching those values to an
+  arbitrary invoice: the root cron posted 999 instead of the configured 10.
+  Recurring provenance now rejects explicit/default creation and later writes
+  outside the private generator path. Pre-existing unposted linked documents
+  remain untouched and cause an actionable failure; posted reuse checks company
+  and document type. No historical data is automatically rewritten.
+
+Focused native regression suite **PASSED: 8 tests, zero failures/errors**. It
+covers the real installed cron action, rollback, retry idempotency, manual error
+clearing, diagnostics tampering/company isolation, ordinary-user denial, error
+propagation, approved contact sharing, revoked sharing, provenance spoofing,
+historical draft refusal and posted-type validation. Independent security review
+found no remaining must-fix in these changes.
+The first full addon run passed all 186 tests with zero failures/errors. The
+final full-suite rerun, including the provenance fix, **PASSED: 189 tests,
+zero failures/errors, exit 0** against the pinned Odoo 18 image and PostgreSQL 16.
+Native browser checks passed
+for both recurring forms and list timestamps: errors remain escaped plain text;
+desktop and 390px mobile have no page overflow and the first native notebook cell
+stays in bounds. A native 0.66 opacity rule made readonly labels too faint;
+the existing label rule now retains full opacity without changing either palette.
+Light and dark diagnostics were inspected after rebuilding native assets; no
+warning/error console messages were captured on the final form. All new records
+and runs were confined to the disposable test database. No live cron was
+triggered, no live financial templates were created, and no external messages
+were sent.
+
+Browser follow-up also reproduced an authenticated `/web` self-redirect loop:
+Werkzeug's `/web?` was normalized to `/web` on every request. Empty-query cleanup
+is now limited to workspace URLs. **PASSED:** seven branding Python checks and
+the original authenticated legacy deep link, which opens the intended recurring
+journal under `/workspace/action-410/27` in the disposable test database.
+
+### JFC end-to-end follow-up — 11 October 2026
+
+The user identified JFC as a demo organization and authorized clearly marked
+test records. Hosted JFC is company 16 in `tcsi_pilot`, reached through
+`https://tcsi-accounting-portal.vercel.app`; its backend is the production Railway
+accounting service. The starting release is `18.0.2.15.0`, revision
+`9e116d2bb988b2401cea5185d722f8ec6f8d71ec`. The three supplied tenant accounts are
+Administrator, Accountant and Encoder; each is assigned only company 16.
+
+Browser workflows and independent ledger reads reproduced additional defects:
+bank matching offered no eligible entries; reconciliation could sign off before
+matching; the provisioned bank suspense account was not reconcilable; payment
+batches could retain `New`; native payment registration omitted instrument and
+reference; invoice and receipt PDFs omitted the issuer; manual journal controls
+were inaccessible to intended roles; ledger shortcuts opened the wrong view;
+expense profiles and account actions were unreachable; posted year-end summaries
+reset to zero; migration forms submitted protected calculated state and attempted
+company-policy writes; tax selectors admitted the wrong sales/purchase direction;
+and ORVEXA/native chat failed through the actual browser RPC contract. Focused
+candidate fixes and regression tests cover these paths. Local verification does
+not by itself establish that those fixes are deployed.
+
+Controlled hosted records include invoice98, bill100, credit111/refund25,
+recurring invoice116, advance26/partial32, supplier credit121/refund27, bank
+reconciliation1, import119 and year-end transfer117/reversal118. Original empty
+drafts93–97 remain untouched. Test recurrences are inactive; the year-end pair
+nets to zero per account. The 14:26:19 UTC report snapshot agrees with the ledger:
+bank PHP400, receivables PHP56.02, payables zero, profit PHP1,025.02, assets
+PHP1,322.02 and liabilities plus earnings PHP1,322.02. Later tests must refresh
+that snapshot. No bank transfer or external customer communication was made.
+
+Current candidate platform checks passed: configured lint, all package typechecks
+and production builds, 90 platform tests (4 contracts, 12 worker, 74 web), 67
+native JavaScript checks, seven branding Python checks, 67 package resources and
+the production dependency audit. The final frozen-source native suite and hosted
+rollout evidence are recorded separately when complete. Engineering test records,
+screenshots and the per-feature status checklist are stored outside the repository
+in the task's JFC evidence directory. No full E2E or client accounting acceptance
+is claimed while checklist scenarios remain blocked or untested.
+
+The user approved releasing the verified candidate to the shared production
+environment with backup, restore, rollout and JFC retesting gates. Approval alone
+is not deployment evidence. The optional Node worker remains disabled.
+
+The three Supabase audit migrations were applied to the existing Accounting
+System project after a fresh encrypted logical backup and a successful disposable
+PostgreSQL 17 migration rehearsal. Remote history now contains all ten migrations.
+Rollback-only production checks verified intake normalization and limits, scoped
+job uniqueness and receivables access without leaving test rows behind.
+
+The accounting recovery rehearsal restored the coordinated encrypted production
+database and filestore into isolated PostgreSQL 18.6. The pre-upgrade fingerprint
+matched exactly. Upgrading that copy to `18.0.2.15.1` preserved all 78 posted
+documents, 170 posted lines, 37 balance groups, original audit records and 488
+referenced physical files. Nine menu-icon attachment metadata changes matched
+the candidate's packaged assets. These are recovery/upgrade results, not proof
+of a production application rollout.
+
+Additional browser coverage verified twelve native PDF/XLSX exports against the
+JFC ledger, both dashboard and app-catalog recovery after a controlled connection
+failure, and year-end preparation/cancellation without posting. JFC's two demo
+12% taxes now have reporting-only VAT classifications: the summary includes five
+signed tax rows totaling PHP471 (sales PHP297 plus purchases PHP174), with zero
+unclassified rows. This sum is not net VAT payable or statutory acceptance.
+
+The actual PDF downloads exposed missing company/currency identification in all
+three custom financial statements; the template now includes both in the page
+body. Rendering also exposed a system report ACL mismatch: system users could
+open the wizard but not read its year-end/cashflow dependencies. Read-only ACLs
+now align those dependencies while preserving company rules and denying writes.
+Native partner statement actions were hidden from intended business roles; role
+mapping now exposes only the actions allowed by the existing report policy.
+Focused native regressions passed for these changes. Hosted verification remains
+required after the accounting release.

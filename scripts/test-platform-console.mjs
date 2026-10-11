@@ -7,7 +7,7 @@ import { webcrypto } from "node:crypto";
 // Execute the production controller with service doubles; native rendering is
 // covered separately. Deferred requests reproduce real cross-editor races.
 const source = fs.readFileSync("addons/thirdcode_accounting/static/src/js/tcsi_console.js", "utf8")
-  .replace(/^import .*;\n/gm, "");
+  .replace(/^import .*;\r?\n/gm, "");
 let Console;
 vm.runInNewContext(source, {
   Component: class {}, Dialog: class {}, ConfirmationDialog: class {},
@@ -185,7 +185,7 @@ test("Unavailable cryptographic randomness preserves manual input and reports fa
 });
 
 const navigationSource = fs.readFileSync("addons/thirdcode_accounting/static/src/js/tcsi_console_navigation.js", "utf8")
-  .replace(/^import .*;\n/gm, "").replace(/^export /gm, "");
+  .replace(/^import .*;\r?\n/gm, "").replace(/^export /gm, "");
 function makeNavigation(owner = true, select = async () => {}) {
   let definition;
   const events = [];

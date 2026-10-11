@@ -111,6 +111,61 @@ class ThirdcodeEmployeePasswordWizard(models.TransientModel):
         }
 
 
+class ThirdcodeExpenseProfileWizard(models.TransientModel):
+    _name = "thirdcode.expense.profile.wizard"
+    _description = "Configure an employee expense profile"
+
+    user_id = fields.Many2one("res.users", string="Employee account", required=True, readonly=True)
+    expense_manager_id = fields.Many2one(
+        "res.users", string="Expense approver", required=True,
+        domain=lambda self: [
+            ("company_ids", "in", self.env.company.ids), ("share", "=", False),
+            ("thirdcode_platform_owner", "=", False),
+            ("groups_id", "in", self.env.ref("hr_expense.group_hr_expense_team_approver").ids),
+            ("groups_id", "not in", self.env.ref(SYSTEM_GROUP).ids),
+        ],
+    )
+
+    def _check_profile_user(self, user):
+        if not self.env.user.has_group(ADMIN_GROUP) and not self.env.user.has_group(SYSTEM_GROUP):
+            raise AccessError(_("Only company administrators can configure expense profiles."))
+        company = self.env.company
+        user = user.sudo().exists()
+        if (
+            not user or not user.active or user.share
+            or user.has_group(SYSTEM_GROUP) or user.thirdcode_platform_owner
+            or company not in user.company_ids or company.sudo().thirdcode_is_platform
+        ):
+            raise AccessError(_("Choose an active employee account belonging to the current company."))
+        return user
+
+    def _profile(self, user):
+        return self.env["hr.employee"].sudo().with_context(
+            {}, allowed_company_ids=self.env.company.ids, active_test=False,
+        ).search([
+            ("user_id", "=", user.id), ("company_id", "=", self.env.company.id),
+        ])
+
+    def action_save_profile(self):
+        self.ensure_one()
+        self.check_access("write")
+        user = self._check_profile_user(self.user_id)
+        manager = self._check_profile_user(self.expense_manager_id)
+        if not manager.has_group("hr_expense.group_hr_expense_team_approver"):
+            raise UserError(_("The expense approver must have expense approval permissions."))
+        employee = self._profile(user)
+        if employee and not employee.active:
+            raise UserError(_("This employee profile is archived. Ask the platform owner to restore it before configuring expenses."))
+        if employee:
+            employee.write({"expense_manager_id": manager.id})
+        else:
+            self.env["hr.employee"].sudo().with_context({}, allowed_company_ids=self.env.company.ids).create({
+                "name": user.partner_id.name, "user_id": user.id, "company_id": self.env.company.id,
+                "expense_manager_id": manager.id,
+            })
+        return {"type": "ir.actions.act_window_close"}
+
+
 class ResUsers(models.Model):
     _inherit = "res.users"
 
@@ -120,6 +175,17 @@ class ResUsers(models.Model):
         help="Platform-owner accounts are visible only to themselves and are "
         "managed only by the platform owner (superadmin).",
     )
+
+    def action_thirdcode_expense_profile(self):
+        self.ensure_one()
+        wizard = self.env["thirdcode.expense.profile.wizard"]
+        user = wizard._check_profile_user(self)
+        employee = wizard._profile(user)
+        return {
+            "type": "ir.actions.act_window", "name": _("Expense profile"),
+            "res_model": "thirdcode.expense.profile.wizard", "view_mode": "form", "target": "new",
+            "context": {"default_user_id": user.id, "default_expense_manager_id": employee.expense_manager_id.id},
+        }
 
     def action_thirdcode_toggle_active(self):
         for user in self:

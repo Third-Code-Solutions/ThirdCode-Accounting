@@ -12,7 +12,7 @@
         <record id="group_thirdcode_readonly" model="res.groups">
             <field name="name">TCSI Read-only</field>
             <field name="category_id" ref="base.module_category_hidden"/>
-            <field name="implied_ids" eval="[(4, ref('account.group_account_readonly')), (4, ref('auditlog.group_auditlog_user'))]"/>
+            <field name="implied_ids" eval="[(4, ref('account.group_account_readonly')), (4, ref('auditlog.group_auditlog_user')), (4, ref('partner_statement.group_activity_statement'))]"/>
         </record>
 
         <record id="group_thirdcode_encoder" model="res.groups">
@@ -24,13 +24,13 @@
         <record id="group_thirdcode_accountant" model="res.groups">
             <field name="name">TCSI Accountant</field>
             <field name="category_id" ref="base.module_category_hidden"/>
-            <field name="implied_ids" eval="[(4, ref('account.group_account_user')), (4, ref('base.group_partner_manager')), (4, ref('hr_expense.group_hr_expense_team_approver')), (4, ref('auditlog.group_auditlog_user'))]"/>
+            <field name="implied_ids" eval="[(4, ref('account.group_account_user')), (4, ref('base.group_partner_manager')), (4, ref('hr_expense.group_hr_expense_team_approver')), (4, ref('auditlog.group_auditlog_user')), (4, ref('partner_statement.group_activity_statement')), (4, ref('partner_statement.group_outstanding_statement'))]"/>
         </record>
 
         <record id="group_thirdcode_administrator" model="res.groups">
             <field name="name">TCSI Accounting Administrator</field>
             <field name="category_id" ref="base.module_category_hidden"/>
-            <field name="implied_ids" eval="[(4, ref('account.group_account_manager')), (4, ref('base.group_partner_manager')), (4, ref('hr_expense.group_hr_expense_manager')), (4, ref('auditlog.group_auditlog_user'))]"/>
+            <field name="implied_ids" eval="[(4, ref('account.group_account_manager')), (4, ref('account.group_account_user')), (4, ref('base.group_partner_manager')), (4, ref('hr_expense.group_hr_expense_manager')), (4, ref('auditlog.group_auditlog_user')), (4, ref('partner_statement.group_activity_statement')), (4, ref('partner_statement.group_outstanding_statement'))]"/>
         </record>
 
         <!-- Platform-owner console access. Granted only through provisioning of

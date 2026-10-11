@@ -1,9 +1,15 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
+from .write_tokens import RECURRING_MOVE_TOKEN
+
 _RECONCILIATION_METADATA_TOKEN = object()
 _REVERSAL_METADATA_TOKEN = object()
 _POSTING_TOKEN = object()
+_RECURRING_PROVENANCE_FIELDS = frozenset({
+    "thirdcode_recurring_journal_id", "thirdcode_recurring_run_date",
+    "thirdcode_recurring_invoice_id", "thirdcode_recurring_invoice_run_date",
+})
 
 
 class AccountMove(models.Model):
@@ -33,11 +39,11 @@ class AccountMove(models.Model):
     )
     thirdcode_is_opening_balance = fields.Boolean(copy=False)
     thirdcode_recurring_journal_id = fields.Many2one(
-        "thirdcode.recurring.journal", readonly=True, copy=False, index=True
+        "thirdcode.recurring.journal", readonly=True, copy=False, index=True, check_company=True
     )
     thirdcode_recurring_run_date = fields.Date(readonly=True, copy=False, index=True)
     thirdcode_recurring_invoice_id = fields.Many2one(
-        "thirdcode.recurring.invoice", readonly=True, copy=False, index=True
+        "thirdcode.recurring.invoice", readonly=True, copy=False, index=True, check_company=True
     )
     thirdcode_recurring_invoice_run_date = fields.Date(readonly=True, copy=False, index=True)
     thirdcode_bir_ack_control_number = fields.Char(
@@ -98,6 +104,10 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if self.env.context.get("thirdcode_recurring_move_token") is not RECURRING_MOVE_TOKEN:
+            defaults = self.default_get(list(_RECURRING_PROVENANCE_FIELDS))
+            if any(values.get(field, defaults.get(field)) for values in vals_list for field in _RECURRING_PROVENANCE_FIELDS):
+                raise AccessError(_("Recurring source links are assigned only by the recurring generation action."))
         if any(values.get("state", self.env.context.get("default_state")) == "posted" for values in vals_list):
             raise UserError(_("Create a draft and use the native posting action."))
         if any(values.get("posted_before", self.env.context.get("default_posted_before")) for values in vals_list):
@@ -107,6 +117,8 @@ class AccountMove(models.Model):
         return moves
 
     def write(self, vals):
+        if _RECURRING_PROVENANCE_FIELDS.intersection(vals):
+            raise AccessError(_("Recurring source links cannot be changed."))
         posting = self.env.context.get("thirdcode_posting_token") is _POSTING_TOKEN
         if {"sequence_number", "sequence_prefix"}.intersection(vals) and not posting:
             raise UserError(_("Sequence counters are managed by native posting."))

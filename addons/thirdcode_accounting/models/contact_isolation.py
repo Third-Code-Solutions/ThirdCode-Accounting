@@ -4,7 +4,7 @@ from copy import deepcopy
 from collections import defaultdict
 
 from odoo import SUPERUSER_ID, Command, _, api, fields, models
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.addons.mail.tools.discuss import Store
 from odoo.osv import expression
 
@@ -17,6 +17,31 @@ _SCOPE_FIELDS = {
 }
 
 
+def company_contact_domain(company_ids, prefix=""):
+    return expression.OR([
+        [(prefix + "thirdcode_is_identity", "=", False), (prefix + "company_id", "in", company_ids)],
+        [(prefix + "thirdcode_is_identity", "=", True), (prefix + "thirdcode_identity_company_ids", "in", company_ids)],
+        [(prefix + "thirdcode_is_identity", "=", False), (prefix + "company_id", "=", False),
+         (prefix + "thirdcode_shared_company_ids", "in", company_ids)],
+    ])
+
+
+def validate_company_partner_scope(company, partners):
+    """Recheck stored references when a scheduled task has no tenant user."""
+    if partners and partners.sudo().with_context(active_test=False).search_count(
+        [("id", "in", partners.ids)] + company_contact_domain(company.ids)
+    ) != len(partners):
+        raise UserError(_("A contact on this recurring definition is no longer available to its company. Review the contact before retrying."))
+
+
+def validate_company_move_partner_scope(move):
+    validate_company_partner_scope(
+        move.company_id,
+        move.partner_id | move.commercial_partner_id | move.partner_shipping_id
+        | move.partner_bank_id.partner_id | move.line_ids.partner_id,
+    )
+
+
 class ContactScopeUser(models.Model):
     _inherit = "res.users"
 
@@ -26,6 +51,13 @@ class ContactScopeUser(models.Model):
     @api.model
     def _thirdcode_is_contact_owner(self):
         return is_platform_owner(self.env)
+
+    @api.model
+    def _thirdcode_user_domain(self, company_ids):
+        if is_platform_owner(self.env):
+            return []
+        return ["&", ("id", "!=", SUPERUSER_ID), "|", ("id", "=", self.env.uid),
+                "&", ("company_ids", "in", company_ids), ("thirdcode_platform_owner", "=", False)]
 
     @api.model
     def _thirdcode_contact_domain(self, company_ids, write=False, bank=False):
@@ -54,12 +86,12 @@ class ContactScopeUser(models.Model):
                 domains.append([(prefix + "thirdcode_is_identity", "=", True),
                                 (prefix + "thirdcode_identity_company_ids", "in", companies)])
             return expression.OR(domains)
-        identities = [(prefix + "thirdcode_is_identity", "=", True),
-                      (prefix + "thirdcode_identity_company_ids", "in", companies)]
-        shared = [(prefix + "thirdcode_is_identity", "=", False),
-                  (prefix + "company_id", "=", False),
-                  (prefix + "thirdcode_shared_company_ids", "in", companies)]
-        return expression.OR([owned, identities, shared, own_profile])
+        # The inactive system assistant is a shared chat persona, not a tenant
+        # employee. Keep this read-only exception off bank and write domains.
+        domains = [company_contact_domain(companies, prefix), own_profile]
+        if not bank:
+            domains.append([("id", "=", self.env.ref("base.partner_root").id)])
+        return expression.OR(domains)
 
 
 class ContactIsolation(models.Model):
@@ -95,6 +127,20 @@ class ContactIsolation(models.Model):
         actor = self.sudo(False)
         if not is_platform_owner(self.env) and actor.env.user.has_group("base.group_user"):
             records = actor.with_context(active_test=False).search([("id", "in", self.ids)])
+            assistant = records & self.env.ref("base.partner_root")
+            if assistant:
+                # Native persona serialization reads its linked user's fields.
+                # Publish only the known bot identity; never read the root user.
+                assistant_fields = fields if fields is not None else [
+                    "active", "avatar_128", "email", "im_status", "is_company", "name", "user",
+                ]
+                super(ContactIsolation, assistant)._to_store(store, fields=[
+                    field for field in assistant_fields
+                    if field not in {"user", "isAdmin", "notification_type", "signature"}
+                ])
+                if "user" in assistant_fields:
+                    store.add(assistant, {"userId": SUPERUSER_ID, "isInternalUser": True})
+                records -= assistant
         return super(ContactIsolation, records)._to_store(
             store, fields=fields, main_user_by_partner=main_user_by_partner)
 

@@ -453,7 +453,7 @@ class ThirdCodeSetupService(models.AbstractModel):
             while candidate in used_codes:
                 candidate = "%s%d" % (code, suffix)
                 suffix += 1
-            self.env["account.journal"].sudo().create(
+            existing |= self.env["account.journal"].sudo().create(
                 {
                     "name": name,
                     "code": candidate,
@@ -464,9 +464,15 @@ class ThirdCodeSetupService(models.AbstractModel):
             used_codes.add(candidate)
             have_types.add(journal_type)
             created.append("%s:%s" % (journal_type, candidate))
-        if created:
-            return ["journals created: %s" % ", ".join(created)]
-        return ["journals already complete"]
+        steps = ["journals created: %s" % ", ".join(created)] if created else ["journals already complete"]
+        suspense_accounts = existing.filtered(lambda journal: journal.type in ("bank", "cash")).suspense_account_id.filtered(
+            lambda account: account.company_ids == company
+            and account.account_type == "asset_current" and not account.reconcile
+        )
+        if suspense_accounts:
+            suspense_accounts.write({"reconcile": True})
+            steps.append("enabled statement matching on bank/cash suspense accounts")
+        return steps
 
     def _ensure_period(self, company, payload):
         today = fields.Date.context_today(self)

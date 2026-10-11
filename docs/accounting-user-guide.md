@@ -168,12 +168,17 @@ values merely to make a check pass.
    authorized credit/debit or reversal flow.
 5. **Payables and bulk payments:** use native payment registration for a single
    bill. For a batch, open **TCSI Accounting → Payment batches**, add lines,
-   select cash/cheque/transfer and references, then **Submit**. If the
+   select cash/cheque/transfer and references, then **Submit**. Saving assigns
+   the company's batch number, using its native batch sequence when no custom
+   payment-batch sequence is configured. If the
    company's approval threshold applies, an Administrator must **Approve**.
    An Accountant then uses **Post batch**. Compare the created payments with
    the source bills and bank evidence.
-6. **Employee expenses:** assign each employee a named expense manager in the
-   employee record before using **Expenses**. The employee submits an expense
+6. **Employee expenses:** as an Administrator, select the correct company and
+   open **Organization → People Accounts → Expense profile** beside each
+   employee. Select an authorized expense approver and **Save profile** before
+   using **Expenses**. This creates or updates only that company's expense
+   profile; it does not grant HR access. The employee submits an expense
    report with the receipt attached. That employee's assigned expense manager
    reviews and approves it; an Accountant posts the approved report and
    registers reimbursement through the correct bank/cash journal. An
@@ -187,10 +192,41 @@ values merely to make a check pass.
    choose the correct journal and dates, attach the paper/PDF statement,
    record opening/closing balances and outstanding items, then **Compute ledger
    balance**. Investigate any difference. **Sign off reconciliation** only
-   when the calculated difference is zero and evidence agrees. Reopening is
+   when all attached statement lines are matched, the calculated difference
+   is zero, and evidence agrees. Reopening is
    restricted to an Administrator.
 
 ## 3. Month-end and year-end
+
+Configured recurring journals, invoices and supplier bills run through the
+accounting system's daily scheduler. They use the accounts, amounts, dates and
+company saved on each active definition; the system does not invent recurring
+transactions. An Accountant or Administrator should review those definitions
+before activation. Recurring customer lines accept sales taxes; supplier lines
+accept purchase taxes. A mismatched tax blocks saving or running the definition.
+Tax profiles likewise require a sales tax for output VAT and a purchase tax for
+input VAT. These controls validate the mapping direction; the company's
+accountant still approves the actual rates and tax treatment.
+
+The recurring lists show **Scheduled run failed at** when a definition fails;
+its form also shows the **Scheduled run error**. That definition's attempted catch-up is
+rolled back and its due date remains unchanged; other valid definitions can
+continue. Correct the stated problem, then use **Run due periods** to retry the
+missed dates. **Run now** uses today's date and is not a substitute for catching
+up missed periods. A successful retry clears the error; duplicate protection
+prevents a second document for the same definition and date. Access failures and
+unexpected system/database failures still stop the job for investigation.
+
+If a scheduled run finds an existing unposted document linked to that date, it
+stops that definition for review. It never posts an existing draft automatically.
+An authorized Accountant should inspect the document and either post it through
+the normal approval workflow or remove an incorrect draft where normal controls
+permit. Then retry the due period. Cancelled documents, incorrect company/type
+links or records that cannot be corrected normally need operator investigation;
+do not alter posted history or repeatedly rerun the job to bypass the error.
+
+These changes are in the local release candidate and take effect after the
+addon upgrade. They do not establish that the hosted scheduler has run.
 
 1. Reconcile every bank/cash journal, customer and supplier open items, and
    control accounts against approved evidence. Review draft entries, failed
@@ -209,12 +245,20 @@ values merely to make a check pass.
    owner restores a recent pair to an isolated target and verifies attachments,
    reports, and ledger totals. A database-only backup misses Odoo attachments.
 
+Migration batches display the company's retention policy; change that policy
+through the authorized company controls. Row reconciliation states are calculated
+from the entered control totals and cannot be set manually. Batch references use
+the company's configured sequence, or a unique company/batch reference when no
+sequence exists. Validation and reconciliation sign-off still require independent
+comparison with the actual source records and imported ledger.
+
 ## 4. Problems staff may encounter
 
 | Symptom | Meaning and next action |
 | --- | --- |
 | Can sign in but cannot see a company | Administrator must assign the user to the legal company and correct role. A login alone does not grant company access. |
 | Cannot post | Check role, selected company, open period, balanced entry, journal, account, and required tax configuration. Do not disable the guard. |
+| Recurring definition says a contact is unavailable | Have the authorized administrator review the contact's company or approved sharing, including its commercial parent. Then retry **Run due periods**. The scheduler rechecks access before posting. |
 | Invoice/receipt print is blocked or marked draft | The company's BIR control or approved sample is absent. Obtain the real approval and value, then configure them. |
 | Payment batch waits for approval | Its amount crossed the configured threshold. The named approver must approve before the Accountant posts. |
 | Employee expense cannot be approved | Check the employee's assigned expense manager and the selected company. An unrelated Accountant cannot approve that employee's report. |

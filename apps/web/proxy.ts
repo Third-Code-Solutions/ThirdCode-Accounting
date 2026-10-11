@@ -75,8 +75,7 @@ export async function proxy(request: NextRequest) {
     if (isWithheldPortalPage(request.nextUrl.pathname)) {
       return NextResponse.redirect(new URL("/", request.url));
     }
-    // Anything else is not a page: fall through so Next answers 404.
-    return portalResponse();
+    return new NextResponse(null, { status: 404 });
   }
   const env = getPublicEnv();
   if (!env.supabaseConfigured) {

@@ -91,6 +91,18 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      supabase-test-db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_DB: tcsi_supabase_migrations_ci
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tcsi_supabase_migrations_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -140,6 +152,12 @@ jobs:
 
       - name: Validate database migrations
         run: npm run validate:migrations
+
+      - name: Apply and verify database migrations in disposable PostgreSQL
+        env:
+          SUPABASE_TEST_DATABASE_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:55432/tcsi_supabase_migrations_ci
+          SUPABASE_TEST_PSQL_IMAGE: postgres:17-alpine
+        run: node scripts/verify-supabase-migrations.mjs
 
       - name: Build web and worker
         run: npm run build

@@ -97,7 +97,7 @@ records in the disposable database because posted accounting records are not
 deleted.
 
 The latest results and exact evidence states are recorded in
-[`docs/verification.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/verification.md).
+[`docs/verification.md`](docs/verification.md).
 
 ## Migration tooling
 
@@ -164,7 +164,7 @@ client's on-premise hardware, data volume, browser, or network.
   purchasing system, bank feed, EIS transmission, or external integration was
   introduced.
 
-See [`docs/prd-traceability.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/prd-traceability.md),
-[`docs/decisions-and-blockers.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/decisions-and-blockers.md),
-[`docs/implementation-plan.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/implementation-plan.md),
-and [`docs/verification.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/verification.md).
+See [`docs/prd-traceability.md`](docs/prd-traceability.md),
+[`docs/decisions-and-blockers.md`](docs/decisions-and-blockers.md),
+[`docs/implementation-plan.md`](docs/implementation-plan.md),
+and [`docs/verification.md`](docs/verification.md).

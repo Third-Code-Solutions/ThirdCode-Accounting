@@ -78,6 +78,46 @@ class TestContactIsolation(TransactionCase):
         self.ub.company_ids = self.b
         self.assertNotIn(self.ub.partner_id, self.partners(self.ua).search([]))
 
+    def test_system_assistant_chat_preserves_tenant_isolation(self):
+        from ..models.contact_isolation import scope_contact_store
+
+        assistant = self.env.ref("base.partner_root")
+        root = self.env.ref("base.user_root")
+        for user, company in ((self.ua, self.a), (self.ub, self.b)):
+            partners = self.partners(user).with_context(active_test=False)
+            self.assertEqual(partners.search([("id", "=", assistant.id)]), assistant)
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                partners.browse(assistant.id).write({"name": "Unauthorized bot rename"})
+            users = self.env["res.users"].with_user(user).with_context(
+                allowed_company_ids=company.ids, active_test=False,
+            )
+            self.assertFalse(users.search([("id", "=", root.id)]))
+            with self.assertRaises(AccessError):
+                users.browse(root.id).read(["name"])
+            root.invalidate_recordset()
+            channel = self.env["discuss.channel"].with_user(user).with_context(
+                allowed_company_ids=company.ids,
+            ).channel_get([assistant.id])
+            self.assertEqual(set(channel.sudo().with_context(active_test=False).channel_partner_ids.ids),
+                             {assistant.id, user.partner_id.id})
+            rpc_data = api.call_kw(channel.browse(), "channel_get", [], {"partners_to": [assistant.id]})
+            self.assertIn(channel.id, [record["id"] for record in rpc_data.get("discuss.channel", [])])
+            data = scope_contact_store(channel.env, Store(channel).get_result())
+            self.assertIn(assistant.id, [record["id"] for record in data.get("res.partner", [])])
+            root.invalidate_recordset()
+            assistant_data = Store(partners.browse(assistant.id), fields=[
+                "name", "user", "signature", "notification_type", "isAdmin",
+            ]).get_result()
+            self.assertEqual(assistant_data["res.partner"][0]["userId"], root.id)
+            for private_key in ("signature", "notification_preference", "isAdmin"):
+                self.assertNotIn(private_key, assistant_data["res.partner"][0])
+            foreign = self.ub if user == self.ua else self.ua
+            self.assertFalse(partners.search([("id", "=", foreign.partner_id.id)]))
+            scoped = scope_contact_store(channel.env, {
+                "res.partner": [{"id": assistant.id, "name": "ORVEXA"}, {"id": foreign.partner_id.id, "name": "Hidden"}],
+            })
+            self.assertEqual([record["id"] for record in scoped["res.partner"]], [assistant.id])
+
     def test_authorized_multicompany_and_owner(self):
         both = self.partners(self.multi, self.a | self.b).search([])
         self.assertIn(self.pa, both)

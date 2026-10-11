@@ -1,6 +1,7 @@
 import json
 
 from dateutil.relativedelta import relativedelta
+from psycopg2.errors import LockNotAvailable
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -166,6 +167,32 @@ class TestPlatformConsole(TransactionCase):
         self.assertEqual(action["params"]["company_id"], self.company_a.id)
         users_action = self.console.with_user(self.owner).open_company_users(self.company_a.id)
         self.assertEqual(users_action["params"]["tab"], "people")
+
+    def test_repeated_suspend_and_resume_preserve_recovery(self):
+        console = self.console.with_user(self.owner)
+        self.company_b.write({"thirdcode_platform_status": "active"})
+        console.suspend_company(self.company_b.id)
+        saved_ids = self.company_b.thirdcode_suspended_user_ids
+        self.assertEqual(console.suspend_company(self.company_b.id)["deactivated"], 0)
+        self.assertEqual(self.company_b.thirdcode_suspended_user_ids, saved_ids)
+        self.assertEqual(self.company_b.thirdcode_suspended_from_status, "active")
+        console.resume_company(self.company_b.id)
+        self.assertTrue(self.tenant_admin.active)
+        self.assertTrue(self.staff_b.active)
+        self.assertEqual(self.company_b.thirdcode_platform_status, "active")
+        self.assertEqual(console.resume_company(self.company_b.id)["restored"], 0)
+        self.assertEqual(self.company_b.thirdcode_platform_status, "active")
+
+    def test_lifecycle_lock_excludes_a_concurrent_transition(self):
+        # Use an installed company: setup fixtures are not visible to another
+        # connection until commit, and tests must not commit their fixtures.
+        company = self.env.ref("thirdcode_accounting.company_platform")
+        with self.env.registry.cursor() as cr:
+            cr.execute("SELECT id FROM res_company WHERE id = %s FOR UPDATE NOWAIT", [company.id])
+        self.console._lock_company_lifecycle(company)
+        with self.assertRaises(LockNotAvailable):
+            with self.env.registry.cursor() as cr:
+                cr.execute("SELECT id FROM res_company WHERE id = %s FOR UPDATE NOWAIT", [company.id])
 
     def test_provisioning_grants_console_group_to_platform_owners(self):
         self.env["thirdcode.setup.service"].sudo()._provision_user(
