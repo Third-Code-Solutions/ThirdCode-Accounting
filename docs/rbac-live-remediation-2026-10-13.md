@@ -27,10 +27,10 @@ this change set; every fix is covered by a regression test in
    any that predate the digest migration) and restart workers.
 2. Re-run the role matrix smoke check with the four demo accounts
    (`qa-demo-report.json` workflows).
-3. Confirm the engine reports addon version `18.0.2.16.0` and that the
-   post-migration log lines appear ("session identifiers replaced", "native
-   audit group removed", "evidence reader group added", "home action
-   backfilled").
+3. Confirm the engine reports addon version `18.0.2.16.x` (16.0 minimum;
+   16.1 adds the role-definition fix below) and that the post-migration log
+   lines appear ("session identifiers replaced", "native audit group
+   removed", "evidence reader group added", "home action backfilled").
 
 ## Migration behaviour (18.0.2.16.0, post-migrate)
 
@@ -44,6 +44,24 @@ this change set; every fix is covered by a regression test in
 Odoo adds newly implied groups on upgrade but never removes withdrawn ones,
 which is why the group changes require the migration rather than only the
 XML data update.
+
+## Follow-up: 18.0.2.16.1 — upgrade-proof role definitions
+
+The first 16.0 pass could not remove the native audit membership on upgraded
+databases: the role records linked the native group through additive
+`(4, ref(...))` commands, which module updates never remove, so the
+per-user strip guard correctly detected the role chain still implying the
+group and skipped every account. `18.0.2.16.1` corrects this:
+
+* the four role records now clear-then-set `implied_ids` (`(5, 0, 0)` first),
+  so every future update converges on the exact intended set;
+* the 16.0 post-migration detaches the native link from the role
+  definitions before stripping accounts (for future upgraders from 15.x);
+* a repeat reconciliation migration (`18.0.2.16.1`) detaches, strips and
+  re-grants idempotently, converging any database that took the earlier
+  build;
+* a definition-level regression test asserts no role ever implies the
+  native audit group.
 
 ## Deliberate non-changes
 
