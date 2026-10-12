@@ -88,6 +88,25 @@ class TestRbacHardening(AccountTestInvoicingCommon):
                     with self.assertRaises(AccessError), self.cr.savepoint():
                         self.env[model].with_user(user).search([], limit=1)
 
+    def test_role_definitions_never_imply_native_audit_group(self):
+        """Role records must not re-link the native audit group on updates."""
+        oca_group = self.env.ref("auditlog.group_auditlog_user")
+        reader_group = self.env.ref("thirdcode_accounting.group_thirdcode_audit_reader")
+        for role in ("administrator", "accountant", "encoder", "readonly"):
+            with self.subTest(role=role):
+                group = self.env.ref("thirdcode_accounting.group_thirdcode_" + role)
+                self.assertNotIn(oca_group, group.trans_implied_ids)
+                self.assertIn(reader_group, group.trans_implied_ids)
+        # The definitions must also be update-proof: every role record clears
+        # previously linked groups before setting its own (see the security
+        # XML); assert the intended set is stable.
+        for role in ("readonly", "encoder"):
+            group = self.env.ref("thirdcode_accounting.group_thirdcode_" + role)
+            self.assertNotIn(
+                self.env.ref("auditlog.group_auditlog_manager", False),
+                group.trans_implied_ids,
+            )
+
     def test_session_digest_never_keeps_the_raw_secret(self):
         from odoo.addons.thirdcode_accounting.models.auditlog import session_digest
 

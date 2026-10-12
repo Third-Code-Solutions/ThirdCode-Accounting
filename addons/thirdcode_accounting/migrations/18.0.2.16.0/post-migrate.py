@@ -5,10 +5,11 @@ that already run a 15.x release before the audit remediation landed:
 
 * replaces retained raw HTTP session identifiers with database-scoped digests
   (audit finding C2);
-* removes the native ``auditlog.group_auditlog_user`` membership from tenant
-  accounts and grants the dedicated read-only audit evidence group instead
-  (Odoo adds newly implied groups on upgrade but never removes withdrawn
-  ones);
+* detaches the native ``auditlog.group_auditlog_user`` link from the role
+  definitions (additive ``(4, ref(...))`` commands survive upgrades) and
+  removes the membership from tenant accounts, granting the dedicated
+  read-only audit evidence group instead (Odoo adds newly implied groups on
+  upgrade but never removes withdrawn ones);
 * backfills the finance-overview home action for existing role accounts so
   every workspace login lands on the TCSI dashboard rather than the web
   client's Discuss default (audit finding F8).
@@ -47,6 +48,25 @@ def _replace_stored_session_ids(env):
             )
         replaced += len(rows)
     return replaced
+
+
+def _detach_native_from_role_groups(env):
+    """Remove the native audit group link from the TCSI role definitions.
+
+    The role records historically linked the native group through additive
+    ``(4, ref(...))`` commands, which survive upgrades; detaching the link
+    here is what lets the per-user strip below actually apply.
+    """
+    oca_group = env.ref("auditlog.group_auditlog_user", raise_if_not_found=False)
+    if not oca_group:
+        return 0
+    detached = 0
+    for xmlid in _ROLE_GROUP_XMLIDS:
+        group = env.ref(xmlid)
+        if oca_group in group.implied_ids:
+            group.write({"implied_ids": [Command.unlink(oca_group.id)]})
+            detached += 1
+    return detached
 
 
 def _strip_native_audit_group(env):
@@ -122,6 +142,12 @@ def migrate(cr, version):
     if replaced:
         _logger.info(
             "Audit session digests: %s stored session identifiers replaced", replaced
+        )
+    detached = _detach_native_from_role_groups(env)
+    if detached:
+        _logger.info(
+            "Audit access: role definitions detached from the native audit group: %s",
+            detached,
         )
     stripped = _strip_native_audit_group(env)
     if stripped:
