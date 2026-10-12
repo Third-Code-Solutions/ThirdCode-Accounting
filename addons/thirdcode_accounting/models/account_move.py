@@ -102,6 +102,29 @@ class AccountMove(models.Model):
         if self._thirdcode_ever_posted():
             raise UserError(_("Previously posted entries are immutable. Use a reversal, credit note or debit note."))
 
+    def _thirdcode_is_encoder_writer(self):
+        return not self.env.su and self.env.user.has_group(
+            "thirdcode_accounting.group_thirdcode_encoder"
+        )
+
+    def _thirdcode_autopost_values_blocked(self, values, from_context=False):
+        """True when create/write values would arm automatic posting.
+
+        Encoders may turn automatic posting off (``no``/``False``) but never
+        on, and may not schedule or pre-check a draft for the nightly job.
+        """
+
+        def effective(name):
+            if name in values:
+                return values[name]
+            return self.env.context.get("default_" + name) if from_context else None
+
+        if effective("auto_post") not in (None, False, "no"):
+            return True
+        if effective("auto_post_until"):
+            return True
+        return bool(effective("checked"))
+
     @api.model_create_multi
     def create(self, vals_list):
         if self.env.context.get("thirdcode_recurring_move_token") is not RECURRING_MOVE_TOKEN:
@@ -112,6 +135,13 @@ class AccountMove(models.Model):
             raise UserError(_("Create a draft and use the native posting action."))
         if any(values.get("posted_before", self.env.context.get("default_posted_before")) for values in vals_list):
             raise UserError(_("Posting history can only be set by native posting."))
+        if self._thirdcode_is_encoder_writer() and any(
+            self._thirdcode_autopost_values_blocked(values, from_context=True)
+            for values in vals_list
+        ):
+            raise AccessError(
+                _("Encoder users may prepare drafts, but may not enable or schedule automatic posting.")
+            )
         moves = super().create(vals_list)
         self.env["thirdcode.accounting.period"]._check_move_post_allowed(moves)
         return moves
@@ -120,6 +150,10 @@ class AccountMove(models.Model):
         if _RECURRING_PROVENANCE_FIELDS.intersection(vals):
             raise AccessError(_("Recurring source links cannot be changed."))
         posting = self.env.context.get("thirdcode_posting_token") is _POSTING_TOKEN
+        if self._thirdcode_is_encoder_writer() and self._thirdcode_autopost_values_blocked(vals):
+            raise AccessError(
+                _("Encoder users may prepare drafts, but may not enable or schedule automatic posting.")
+            )
         if {"sequence_number", "sequence_prefix"}.intersection(vals) and not posting:
             raise UserError(_("Sequence counters are managed by native posting."))
         if vals.get("name") and vals["name"] != "/" and not posting and any(
@@ -188,7 +222,58 @@ class AccountMove(models.Model):
             AccountMove, self.with_context(thirdcode_posting_token=_POSTING_TOKEN)
         )._post(soft=soft)
 
+    def _autopost_draft_entries(self):
+        # The nightly job runs as the root user; an Encoder must never cause a
+        # posting through it. Drafts last written by an Encoder account are
+        # demoted instead of posted, including drafts armed before the write
+        # guard existed.
+        encoder_group = self.env.ref(
+            "thirdcode_accounting.group_thirdcode_encoder", raise_if_not_found=False
+        )
+        drafts = self.browse()
+        if encoder_group:
+            encoder_ids = (
+                self.env["res.users"]
+                .sudo()
+                .with_context(active_test=False)
+                .search([("groups_id", "in", encoder_group.ids)])
+                .ids
+            )
+            if encoder_ids:
+                drafts = self.sudo().search(
+                    [
+                        ("state", "=", "draft"),
+                        ("auto_post", "!=", "no"),
+                        ("write_uid", "in", encoder_ids),
+                    ]
+                )
+        for move in drafts:
+            move.write({"auto_post": "no", "checked": False})
+            move.message_post(
+                body=_("Automatic posting was disabled because this draft was last edited by an Encoder account.")
+            )
+        return super()._autopost_draft_entries()
+
+    def action_invoice_sent(self):
+        # Data-entry and read-only roles may not initiate outbound
+        # communication to customers; the server refuses what the view hides.
+        if not self.env.su and (
+            self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder")
+            or self.env.user.has_group("thirdcode_accounting.group_thirdcode_readonly")
+        ):
+            raise AccessError(
+                _("This role may not send documents to customers; ask an Accountant or Administrator.")
+            )
+        return super().action_invoice_sent()
+
     def action_print_thirdcode_invoice(self):
+        if not self.env.su and (
+            self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder")
+            or self.env.user.has_group("thirdcode_accounting.group_thirdcode_readonly")
+        ):
+            raise AccessError(
+                _("This role may not issue the official invoice document; ask an Accountant or Administrator.")
+            )
         for move in self:
             if move.state != "posted":
                 raise UserError(_("Only posted invoices may be printed."))

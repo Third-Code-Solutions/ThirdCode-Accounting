@@ -1,10 +1,17 @@
 import logging
 
-from odoo import Command, _, fields, models
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 from .platform_access import require_platform_owner
 
 _logger = logging.getLogger(__name__)
+
+# The token-checked ``/tcsi/setup`` controller is the only allowed caller of the
+# service. A web request can place arbitrary JSON in ``kwargs.context`` through
+# ``call_kw``, so the entry gate is an in-process identity check on a module
+# sentinel: only code that imports this module can produce it.
+SETUP_ENTRY_CONTEXT_KEY = "thirdcode_setup_entry"
+SETUP_ENTRY_SENTINEL = object()
 
 TRIAL_ROLE_GROUPS = {
     "administrator": "thirdcode_accounting.group_thirdcode_administrator",
@@ -26,8 +33,9 @@ class ThirdCodeSetupService(models.AbstractModel):
     """Privileged pilot/trial provisioning service.
 
     Only reachable through the token-checked ``/tcsi/setup`` controller, which
-    sets ``tcsi_setup_token_ok`` in the context. All operations are idempotent
-    so the pilot can be re-provisioned after any partial failure.
+    enters with a module sentinel an RPC caller cannot forge, inside the
+    superuser environment. All operations are idempotent so the pilot can be
+    re-provisioned after any partial failure.
     """
 
     _name = "thirdcode.setup.service"
@@ -36,14 +44,18 @@ class ThirdCodeSetupService(models.AbstractModel):
     # ------------------------------------------------------------------
     # dispatch
     # ------------------------------------------------------------------
+    @api.private
     def dispatch(self, action, payload=None):
-        require_platform_owner(self.env)
-        if self.env.context.get("tcsi_setup_token_ok") is not True:
+        if (
+            not self.env.su
+            or self.env.context.get(SETUP_ENTRY_CONTEXT_KEY) is not SETUP_ENTRY_SENTINEL
+        ):
             raise AccessError(
                 _(
                     "The setup service is only callable through the token-checked setup endpoint."
                 )
             )
+        require_platform_owner(self.env)
         payload = payload or {}
         handler = getattr(self, "_action_%s" % action, None) if action else None
         if not handler or not callable(handler):
@@ -190,6 +202,7 @@ class ThirdCodeSetupService(models.AbstractModel):
             regroup=bool(payload.get("regroup")),
         )
 
+    @api.private
     def _provision_user(
         self,
         login,
@@ -205,9 +218,16 @@ class ThirdCodeSetupService(models.AbstractModel):
     ):
         """Create or update a role user inside a company.
 
-        Callers are responsible for access checks: the setup controller is
-        token-gated, and the in-app wizards verify administrator rights.
+        Only platform-owner code (``env.su``) may call this: the setup
+        controller and the in-app wizards verify their own rights and enter
+        with the superuser flag.
         """
+        if not self.env.su:
+            raise AccessError(
+                _(
+                    "User provisioning is only reachable through the setup service or an authorized administration wizard."
+                )
+            )
         login = str(login or "").strip().lower()
         if not login:
             raise UserError(_("A login is required."))
