@@ -24,6 +24,12 @@ No SaaS signup or shared-client turnover was introduced.
   reported SUCCESS. Database addon is installed at `18.0.2.15.5`; all 159
   deployed addon source files match the release. Live conservation checks
   matched the seven financial tables, original audit rows and 517 files.
+  A later strict filesystem comparison detected four removed orphan members
+  during native garbage collection: three checklist markers and one file with
+  no attachment reference in either the original dump or current database.
+  The final accounting/audit comparison still matches, all 513 remaining
+  original members retain their hashes, and all 878 currently stored attachment
+  rows have files. No referenced business attachment was lost.
 - **PASSED — live authorization:** rollback-only native checks allowed the
   business Administrator's scoped controls and denied identity, currency,
   lifecycle, foreign-company and lower-role writes. Probe changes rolled back.
@@ -56,8 +62,8 @@ definition with zero failures and no due invoices on the isolated production
 copy. Its eight overdue daily runs produced eight balanced zero-value posted
 entries, then the entire probe was rolled back. This is an existing user-created
 definition without a synthetic marker; it was not changed or run manually in
-production. The operator must decide whether to pause it or retain the configured
-catch-up. Its next scheduled run is `2026-10-12T09:13Z` (17:13 Singapore time).
+production. The user explicitly chose to retain its configured catch-up.
+Its next scheduled run is `2026-10-12T09:13Z` (17:13 Singapore time).
 The historical failure counter remains seven until a successful live scheduler
 run; it was not manually reset to manufacture a passing status.
 

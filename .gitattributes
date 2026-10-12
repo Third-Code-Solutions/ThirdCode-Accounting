@@ -1,1 +1,2 @@
 docker/postgres/*.sh text eol=lf
+docker/odoo/backup_store.py text eol=lf

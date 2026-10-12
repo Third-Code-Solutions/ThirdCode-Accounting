@@ -122,11 +122,22 @@ if not params.get_param('tcsi.cloud_bootstrapped'):
     env.cr.commit()
 '''
     subprocess.run(["odoo", "shell", "-c", config_path, "-d", database, "--no-http"], input=bootstrap, text=True, check=True)
+    backup_commands = []
+    if os.environ.get("TCSI_BACKUP_ENABLED") == "1":
+        try:
+            from backup_runtime import prepare
+            command = prepare(os.environ)
+            if command:
+                backup_commands.append(command)
+        except Exception:
+            # Configuration/capture failures must not take accounting offline.
+            # The independent monitor observes the absent or stale durable receipt.
+            print("Automatic paired backup disabled: invalid configuration", flush=True)
     with tempfile.TemporaryDirectory(prefix="tcsi-proxy-") as directory:
         proxy_path = pathlib.Path(directory) / "nginx.conf"
         proxy_path.write_text(proxy_config(directory, os.environ.get("PORT", "8069")))
         subprocess.run(["nginx", "-t", "-c", str(proxy_path)], check=True)
-        raise SystemExit(serve([base, ["nginx", "-c", str(proxy_path)]]))
+        raise SystemExit(serve([base, ["nginx", "-c", str(proxy_path)]], optional_commands=backup_commands))
 
 
 if __name__ == "__main__":

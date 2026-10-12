@@ -70,6 +70,23 @@ class HostedStartupVersionTests(unittest.TestCase):
                 self.assertTrue(any("shell" in call.args[0] for call in self.run.call_args_list))
                 self.serve.assert_called_once()
 
+    def test_invalid_backup_configuration_does_not_stop_accounting(self):
+        module = mock.Mock()
+        module.prepare.side_effect = RuntimeError("private-secret")
+        with mock.patch.dict(sys.modules, {"backup_runtime": module}), mock.patch.dict(launcher.os.environ, {"TCSI_BACKUP_ENABLED": "1"}), mock.patch("builtins.print") as printed:
+            with self.assertRaises(SystemExit):
+                self.start("18.0.2.15.5")
+        self.assertEqual(self.serve.call_args.kwargs["optional_commands"], [])
+        self.assertNotIn("private-secret", str(printed.call_args_list))
+
+    def test_enabled_backup_is_separate_optional_command(self):
+        module = mock.Mock()
+        module.prepare.return_value = ["python3", "/opt/tcsi/backup_runtime.py", "schedule"]
+        with mock.patch.dict(sys.modules, {"backup_runtime": module}), mock.patch.dict(launcher.os.environ, {"TCSI_BACKUP_ENABLED": "1"}):
+            with self.assertRaises(SystemExit):
+                self.start("18.0.2.15.5")
+        self.assertEqual(self.serve.call_args.kwargs["optional_commands"], [module.prepare.return_value])
+
 
 class HostedRuntimeTests(unittest.TestCase):
     def test_public_port_cannot_overlap_internal_services(self):
@@ -93,6 +110,19 @@ class HostedRuntimeTests(unittest.TestCase):
     def test_failed_spawn_stops_already_started_peer(self):
         with self.assertRaises(FileNotFoundError):
             runtime.serve([[sys.executable, "-c", "import time; time.sleep(30)"], ["/no-such-tcsi-process"]])
+
+    def test_optional_backup_failure_does_not_stop_required_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            done = pathlib.Path(directory) / "accounting-stayed-up"
+            required = [sys.executable, "-c", "import time,sys; time.sleep(0.8); open(sys.argv[1], 'w').write('done'); raise SystemExit(9)", str(done)]
+            status = runtime.serve([required], optional_commands=[[sys.executable, "-c", "raise SystemExit(7)"]])
+            self.assertEqual(status, 9)
+            self.assertEqual(done.read_text(), "done")
+
+    def test_optional_spawn_failure_does_not_stop_required_process(self):
+        status = runtime.serve([[sys.executable, "-c", "import time; time.sleep(0.3); raise SystemExit(9)"]],
+                               optional_commands=[["/no-such-backup-command"]])
+        self.assertEqual(status, 9)
 
 
 if __name__ == "__main__":
