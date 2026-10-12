@@ -1,4 +1,70 @@
-# Full local verification
+# Verification evidence
+
+## 12 October 2026 production release
+
+Released application revision `f8c23efd334c4d4a28df1bd0d39e8aef78a56bec` to
+the existing hosted system, preserving its books and storage. Future client
+installations still use fresh independent databases, filestores and credentials.
+No SaaS signup or shared-client turnover was introduced.
+
+- **PASSED — recovery gate:** coordinated encrypted production capture at
+  `2026-10-12T05:39:44Z`; SHA-256
+  `8d9aa6934c1afc5a9d524d942ec9e9b07dbcff1fe3de0898bb77c30bf7748325`.
+  All 681 manifest entries verified. Isolated PostgreSQL 18.6 restore matched
+  all ten original table fingerprints. Upgrade to `18.0.2.15.5` took 14.104
+  seconds and preserved seven financial tables, 1,807 audits, 32,008 audit
+  details, business attachments and all 517 physical files.
+- **PASSED — rollback safety:** first deployed the existing 15.1 application
+  with the tested downgrade guard. Actual bridge startup against the upgraded
+  recovery copy refused before starting Odoo or HTTP. Never select an older,
+  unguarded image as a rollback target against the upgraded database.
+- **PASSED — engine deployment:** Railway deployment
+  `32fd1892-9775-4e91-9df6-be731eb46016`, image
+  `sha256:65b80b1bd9a5a1eec5c942ae6cd788b1ce0c55dadc29dab0b13c146656ae8387`,
+  reported SUCCESS. Database addon is installed at `18.0.2.15.5`; all 159
+  deployed addon source files match the release. Live conservation checks
+  matched the seven financial tables, original audit rows and 517 files.
+- **PASSED — live authorization:** rollback-only native checks allowed the
+  business Administrator's scoped controls and denied identity, currency,
+  lifecycle, foreign-company and lower-role writes. Probe changes rolled back.
+- **PASSED — portal and intake:** Vercel deployment
+  `dpl_GZviB7LB2HBvTK7c4jg7Pt6kmzqc` serves the release on the public and team
+  aliases. Supabase recorded `require_trusted_demo_intake` as migration version
+  `20261012054359` (repository filename `20261011151215`). Singleton secret
+  digest matches; direct anonymous/authenticated INSERT and old INSERT policies
+  are absent. Three existing requests remain; one explicitly marked synthetic
+  release request returned HTTP 201. No email or other message was sent.
+- **PASSED — live journeys:** public health/readiness HTTP 200, both dependencies
+  healthy, setup route HTTP 404. Existing company Accountant session reloads
+  the dashboard with unchanged balances. Financial PDF export succeeded with
+  company, PHP currency and visible trial marking. Deployment-time connection
+  interruptions recovered after startup.
+- **PASSED — local parity:** independent demo now runs the same release source,
+  image `sha256:f916a6bac6aa3fb873cfc9559c3796fa9bf0299bff4c7448847a45376a3e13aa`,
+  including the startup guard. Original database and filestore volumes retained.
+
+Private backup, restore, source, permissions and conservation evidence is retained
+outside Git under `tcsi-production-release-20261012`. The earlier 212-test native
+suite below covers the unchanged addon; five hosted-runtime tests additionally
+passed for the startup guard. GitHub Actions did not run for this branch-only
+push because the workflow triggers on main pushes and pull requests.
+
+**PASSED — recurrence diagnosis:** the seven historical scheduler failures came
+from the older superuser permission check, fixed before this release. The actual
+current method, under its configured scheduler user, processed one journal
+definition with zero failures and no due invoices on the isolated production
+copy. Its eight overdue daily runs produced eight balanced zero-value posted
+entries, then the entire probe was rolled back. This is an existing user-created
+definition without a synthetic marker; it was not changed or run manually in
+production. The operator must decide whether to pause it or retain the configured
+catch-up. Its next scheduled run is `2026-10-12T09:13Z` (17:13 Singapore time).
+The historical failure counter remains seven until a successful live scheduler
+run; it was not manually reset to manufacture a passing status.
+
+Operational acceptance remains separate: unattended off-site backup delivery and
+failure alerts need an approved destination and operator recipient. Trial status
+remains visible; client identity, taxes, reports and real-books acceptance are
+not inferred from this deployment.
 
 ## 11–12 October 2026 independent TCSI demonstration candidate
 

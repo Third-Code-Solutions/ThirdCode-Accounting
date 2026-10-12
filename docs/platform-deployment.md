@@ -9,6 +9,14 @@ White-label SaaS, shared customer hosting, subscriptions and the optional Node
 worker are outside this delivery. The earlier hosted pilot below remains a
 separate environment; do not convert or copy its customer books into a demo.
 
+The existing hosted environment was upgraded on 12 October 2026 to application
+revision `f8c23ef`, addon `18.0.2.15.5`, using a coordinated backup, isolated
+production-copy upgrade rehearsal and post-release conservation checks. Its
+public workspace remains `https://tcsi-accounting-portal.vercel.app/workspace`.
+The local independent demo uses the same release source. This does not make
+the hosted pilot's existing companies separate client installations. See
+`docs/verification.md` for release evidence and outstanding operational gates.
+
 `docker-compose.independent.yml` runs one Odoo engine and one PostgreSQL server
 per installation. Each Compose project owns separate database/filestore volumes
 and its own network. The database has no published port; the engine binds only
