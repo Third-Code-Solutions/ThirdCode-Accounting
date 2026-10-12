@@ -1,10 +1,28 @@
-from odoo import models
+from odoo import fields, models
 
 from .account_move import _RECONCILIATION_METADATA_TOKEN
 
 
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
+
+    thirdcode_payment_instrument = fields.Selection(
+        [("cash", "Cash"), ("cheque", "Cheque"), ("bank_transfer", "Bank transfer")],
+        string="Payment instrument",
+    )
+    thirdcode_instrument_reference = fields.Char(string="Instrument reference")
+
+    def _create_payment_vals_from_wizard(self, batch_result):
+        values = super()._create_payment_vals_from_wizard(batch_result)
+        values.update(thirdcode_payment_instrument=self.thirdcode_payment_instrument,
+                      thirdcode_instrument_reference=self.thirdcode_instrument_reference)
+        return values
+
+    def _create_payment_vals_from_batch(self, batch_result):
+        values = super()._create_payment_vals_from_batch(batch_result)
+        values.update(thirdcode_payment_instrument=self.thirdcode_payment_instrument,
+                      thirdcode_instrument_reference=self.thirdcode_instrument_reference)
+        return values
 
     def action_create_payments(self):
         """Allow the native wizard to link a payment to a posted invoice.

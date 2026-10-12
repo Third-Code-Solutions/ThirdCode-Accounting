@@ -1,0 +1,98 @@
+name: ${COMPOSE_PROJECT_NAME:?Set a unique Compose project name for this company}
+
+services:
+  db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: ${PG_ADMIN_USER:?Set a dedicated PostgreSQL administrator role}
+      POSTGRES_PASSWORD: ${PG_ADMIN_PASSWORD:?Set a unique PostgreSQL administrator password}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 300s
+
+  db-init:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PG_ADMIN_USER: ${PG_ADMIN_USER:?Set a dedicated PostgreSQL administrator role}
+      PG_ADMIN_PASSWORD: ${PG_ADMIN_PASSWORD:?Set a unique PostgreSQL administrator password}
+      APP_DB_USER: ${PGUSER:?Set a dedicated Odoo database role}
+      APP_DB_PASSWORD: ${PGPASSWORD:?Set a unique Odoo database password}
+      APP_DB_NAME: ${PGDATABASE:?Set the installation database name}
+    volumes:
+      - ./docker/postgres/init-independent.sh:/usr/local/bin/init-independent.sh:ro
+    networks:
+      - backend
+    entrypoint: ["/bin/sh", "/usr/local/bin/init-independent.sh"]
+
+  odoo:
+    image: ${TCSI_ODOO_IMAGE:?Set the immutable Odoo image built from docker/odoo/Dockerfile}
+    restart: unless-stopped
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: ${PGUSER:?Set a dedicated Odoo database role}
+      PGPASSWORD: ${PGPASSWORD:?Set a unique Odoo database password}
+      PGDATABASE: ${PGDATABASE:?Set the installation database name}
+      TCSI_ADMIN_LOGIN: ${TCSI_ADMIN_LOGIN:?Set the initial Odoo administrator login}
+      TCSI_ADMIN_PASSWORD: ${TCSI_ADMIN_PASSWORD:?Set a unique initial Odoo administrator password}
+      TCSI_MASTER_PASSWORD: ${TCSI_MASTER_PASSWORD:?Set a unique Odoo database manager password}
+      TCSI_SETUP_TOKEN_SHA256: ""
+      TCSI_WORKERS: ${TCSI_WORKERS:-2}
+      TCSI_DB_MAXCONN: ${TCSI_DB_MAXCONN:-8}
+      TCSI_LIMIT_TIME_REAL: ${TCSI_LIMIT_TIME_REAL:-600}
+      TCSI_BACKUP_ENABLED: ${TCSI_BACKUP_ENABLED:-0}
+      TCSI_BACKUP_S3_ENDPOINT: ${TCSI_BACKUP_S3_ENDPOINT:-}
+      TCSI_BACKUP_S3_REGION: ${TCSI_BACKUP_S3_REGION:-}
+      TCSI_BACKUP_S3_BUCKET: ${TCSI_BACKUP_S3_BUCKET:-}
+      TCSI_BACKUP_S3_ACCESS_KEY_ID: ${TCSI_BACKUP_S3_ACCESS_KEY_ID:-}
+      TCSI_BACKUP_S3_SECRET_ACCESS_KEY: ${TCSI_BACKUP_S3_SECRET_ACCESS_KEY:-}
+      TCSI_BACKUP_PREFIX: ${TCSI_BACKUP_PREFIX:-}
+      TCSI_BACKUP_MONITOR_ID: ${TCSI_BACKUP_MONITOR_ID:-}
+      TCSI_BACKUP_PUBLIC_CERTIFICATE: ${TCSI_BACKUP_PUBLIC_CERTIFICATE:-}
+      TCSI_BACKUP_OPERATOR: ${TCSI_BACKUP_OPERATOR:-}
+      TCSI_BACKUP_RESTORE_CONTACT: ${TCSI_BACKUP_RESTORE_CONTACT:-}
+      TCSI_RELEASE_SHA: ${TCSI_RELEASE_SHA:-}
+      TCSI_RELEASE_IMAGE: ${TCSI_RELEASE_IMAGE:-}
+      PORT: "8069"
+    command: ["python3", "/opt/tcsi/cloud_start.py"]
+    ports:
+      - "127.0.0.1:${ODOO_PORT:?Set a unique loopback port for this installation}:8069"
+    volumes:
+      - odoo-data:/var/lib/odoo
+    networks:
+      - backend
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8069/web/health', timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 600s
+
+networks:
+  backend:
+
+volumes:
+  db-data:
+  odoo-data:

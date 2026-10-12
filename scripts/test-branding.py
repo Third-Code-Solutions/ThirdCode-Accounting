@@ -23,7 +23,7 @@ class BrandingTests(unittest.TestCase):
         brand = scope["branded_workspace_url"]
         for suffix in ("", "?debug=1", "#menu_id=4", "/action-408?lang=en_US#tab"):
             self.assertEqual(brand("/odoo" + suffix), "/workspace" + suffix)
-        for path in ("/odoo-other", "/web/login", "https://other.example/odoo"):
+        for path in ("/odoo-other", "/web?", "/web/login", "https://other.example/odoo"):
             self.assertEqual(brand(path), path)
 
     def test_invitation_preserves_dynamic_fields_and_is_idempotent(self):

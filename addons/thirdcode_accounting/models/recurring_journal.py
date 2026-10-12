@@ -2,8 +2,13 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo import SUPERUSER_ID, _, api, fields, models
+from odoo.exceptions import AccessDenied, AccessError, UserError, ValidationError
+
+from .write_tokens import RECURRING_MOVE_TOKEN
+
+
+_CRON_STATUS_TOKEN = object()
 
 
 class RecurringJournal(models.Model):
@@ -42,6 +47,8 @@ class RecurringJournal(models.Model):
     active = fields.Boolean(default=True, tracking=True)
     line_ids = fields.One2many("thirdcode.recurring.journal.line", "recurring_id")
     last_run = fields.Date(readonly=True, copy=False, tracking=True)
+    last_cron_error = fields.Text(string="Scheduled run error", readonly=True, copy=False)
+    last_cron_error_at = fields.Datetime(string="Scheduled run failed at", readonly=True, copy=False)
     generated_move_ids = fields.One2many(
         "account.move", "thirdcode_recurring_journal_id", readonly=True
     )
@@ -88,7 +95,7 @@ class RecurringJournal(models.Model):
         return run_date + delta
 
     def _check_run_access(self):
-        if not (
+        if self.env.uid != SUPERUSER_ID and not (
             self.env.user.has_group("thirdcode_accounting.group_thirdcode_accountant")
             or self.env.user.has_group("thirdcode_accounting.group_thirdcode_administrator")
         ):
@@ -96,6 +103,8 @@ class RecurringJournal(models.Model):
 
     def _prepare_move_values(self, run_date):
         self.ensure_one()
+        from .contact_isolation import validate_company_partner_scope
+        validate_company_partner_scope(self.company_id, self.line_ids.partner_id)
         if not self.line_ids:
             raise UserError(_("Recurring journal %(name)s has no lines.", name=self.name))
         debit = sum(self.line_ids.mapped("debit"))
@@ -138,14 +147,24 @@ class RecurringJournal(models.Model):
             ],
             limit=1,
         )
-        move = existing or self.env["account.move"].create(self._prepare_move_values(run_date))
+        if existing and (existing.company_id != self.company_id or existing.move_type != "entry"):
+            raise UserError(_("The existing recurring document has a different company or document type. Review its source link before retrying."))
+        if existing and existing.state != "posted":
+            raise UserError(_("An unposted document already uses this recurring run date. Review and resolve that document through the normal accounting workflow before retrying; it will not be posted automatically."))
+        move = existing or self.env["account.move"].with_context(
+            thirdcode_recurring_move_token=RECURRING_MOVE_TOKEN,
+        ).create(self._prepare_move_values(run_date))
         if move.state == "draft":
+            from .contact_isolation import validate_company_move_partner_scope
+            validate_company_move_partner_scope(move)
             move.action_post()
         if move.state != "posted":
             raise UserError(_("Recurring journal entry was not posted."))
-        self.write({
+        self.with_context(thirdcode_cron_status_token=_CRON_STATUS_TOKEN).write({
             "last_run": max(self.last_run or run_date, run_date),
             "next_run": max(self.next_run or run_date, self._next_date(run_date)),
+            "last_cron_error": False,
+            "last_cron_error_at": False,
         })
         return move
 
@@ -182,9 +201,41 @@ class RecurringJournal(models.Model):
     @api.model
     def _cron_run_due(self):
         records = self.search([("active", "=", True), ("next_run", "<=", fields.Date.today())])
+        failures = 0
         for record in records:
-            record.action_run_due()
-        return True
+            try:
+                # Roll back the whole definition's catch-up, including earlier
+                # dates, while retaining successful independent definitions.
+                with self.env.cr.savepoint():
+                    record.action_run_due()
+            except (AccessError, AccessDenied):
+                raise
+            except UserError as error:
+                failures += 1
+                record.with_context(thirdcode_cron_status_token=_CRON_STATUS_TOKEN).write({
+                    "last_cron_error": str(error),
+                    "last_cron_error_at": fields.Datetime.now(),
+                })
+        return {"processed": len(records), "failed": failures}
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        from .contact_isolation import validate_final_partner_references
+        defaults = self.default_get(["last_cron_error", "last_cron_error_at"])
+        if any(values.get(field, defaults.get(field)) for values in vals_list
+               for field in ("last_cron_error", "last_cron_error_at")):
+            raise AccessError(_("Scheduled run diagnostics are system-managed."))
+        records = super().create(vals_list)
+        validate_final_partner_references(records.line_ids)
+        return records
+
+    def write(self, values):
+        from .contact_isolation import validate_final_partner_references
+        if {"last_cron_error", "last_cron_error_at"}.intersection(values) and self.env.context.get("thirdcode_cron_status_token") is not _CRON_STATUS_TOKEN:
+            raise AccessError(_("Scheduled run diagnostics are system-managed."))
+        result = super().write(values)
+        validate_final_partner_references(self.line_ids)
+        return result
 
 
 class RecurringJournalLine(models.Model):
@@ -203,6 +254,19 @@ class RecurringJournalLine(models.Model):
     credit = fields.Monetary(currency_field="currency_id")
     currency_id = fields.Many2one(related="recurring_id.company_id.currency_id", store=True)
     analytic_distribution = fields.Json()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        from .contact_isolation import normalize_partner_defaults, validate_final_partner_references
+        records = super().create(normalize_partner_defaults(self, vals_list))
+        validate_final_partner_references(records)
+        return records
+
+    def write(self, values):
+        from .contact_isolation import validate_final_partner_references
+        result = super().write(values)
+        validate_final_partner_references(self)
+        return result
 
     @api.constrains("debit", "credit")
     def _check_debit_credit(self):

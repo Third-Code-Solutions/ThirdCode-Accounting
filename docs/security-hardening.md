@@ -26,7 +26,7 @@ changes need an addon upgrade, and the portal changes need a deployment.
 | M2 | Portal served HTML for `/robots.txt`, `/sitemap.xml`, `/apple-touch-icon.png` | `apps/web/app/robots.ts`, `apps/web/app/sitemap.ts`, `apps/web/public/apple-touch-icon.png` |
 | M3 | No CSP on the portal, no HSTS/`Referrer-Policy`/`Permissions-Policy` on the engine | portal CSP with a per-request nonce in `apps/web/proxy.ts`; engine headers in `models/ir_http.py` (`Strict-Transport-Security` only over TLS) |
 | M4 | `/api/readiness` took ~2 s | `apps/web/app/api/readiness/route.ts` probes the engine and the portal in parallel |
-| M5 | `/tcsi/setup` accepted any caller with the token, no rate limit, echoed tracebacks | `controllers/setup.py`: optional address allowlist (`tcsi.setup_allow_ips`), shared failure throttle, token comparison on a digest, and a traceback only when `tcsi.setup_allow_debug` is enabled |
+| M5 | `/tcsi/setup` accepted any caller with the token, no rate limit, echoed tracebacks | `controllers/setup.py`: disabled unless an installation-specific `TCSI_SETUP_TOKEN_SHA256` is set; optional address allowlist, shared failure throttle, actual body-byte cap, and traceback only when `tcsi.setup_allow_debug` is enabled |
 | M6 | Branding redirect carried a stray `?` and disagreed on the trailing slash | `controllers/webclient.py` normalises the redirect target to `/workspace` |
 | M7 | Refused database-manager actions answered 200 | now a 404 like the rest of the path (see H5) |
 | M8 | Portal `/favicon.ico` was a 404 | `apps/web/public/favicon.ico` |
@@ -57,6 +57,15 @@ an empty address list means "not restricted".
 | `tcsi.security.hsts_max_age` | `31536000` | HSTS `max-age` when the request arrived over TLS |
 
 ## Deploying the engine fixes
+
+The setup endpoint now requires a private runtime environment value,
+`TCSI_SETUP_TOKEN_SHA256`, containing exactly 64 lowercase hex characters.
+Unset, empty or malformed values disable it before database/service access.
+The old shared digest is no longer accepted. Independent deployments deliberately
+leave it disabled; authenticated owner-console provisioning is available instead.
+If an operator needs the endpoint, issue a unique random token for that one
+installation, store only its digest in the runtime configuration, and remove it
+after setup. A restart applies removal/rotation across all workers.
 
 1. Update the addon: `odoo -u thirdcode_accounting --stop-after-init`.
 2. Keep `list_db = False` and `proxy_mode = True` in the runtime configuration,

@@ -52,11 +52,18 @@ describe("hosted pilot boundary", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
-  it.each(["/platform", "/controls", "/pilot", "/contact", "/owner", "/login", "/auth/confirm", "/icon.svg", "/api/demo-requests", "/api/platform/analytics"])("allows public portal route %s", async (path) => {
+  it.each(["/platform", "/controls", "/pilot", "/contact", "/updates", "/owner", "/login", "/auth/confirm", "/icon.svg", "/logos/tcsi-logo.png", "/api/demo-requests", "/api/platform/analytics"])("allows public portal route %s", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`));
     expect(response.headers.get("x-middleware-next")).toBe("1");
     expect(response.headers.get("location")).toBeNull();
+  });
+
+  it.each(["/future-ledger", "/unexpected-page/nested"])("rejects unlisted portal page %s", async (path) => {
+    vi.stubEnv("TCSI_PORTAL_ONLY", "true");
+    const response = await proxy(new NextRequest(`https://portal.example${path}`));
+    expect(response.status).toBe(404);
+    expect(response.headers.get("x-middleware-next")).toBeNull();
   });
 
   it.each(["/api/workspaces", "/api/dashboard"])("blocks unreleased endpoint %s", async (path) => {

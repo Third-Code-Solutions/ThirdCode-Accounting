@@ -88,9 +88,17 @@ class YearEndClose(models.Model):
             totals[line.account_id] = totals.get(line.account_id, 0.0) + line.balance
         return [(account, balance) for account, balance in totals.items() if abs(balance) > 0.000001]
 
-    @api.depends("date_end", "company_id")
+    @api.depends("date_end", "company_id", "state", "move_id.line_ids.balance",
+                 "move_id.line_ids.account_id.internal_group")
     def _compute_profit_loss(self):
         for close in self:
+            if close.move_id:
+                lines = close.move_id.line_ids.filtered(
+                    lambda line: line.account_id.internal_group in ("income", "expense")
+                )
+                close.profit_loss = sum(lines.mapped("balance"))
+                close.line_count = len(lines)
+                continue
             if not close.date_end or not close.company_id:
                 close.profit_loss = 0.0
                 close.line_count = 0
@@ -192,3 +200,9 @@ class YearEndClose(models.Model):
         ):
             raise UserError(_("A completed year-end close cannot be edited."))
         return super().write(vals)
+
+    def unlink(self):
+        self._lock_for_posting()
+        if any(close.state == "posted" or close.move_id for close in self):
+            raise UserError(_("A posted year-end close must be retained. Reverse its journal entry to correct it."))
+        return super().unlink()

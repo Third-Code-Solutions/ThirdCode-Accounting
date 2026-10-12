@@ -1,8 +1,11 @@
 import base64
+import uuid
 
-from odoo import Command, fields
-from odoo.exceptions import AccessError, UserError
-from odoo.tests import tagged
+from psycopg2.errors import SerializationFailure
+
+from odoo import SUPERUSER_ID, Command, api, fields
+from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.tests import TransactionCase, tagged
 from odoo.tools import date_utils
 from .common import AccountTestInvoicingCommon
 from .common import TestExpenseCommon
@@ -35,6 +38,28 @@ class TestFinancialControls(AccountTestInvoicingCommon):
                 ],
             }
         )
+
+    def test_tax_profile_rejects_reversed_vat_mappings(self):
+        taxes = self.env["account.tax"]
+        sale = taxes.create({"name": "Output VAT test", "amount": 12, "type_tax_use": "sale", "company_id": self.company.id})
+        purchase = taxes.create({"name": "Input VAT test", "amount": 12, "type_tax_use": "purchase", "company_id": self.company.id})
+        profiles = self.env["thirdcode.tax.profile"].with_user(self.accountant)
+        values = {"name": "Demo VAT mapping", "company_id": self.company.id,
+                  "accountant_owner": "Test accountant", "notes": "Demo mapping only",
+                  "vat_registered": True, "output_vat_tax_id": sale.id, "input_vat_tax_id": purchase.id}
+        for field, wrong_tax in (("output_vat_tax_id", purchase), ("input_vat_tax_id", sale)):
+            with self.subTest(field=field), self.assertRaises(ValidationError), self.cr.savepoint():
+                profiles.create(dict(values, **{field: wrong_tax.id}))
+        profile = profiles.create(values)
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            profile.write({"input_vat_tax_id": sale.id})
+        profile.action_configure()
+        self.assertEqual(profile.status, "configured")
+        # Reapproval must inspect current tax metadata, not only profile edits.
+        profile.sudo().write({"status": "assessment_required"})
+        sale.type_tax_use = "purchase"
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            profile.action_configure()
 
     def _posted_invoice(self, tax=None):
         invoice_line = {
@@ -71,6 +96,50 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             }
         )
 
+    def test_payment_batch_uses_company_native_sequence_when_custom_sequence_missing(self):
+        custom = self.env["ir.sequence"].sudo().search([
+            ("code", "=", "thirdcode.payment.batch"),
+            ("company_id", "in", [False, self.company.id]),
+        ])
+        custom.active = False
+        native = self.company.sudo().batch_payment_sequence_id
+        native.prefix = "TEST-BATCH/"
+        model = self.env["thirdcode.payment.batch"].with_user(self.accountant)
+        values = {"company_id": self.company.id, "journal_id": self.company_data["default_journal_bank"].id}
+        batches = model.create([dict(values), dict(values)])
+        self.assertEqual(len(set(batches.mapped("name"))), 2)
+        self.assertTrue(all(batch.name.startswith("TEST-BATCH/") for batch in batches))
+        self.assertEqual(batches.company_id, self.company)
+        named = model.create(dict(values, name="Approved external reference"))
+        self.assertEqual(named.name, "Approved external reference")
+
+    def test_register_payment_preserves_instrument_for_single_and_multiple_partners(self):
+        for multiple_partners in (False, True):
+            with self.subTest(multiple_partners=multiple_partners):
+                invoices = self._posted_invoice()
+                if multiple_partners:
+                    other = invoices.copy({"partner_id": self.partner_b.id})
+                    other.action_post()
+                    invoices |= other
+                reference = "LOCAL-TRANSFER-%s" % multiple_partners
+                wizard = self.env["account.payment.register"].with_user(self.accountant).with_context(
+                    active_model="account.move", active_ids=invoices.ids
+                ).create({
+                    "journal_id": self.company_data["default_journal_bank"].id,
+                    "group_payment": False,
+                    "thirdcode_payment_instrument": "bank_transfer",
+                    "thirdcode_instrument_reference": reference,
+                })
+                wizard.action_create_payments()
+                payments = self.env["account.payment"].search([
+                    ("company_id", "=", self.company.id),
+                    ("thirdcode_instrument_reference", "=", reference),
+                ])
+                self.assertEqual(len(payments), len(invoices))
+                self.assertEqual(set(payments.mapped("thirdcode_payment_instrument")), {"bank_transfer"})
+                self.assertEqual(set(payments.mapped("thirdcode_instrument_reference")), {reference})
+                self.assertTrue(all(invoice.currency_id.is_zero(invoice.amount_residual) for invoice in invoices))
+
     def test_zero_amount_invoice_line_cannot_submit_or_bypass_approval(self):
         invoice = self._posted_invoice()
         batch = self._payment_batch(
@@ -101,6 +170,83 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             batch.write({"state": "posted"})
 
         self.assertEqual(batch.state, "draft")
+
+    def test_workflow_context_defaults_cannot_forge_approval(self):
+        model = self.env["thirdcode.payment.batch"].with_user(self.accountant)
+        values = {
+            "name": "FIN-CONTROL-DEFAULTS",
+            "company_id": self.company.id,
+            "journal_id": self.company_data["default_journal_bank"].id,
+            "payment_instrument": "cash",
+        }
+        for context in (
+            {"default_state": "approved"},
+            {"default_approved_by": self.env.uid},
+            {"default_approved_at": fields.Datetime.now()},
+        ):
+            with self.subTest(context=context), self.assertRaises(AccessError), self.cr.savepoint():
+                model.with_context(**context).create(values)
+        batch = model.with_context(default_state="approved").create(
+            dict(values, state="draft")
+        )
+        self.assertEqual(batch.state, "draft")
+        self.assertFalse(batch.approved_by)
+
+    def test_payment_lines_cannot_enter_submitted_batches(self):
+        self.company.sudo().write({
+            "thirdcode_payment_approval_enabled": True,
+            "thirdcode_payment_approval_threshold": 10,
+        })
+        source = self._payment_batch({"partner_id": self.partner_a.id, "amount": 5})
+        destination = self._payment_batch({"partner_id": self.partner_a.id, "amount": 20})
+        destination.action_submit()
+        self.assertEqual(destination.state, "pending_approval")
+        line_model = self.env["thirdcode.payment.batch.line"].with_user(self.accountant)
+        for state in ("pending_approval", "approved", "posted"):
+            # Trusted setup isolates each destination-state boundary without paying it.
+            destination.sudo().write({"state": state})
+            with self.subTest(state=state):
+                with self.assertRaises(UserError), self.cr.savepoint():
+                    source.line_ids.write({"batch_id": destination.id})
+                with self.assertRaises(UserError), self.cr.savepoint():
+                    line_model.with_context(default_batch_id=destination.id).create({
+                        "partner_id": self.partner_a.id, "amount": 100,
+                    })
+                self.assertEqual(destination.total_amount, 20)
+                self.assertEqual(source.line_ids.batch_id, source)
+        draft = self._payment_batch({"partner_id": self.partner_a.id, "amount": 1})
+        line = source.line_ids
+        line.write({"batch_id": draft.id})
+        self.assertEqual(line.batch_id, draft)
+        self.assertEqual(draft.total_amount, 6)
+
+    def test_payment_links_cannot_be_supplied_or_reused_by_unposted_batch(self):
+        invoice = self._posted_invoice()
+        expected_residual = invoice.amount_residual - 20
+        paid_batch = self._payment_batch({
+            "move_id": invoice.id, "partner_id": self.partner_a.id, "amount": 20,
+        })
+        paid_batch.action_post()
+        payment = paid_batch.line_ids.payment_id
+        paid_batch.action_post()
+        self.assertEqual(paid_batch.line_ids.payment_id, payment)
+        self.assertAlmostEqual(invoice.amount_residual, expected_residual, places=2)
+        draft = self._payment_batch({
+            "move_id": invoice.id, "partner_id": self.partner_a.id, "amount": 30,
+        })
+        model = self.env["thirdcode.payment.batch.line"].with_user(self.accountant)
+        values = {"batch_id": draft.id, "partner_id": self.partner_a.id, "amount": 30}
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            model.create(dict(values, payment_id=payment.id))
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            model.with_context(default_payment_id=payment.id).create(values)
+        # Simulate a persisted link created before the creation guard existed.
+        draft.line_ids.sudo().write({"payment_id": payment.id})
+        with self.assertRaises(UserError), self.cr.savepoint():
+            draft.action_post()
+        self.assertEqual(draft.state, "draft")
+        self.assertAlmostEqual(invoice.amount_residual, expected_residual, places=2)
+
 
     def test_threshold_batch_requires_administrator_approval_before_posting(self):
         self.company.sudo().write(
@@ -254,6 +400,21 @@ class TestFinancialControls(AccountTestInvoicingCommon):
             }
         )
         self.assertEqual(reconciliation.difference, 0)
+        self.assertFalse(statement_line.is_reconciled)
+        with self.assertRaisesRegex(UserError, "Match every attached bank statement line"):
+            reconciliation.action_reconcile()
+        self.assertEqual(reconciliation.state, "draft")
+        self.assertFalse(reconciliation.reconciled_by)
+        self.assertFalse(reconciliation.reconciled_at)
+        invoice = self._posted_invoice()
+        receivable = invoice.line_ids.filtered(lambda line: line.account_id.account_type == "asset_receivable")
+        self.company_data["default_journal_bank"].suspense_account_id.reconcile = True
+        statement_line.action_match_thirdcode_items(
+            [{"line_id": receivable.id, "amount": 10}],
+            self.company_data["default_journal_misc"].id,
+            str(fields.Date.today()),
+        )
+        self.assertTrue(statement_line.is_reconciled)
         reconciliation.action_reconcile()
         self.assertEqual(reconciliation.state, "reconciled")
 
@@ -1170,12 +1331,25 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         })
         close.action_post()
         self.assertEqual(before, "100.00")
+        self.assertEqual(close.profit_loss, 100.0)
+        self.assertEqual(close.line_count, 1)
+        self.assertEqual(wizard.get_report_data()["net_result"], before)
+        with self.assertRaises(UserError), self.cr.savepoint():
+            close.sudo().unlink()
+        self.assertTrue(close.exists())
         self.assertEqual(wizard.get_report_data()["net_result"], before)
         wizard.report_type = "balance_sheet"
         self.assertTrue(wizard.get_report_data()["balanced"])
         close.move_id._reverse_moves([{"date": invoice.date}], cancel=True)
+        close.invalidate_recordset(["profit_loss", "line_count"])
+        self.assertEqual(close.profit_loss, 100.0)
+        self.assertEqual(close.line_count, 1)
         wizard.report_type = "profit_loss"
         self.assertEqual(wizard.get_report_data()["net_result"], before)
+        self._posted_invoice()
+        close.invalidate_recordset(["profit_loss", "line_count"])
+        self.assertEqual(close.profit_loss, 100.0)
+        self.assertEqual(close.line_count, 1)
 
     def test_context_defaults_cannot_forge_posting_or_closure_history(self):
         for context in ({"default_state": "posted"}, {"default_posted_before": True}):
@@ -1285,6 +1459,67 @@ class TestFinancialControls(AccountTestInvoicingCommon):
                 ).create({"journal_id": bank.id, "amount": 25})._create_payments()
                 self.assertEqual(moves.amount_residual, 0)
             self.assertEqual(sheet.state, "done")
+
+
+@tagged("post_install", "-at_install")
+class TestPaymentBatchConcurrency(TransactionCase):
+    def test_batch_submit_retries_after_concurrent_child_only_edit(self):
+        # Separate committed fixtures keep the native test transaction intact.
+        # Two real cursors reproduce the stale REPEATABLE READ request snapshot.
+        registry = self.env.registry
+        company_id = self.env.ref("thirdcode_accounting.company_platform").id
+        context = {"allowed_company_ids": [company_id]}
+        with registry.cursor() as setup:
+            setup.execute("SET LOCAL lock_timeout = '5s'")
+            local = api.Environment(setup, SUPERUSER_ID, context)
+            journal = local["account.journal"].create({
+                "name": "Batch concurrency regression", "code": uuid.uuid4().hex[:5],
+                "type": "general", "company_id": company_id,
+            })
+            partner = local["res.partner"].create({
+                "name": "Batch concurrency regression", "company_id": company_id,
+            })
+            batch = local["thirdcode.payment.batch"].create({
+                "name": "Batch concurrency regression", "company_id": company_id,
+                "journal_id": journal.id, "payment_instrument": "cash",
+                "line_ids": [Command.create({
+                    "partner_id": partner.id, "amount": 1, "communication": "Before edit",
+                })],
+            })
+            batch_id, journal_id, partner_id = batch.id, journal.id, partner.id
+            setup.commit()
+        try:
+            with registry.cursor() as stale, registry.cursor() as writer:
+                stale.execute("SET LOCAL lock_timeout = '5s'")
+                writer.execute("SET LOCAL lock_timeout = '5s'")
+                request = api.Environment(stale, SUPERUSER_ID, context)
+                editor = api.Environment(writer, SUPERUSER_ID, context)
+                stale_batch = request["thirdcode.payment.batch"].browse(batch_id)
+                self.assertEqual(stale_batch.line_ids.communication, "Before edit")
+                editor["thirdcode.payment.batch"].browse(batch_id).line_ids.write({
+                    "communication": "Reviewed replacement",
+                })
+                writer.commit()
+                with self.assertRaises(SerializationFailure):
+                    stale_batch.action_submit()
+                stale.rollback()
+            with registry.cursor() as retry:
+                retry.execute("SET LOCAL lock_timeout = '5s'")
+                request = api.Environment(retry, SUPERUSER_ID, context)
+                batch = request["thirdcode.payment.batch"].browse(batch_id)
+                self.assertEqual(batch.state, "draft")
+                self.assertEqual(batch.line_ids.communication, "Reviewed replacement")
+                batch.action_submit()
+                self.assertIn(batch.state, ("approved", "pending_approval"))
+                # No commit: only the concurrent edit needs to survive this cursor.
+        finally:
+            with registry.cursor() as cleanup:
+                cleanup.execute("SET LOCAL lock_timeout = '5s'")
+                local = api.Environment(cleanup, SUPERUSER_ID, context)
+                local["thirdcode.payment.batch"].browse(batch_id).unlink()
+                local["account.journal"].browse(journal_id).unlink()
+                local["res.partner"].browse(partner_id).unlink()
+                cleanup.commit()
 
 
 @tagged("post_install", "-at_install")

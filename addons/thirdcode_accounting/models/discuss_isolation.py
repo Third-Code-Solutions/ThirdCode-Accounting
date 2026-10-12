@@ -193,6 +193,7 @@ class CompanyDiscussChannel(models.Model):
         self._assert_company_scope()
         return super()._read_format(fnames, load=load)
 
+    @api.model
     @api.returns("self", lambda channels: Store(channels).get_result())
     def channel_get(self, partners_to, pin=True, force_open=False):
         partners = sorted(set(partners_to) | {self.env.user.partner_id.id})
@@ -206,7 +207,9 @@ class CompanyDiscussChannel(models.Model):
         general._assert_participants(partners)
         channels = self.search([("channel_type", "=", "chat"), ("thirdcode_company_id", "=", company.id),
                                 ("channel_partner_ids", "in", partners)])
-        channel = channels.filtered(lambda c: set(c.sudo().channel_partner_ids.ids) == set(partners))[:1]
+        channel = channels.filtered(
+            lambda c: set(c.sudo().with_context(active_test=False).channel_partner_ids.ids) == set(partners)
+        )[:1]
         if not channel:
             channel = self.create({"name": ", ".join(self.env["res.partner"].browse(partners).mapped("name")),
                                    "channel_type": "chat", "channel_member_ids": [

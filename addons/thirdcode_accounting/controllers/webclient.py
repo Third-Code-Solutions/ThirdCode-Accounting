@@ -20,7 +20,7 @@ def branded_workspace_url(url):
         return url
     branded = re.sub(r"^/odoo(?=[/?#]|$)", "/workspace", url)
     branded = re.sub(r"^(/workspace)/?(?=[?#]|$)", r"\1", branded)
-    return branded[:-1] if branded.endswith("?") else branded
+    return branded[:-1] if branded.startswith("/workspace") and branded.endswith("?") else branded
 
 
 def _workspace_action_url():

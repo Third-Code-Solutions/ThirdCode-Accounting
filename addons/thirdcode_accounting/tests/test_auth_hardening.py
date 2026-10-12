@@ -18,14 +18,64 @@ through a cursor of their own - which is what the next request does in
 production.
 """
 
+import hashlib
+import io
 from unittest import mock
 
-from odoo import SUPERUSER_ID, api
-from odoo.exceptions import AccessDenied
+from odoo import SUPERUSER_ID, Command, api, fields
+from odoo.exceptions import AccessDenied, AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.addons.thirdcode_accounting.controllers import setup
 
 THROTTLE_TABLE = "thirdcode_auth_throttle"
 IP_SCOPE = "login-ip"
+
+
+@tagged("post_install", "-at_install")
+class TestSetupCredentialIsolation(TransactionCase):
+    def test_setup_requires_installation_specific_credential(self):
+        token = "first-installation-operator-token"
+        digest = hashlib.sha256(token.encode()).hexdigest()
+        for configured in ("", "invalid", digest.upper(), digest + "\n"):
+            with mock.patch.dict(setup.os.environ, {"TCSI_SETUP_TOKEN_SHA256": configured}):
+                self.assertFalse(setup._token_authorized(token))
+        with mock.patch.dict(setup.os.environ, {"TCSI_SETUP_TOKEN_SHA256": digest}):
+            self.assertTrue(setup._token_authorized(token))
+            self.assertFalse(setup._token_authorized("second-installation-operator-token"))
+            self.assertFalse(setup._token_authorized(""))
+        with mock.patch.dict(setup.os.environ, {}, clear=True):
+            self.assertFalse(setup._token_authorized(token))
+        replacement = "replacement-installation-operator-token"
+        with mock.patch.dict(setup.os.environ, {
+            "TCSI_SETUP_TOKEN_SHA256": hashlib.sha256(replacement.encode()).hexdigest(),
+        }):
+            self.assertFalse(setup._token_authorized(token))
+            self.assertTrue(setup._token_authorized(replacement))
+
+    def test_disabled_setup_never_touches_privileged_service(self):
+        with mock.patch.dict(setup.os.environ, {}, clear=True), \
+                mock.patch.object(setup, "request", new=mock.MagicMock()) as request:
+            request.make_json_response.return_value = setup.http.Response()
+            setup.ThirdCodeSetupController().tcsi_setup()
+            request.make_json_response.assert_called_once_with(
+                {"ok": False, "error": "not found"}, status=404)
+            request.env.__getitem__.assert_not_called()
+
+    def test_setup_bounds_body_without_content_length(self):
+        with mock.patch.dict(setup.os.environ, {"TCSI_SETUP_TOKEN_SHA256": "a" * 64}), \
+                mock.patch.object(setup, "request", new=mock.MagicMock()) as request, \
+                mock.patch.object(setup, "_ip_allowed", return_value=True), \
+                mock.patch.object(setup, "_param_int", side_effect=lambda name, default: default):
+            request.make_json_response.return_value = setup.http.Response()
+            limiter = request.env.__getitem__.return_value.sudo.return_value
+            limiter._tcsi_blocked_seconds.return_value = 0
+            request.httprequest.content_length = None
+            request.httprequest.stream = io.BytesIO(b" " * (setup._MAX_BODY_BYTES + 20))
+            setup.ThirdCodeSetupController().tcsi_setup()
+            request.make_json_response.assert_called_once_with(
+                {"ok": False, "error": "payload too large"}, status=413)
+            self.assertEqual(request.httprequest.stream.tell(), setup._MAX_BODY_BYTES + 1)
+            request.env.__getitem__.assert_called_once_with("thirdcode.auth.throttle")
 
 
 @tagged("post_install", "-at_install")
@@ -104,6 +154,51 @@ class TestAuthThrottle(TransactionCase):
     def test_disabled_limit_records_nothing(self):
         self.assertEqual(self.limiter._tcsi_register_failure("203.0.113.12", IP_SCOPE, 0, 60, 900), 0)
         self.assertIsNone(self._counter_row("203.0.113.12", IP_SCOPE))
+
+    def test_tenant_administrator_cannot_access_global_counters(self):
+        tenant = self.env["res.users"].create({
+            "name": "Throttle tenant administrator", "login": "throttle-tenant-admin",
+            "company_id": self.env.company.id,
+            "company_ids": [Command.set(self.env.company.ids)],
+            "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_administrator").ids)],
+        })
+        record = self.limiter.create({"key": "203.0.113.20", "scope": IP_SCOPE})
+        model = self.env["thirdcode.auth.throttle"].with_user(tenant)
+        for operation in (
+            lambda: model.search_read([], ["key"]),
+            lambda: model.create({"key": "203.0.113.21", "scope": IP_SCOPE}),
+            lambda: record.with_user(tenant).write({"blocked_until": fields.Datetime.now()}),
+            lambda: record.with_user(tenant).unlink(),
+        ):
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                operation()
+        # Updating this existing external ID revokes grants on upgraded databases.
+        self.assertEqual(self.env.ref("thirdcode_accounting.access_thirdcode_auth_throttle_admin").group_id,
+                         self.env.ref("base.group_system"))
+
+    def test_blocked_unknown_login_does_not_hash(self):
+        users = self.env["res.users"]
+        login = "throttle-missing@example.invalid"
+        for key, scope in (("203.0.113.22", IP_SCOPE), ("login:" + login, "login-user")):
+            self._clear_counters()
+            self.limiter._tcsi_register_failure(key, scope, 1, 900, 900)
+            with mock.patch.object(type(users), "_tcsi_client_ip", return_value="203.0.113.22"), \
+                    mock.patch.object(type(users), "_tcsi_allowlisted", return_value=False), \
+                    mock.patch.object(type(users), "_tcsi_burn_password_hash") as burn:
+                with self.assertRaises(AccessDenied):
+                    users._login(self.env.cr.dbname, {"login": login, "password": "invalid", "type": "password"}, {})
+                burn.assert_not_called()
+
+    def test_permitted_unknown_login_still_hashes_and_records_failure(self):
+        users = self.env["res.users"]
+        with mock.patch.object(type(users), "_tcsi_client_ip", return_value="203.0.113.23"), \
+                mock.patch.object(type(users), "_tcsi_allowlisted", return_value=False), \
+                mock.patch.object(type(users), "_tcsi_burn_password_hash") as burn:
+            with self.assertRaises(AccessDenied):
+                users._login(self.env.cr.dbname, {"login": "throttle-unknown@example.invalid",
+                                                "password": "invalid", "type": "password"}, {})
+            burn.assert_called_once_with("invalid")
+        self.assertIsNotNone(self._counter_row("203.0.113.23", IP_SCOPE))
 
 
 @tagged("post_install", "-at_install")

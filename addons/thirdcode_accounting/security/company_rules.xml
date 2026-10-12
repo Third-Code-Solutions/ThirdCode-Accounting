@@ -98,7 +98,7 @@
             <field name="model_id" ref="base.model_res_users"/>
             <field name="groups" eval="[Command.clear()]"/>
             <field name="global" eval="True"/>
-            <field name="domain_force">[] if user._thirdcode_is_contact_owner() else ['|', ('id', '=', user.id), '&amp;', ('company_ids', 'in', company_ids), ('thirdcode_platform_owner', '=', False)]</field>
+            <field name="domain_force">user._thirdcode_user_domain(company_ids)</field>
         </record>
         <record id="rule_audit_log_company" model="ir.rule">
             <field name="name">Audit evidence: recorded company scope</field>
@@ -128,6 +128,14 @@
             <field name="model_id" ref="base.model_res_partner_bank"/>
             <field name="domain_force">user._thirdcode_contact_domain(company_ids, write=True, bank=True)</field>
             <field name="perm_read" eval="False"/>
+            <field name="global" eval="True"/>
+        </record>
+        <!-- F1: attachments follow the tenant boundary for every ORM path;
+             the /web/content route also enforces it in models/ir_attachment.py. -->
+        <record id="rule_thirdcode_ir_attachment_company" model="ir.rule">
+            <field name="name">Attachments: tenant company scope</field>
+            <field name="model_id" ref="base.model_ir_attachment"/>
+            <field name="domain_force">[] if user.has_group('base.group_system') else ['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
         </record>
     </data>

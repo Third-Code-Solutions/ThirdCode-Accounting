@@ -32,9 +32,14 @@
                 <field name="active"/>
                 <field name="company_id" groups="base.group_system"/>
                 <button name="action_thirdcode_toggle_active" type="object" string="Enable/Disable" class="btn-link"/>
+                <button name="action_thirdcode_expense_profile" type="object" string="Expense profile" class="btn-link"/>
                 <button name="%(action_thirdcode_password_reset)d" type="action" string="Reset Password" class="btn-link" context="{'default_user_id': id}"/>
             </list>
         </field>
+    </record>
+
+    <record id="action_thirdcode_employee_list" model="ir.actions.act_window">
+        <field name="view_id" ref="view_thirdcode_employee_list"/>
     </record>
 
     <record id="view_thirdcode_employee_wizard_form" model="ir.ui.view">
@@ -78,6 +83,27 @@
                 </sheet>
                 <footer>
                     <button name="action_reset_password" type="object" string="Set Password" class="btn-primary"/>
+                    <button special="cancel" string="Cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_thirdcode_expense_profile_form" model="ir.ui.view">
+        <field name="name">thirdcode.expense.profile.form</field>
+        <field name="model">thirdcode.expense.profile.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Expense profile">
+                <sheet>
+                    <div class="tcsi-form-sections">
+                        <group string="Expense approval" class="tcsi-form-section tcsi-form-section-wide">
+                            <field name="user_id" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="expense_manager_id" options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_save_profile" type="object" string="Save profile" class="btn-primary"/>
                     <button special="cancel" string="Cancel" class="btn-secondary"/>
                 </footer>
             </form>

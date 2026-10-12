@@ -156,6 +156,32 @@ class TestBusinessRoleMatrix(AccountTestInvoicingCommon):
                         with self.assertRaises(AccessError):
                             getattr(reports.with_user(actor), renderer)(action["report_name"], [], data=options)
 
+    def test_partner_statement_native_actions_follow_report_roles(self):
+        invoice = self.env["account.move"].with_user(self.roles["accountant"]).create(self._invoice_values("out_invoice"))
+        invoice.action_post()
+        context = {"allowed_company_ids": self.env.company.ids, "active_ids": self.partner_a.ids}
+        for role, user in self.roles.items():
+            bindings = self.env["ir.actions.actions"].with_user(user).get_bindings("res.partner")
+            names = {action["name"] for actions in bindings.values() for action in actions}
+            for name in ("Partner Activity Statement", "Partner Outstanding Statement", "Partner Detailed Activity Statement"):
+                permitted = role in {"accountant", "administrator"} or (
+                    role == "readonly" and name == "Partner Activity Statement"
+                )
+                self.assertEqual(name in names, permitted, (role, name))
+            if role == "encoder":
+                with self.assertRaises(AccessError), self.cr.savepoint():
+                    self.env["activity.statement.wizard"].with_user(user).with_context(**context).create({"company_id": self.env.company.id})
+                continue
+            wizard = self.env["activity.statement.wizard"].with_user(user).with_context(**context).create({
+                "company_id": self.env.company.id, "date_start": fields.Date.today(), "date_end": fields.Date.today(),
+            })
+            action = wizard.button_export_html()
+            data = json.loads(json.dumps(action["data"], default=str))
+            html, _format = self.env["ir.actions.report"].with_user(user).with_context(**context)._render_qweb_html(
+                action["report_name"], self.partner_a.ids, data=data,
+            )
+            self.assertIn(invoice.name.encode(), html)
+
     def test_statement_export_rechecks_changed_company(self):
         wizard = self.env["activity.statement.wizard"].with_context(active_ids=self.partner_a.ids).create({"company_id": self.env.company.id})
         wizard.company_id = self.env["res.company"].sudo().create({"name": "Unselected statement scope"})

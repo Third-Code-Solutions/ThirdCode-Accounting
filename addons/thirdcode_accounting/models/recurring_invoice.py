@@ -1,7 +1,12 @@
 from dateutil.relativedelta import relativedelta
 
-from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo import SUPERUSER_ID, _, api, fields, models
+from odoo.exceptions import AccessDenied, AccessError, UserError, ValidationError
+
+from .write_tokens import RECURRING_MOVE_TOKEN
+
+
+_CRON_STATUS_TOKEN = object()
 
 
 class RecurringInvoice(models.Model):
@@ -42,6 +47,8 @@ class RecurringInvoice(models.Model):
     active = fields.Boolean(default=True, tracking=True)
     line_ids = fields.One2many("thirdcode.recurring.invoice.line", "recurring_id")
     last_run = fields.Date(readonly=True, copy=False, tracking=True)
+    last_cron_error = fields.Text(string="Scheduled run error", readonly=True, copy=False)
+    last_cron_error_at = fields.Datetime(string="Scheduled run failed at", readonly=True, copy=False)
     generated_move_ids = fields.One2many(
         "account.move", "thirdcode_recurring_invoice_id", readonly=True
     )
@@ -80,8 +87,12 @@ class RecurringInvoice(models.Model):
                 if line.price_unit < 0:
                     raise ValidationError(_("Recurring invoice prices cannot be negative."))
 
+    @api.constrains("move_type", "line_ids")
+    def _check_tax_types(self):
+        self.line_ids._check_tax_type()
+
     def _check_run_access(self):
-        if not (
+        if self.env.uid != SUPERUSER_ID and not (
             self.env.user.has_group("thirdcode_accounting.group_thirdcode_accountant")
             or self.env.user.has_group("thirdcode_accounting.group_thirdcode_administrator")
         ):
@@ -99,6 +110,8 @@ class RecurringInvoice(models.Model):
 
     def _prepare_move_values(self, run_date):
         self.ensure_one()
+        from .contact_isolation import validate_company_partner_scope
+        validate_company_partner_scope(self.company_id, self.partner_id)
         if not self.line_ids:
             raise UserError(_("Recurring invoice %(name)s has no invoice lines.", name=self.name))
         return {
@@ -132,6 +145,7 @@ class RecurringInvoice(models.Model):
     def _run_one(self, run_date):
         self.ensure_one()
         self._lock_for_run()
+        self._check_tax_types()
         existing = self.env["account.move"].search(
             [
                 ("thirdcode_recurring_invoice_id", "=", self.id),
@@ -139,14 +153,24 @@ class RecurringInvoice(models.Model):
             ],
             limit=1,
         )
-        move = existing or self.env["account.move"].create(self._prepare_move_values(run_date))
+        if existing and (existing.company_id != self.company_id or existing.move_type != self.move_type):
+            raise UserError(_("The existing recurring document has a different company or document type. Review its source link before retrying."))
+        if existing and existing.state != "posted":
+            raise UserError(_("An unposted document already uses this recurring run date. Review and resolve that document through the normal accounting workflow before retrying; it will not be posted automatically."))
+        move = existing or self.env["account.move"].with_context(
+            thirdcode_recurring_move_token=RECURRING_MOVE_TOKEN,
+        ).create(self._prepare_move_values(run_date))
         if move.state == "draft":
+            from .contact_isolation import validate_company_move_partner_scope
+            validate_company_move_partner_scope(move)
             move.action_post()
         if move.state != "posted":
             raise UserError(_("Recurring invoice was not posted."))
-        self.write({
+        self.with_context(thirdcode_cron_status_token=_CRON_STATUS_TOKEN).write({
             "last_run": max(self.last_run or run_date, run_date),
             "next_run": max(self.next_run or run_date, self._next_date(run_date)),
+            "last_cron_error": False,
+            "last_cron_error_at": False,
         })
         return move
 
@@ -182,9 +206,45 @@ class RecurringInvoice(models.Model):
     @api.model
     def _cron_run_due(self):
         records = self.search([("active", "=", True), ("next_run", "<=", fields.Date.today())])
+        failures = 0
         for record in records:
-            record.action_run_due()
-        return True
+            try:
+                # Roll back the whole definition's catch-up, including earlier
+                # dates, while retaining successful independent definitions.
+                with self.env.cr.savepoint():
+                    record.action_run_due()
+            except (AccessError, AccessDenied):
+                raise
+            except UserError as error:
+                failures += 1
+                record.with_context(thirdcode_cron_status_token=_CRON_STATUS_TOKEN).write({
+                    "last_cron_error": str(error),
+                    "last_cron_error_at": fields.Datetime.now(),
+                })
+        return {"processed": len(records), "failed": failures}
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        from .contact_isolation import check_partner_reference, normalize_partner_defaults, validate_final_partner_references
+        vals_list = normalize_partner_defaults(self, vals_list)
+        defaults = self.default_get(["last_cron_error", "last_cron_error_at"])
+        if any(values.get(field, defaults.get(field)) for values in vals_list
+               for field in ("last_cron_error", "last_cron_error_at")):
+            raise AccessError(_("Scheduled run diagnostics are system-managed."))
+        for values in vals_list:
+            check_partner_reference(self, values)
+        records = super().create(vals_list)
+        validate_final_partner_references(records)
+        return records
+
+    def write(self, values):
+        from .contact_isolation import check_partner_reference, validate_final_partner_references
+        if {"last_cron_error", "last_cron_error_at"}.intersection(values) and self.env.context.get("thirdcode_cron_status_token") is not _CRON_STATUS_TOKEN:
+            raise AccessError(_("Scheduled run diagnostics are system-managed."))
+        check_partner_reference(self, values)
+        result = super().write(values)
+        validate_final_partner_references(self)
+        return result
 
 
 class RecurringInvoiceLine(models.Model):
@@ -203,3 +263,10 @@ class RecurringInvoiceLine(models.Model):
     tax_ids = fields.Many2many("account.tax", string="Taxes", check_company=True)
     currency_id = fields.Many2one(related="recurring_id.company_id.currency_id", store=True)
     analytic_distribution = fields.Json()
+
+    @api.constrains("tax_ids", "recurring_id")
+    def _check_tax_type(self):
+        for line in self:
+            expected = "sale" if line.recurring_id.move_type == "out_invoice" else "purchase"
+            if any(tax.type_tax_use != expected for tax in line.tax_ids):
+                raise ValidationError(_("Recurring document lines require %(type)s taxes.", type=expected))

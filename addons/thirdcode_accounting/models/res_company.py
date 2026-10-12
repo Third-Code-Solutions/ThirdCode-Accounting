@@ -2,6 +2,20 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 
+_ACCOUNTING_CONTROL_FIELDS = {
+    "thirdcode_bir_ack_control_number", "thirdcode_bir_ack_approved", "thirdcode_eis_status",
+    "thirdcode_report_samples_approved", "thirdcode_invoice_layout_revision",
+    "thirdcode_statement_layout_revision", "thirdcode_financial_statement_layout_revision",
+    "thirdcode_receipt_layout_revision", "thirdcode_reconciliation_layout_revision",
+    "thirdcode_receipt_signatory_name", "thirdcode_receipt_signatory_title",
+    "thirdcode_payment_approval_enabled", "thirdcode_payment_approval_threshold",
+    "thirdcode_numbering_owner", "thirdcode_retained_earnings_account_id",
+    "thirdcode_year_end_journal_id", "thirdcode_reconciliation_definition",
+    "thirdcode_live_history_policy", "thirdcode_statutory_retention_years",
+    "thirdcode_backup_owner", "thirdcode_restore_owner",
+}
+
+
 class ResCompany(models.Model):
     _inherit = "res.company"
 
@@ -113,6 +127,29 @@ class ResCompany(models.Model):
         "thirdcode.bank.reconciliation", "company_id"
     )
 
+    def write(self, values):
+        # Preserve native operator authority. The additional business-role ACL
+        # below grants only these accounting controls, never company management.
+        if not self.env.su and not self.env.user.has_group("base.group_erp_manager"):
+            if (
+                not self.env.user.has_group("thirdcode_accounting.group_thirdcode_administrator")
+                or set(values) - _ACCOUNTING_CONTROL_FIELDS
+                or set(self.ids) - set(self.env.companies.ids)
+                or self.sudo().filtered("thirdcode_is_platform")
+            ):
+                raise AccessError(_("Only a company Administrator may edit its accounting controls. Company and platform management require a system operator."))
+            if values.get("thirdcode_retained_earnings_account_id"):
+                account = self.env["account.account"].browse(values["thirdcode_retained_earnings_account_id"])
+                account.check_access("read")
+                if account.account_type != "equity" or any(company not in account.company_ids for company in self):
+                    raise UserError(_("Select an equity account belonging to this company."))
+            if values.get("thirdcode_year_end_journal_id"):
+                journal = self.env["account.journal"].browse(values["thirdcode_year_end_journal_id"])
+                journal.check_access("read")
+                if journal.type != "general" or any(company != journal.company_id for company in self):
+                    raise UserError(_("Select a general journal belonging to this company."))
+        return super().write(values)
+
     @api.constrains("thirdcode_bir_ack_approved", "thirdcode_bir_ack_control_number")
     def _check_bir_control_number(self):
         for company in self:
@@ -122,6 +159,17 @@ class ResCompany(models.Model):
                         "A BIR acknowledgement control number is required before marking the certificate approved."
                     )
                 )
+
+    @api.constrains(
+        "thirdcode_payment_approval_enabled", "thirdcode_payment_approval_threshold",
+        "thirdcode_statutory_retention_years",
+    )
+    def _check_accounting_control_values(self):
+        for company in self:
+            if company.thirdcode_payment_approval_enabled and company.thirdcode_payment_approval_threshold <= 0:
+                raise UserError(_("Payment approval requires a positive threshold."))
+            if company.thirdcode_statutory_retention_years <= 0:
+                raise UserError(_("Statutory retention years must be positive."))
 
     thirdcode_period_revision = fields.Integer(default=0, readonly=True, copy=False)
 
@@ -183,11 +231,6 @@ class ResCompany(models.Model):
             raise AccessError(
                 _("Only an Accountant or Administrator may validate company accounting configuration.")
             )
-        for company in self:
-            if company.thirdcode_bir_ack_approved and not company.thirdcode_bir_ack_control_number:
-                raise UserError(_("Configure the approved BIR acknowledgement control number first."))
-            if company.thirdcode_payment_approval_enabled and company.thirdcode_payment_approval_threshold <= 0:
-                raise UserError(_("Payment approval requires a positive threshold."))
-            if company.thirdcode_statutory_retention_years <= 0:
-                raise UserError(_("Statutory retention years must be positive."))
+        self._check_bir_control_number()
+        self._check_accounting_control_values()
         return True
