@@ -67,10 +67,82 @@ Its next scheduled run is `2026-10-12T09:13Z` (17:13 Singapore time).
 The historical failure counter remains seven until a successful live scheduler
 run; it was not manually reset to manufacture a passing status.
 
-Operational acceptance remains separate: unattended off-site backup delivery and
-failure alerts need an approved destination and operator recipient. Trial status
-remains visible; client identity, taxes, reports and real-books acceptance are
-not inferred from this deployment.
+### Encrypted recovery automation follow-up
+
+The user selected the recommended backup/alert setup. Operations source
+`17dbd43c48b2a96d20d5cf883d6caa0b5889bfac` is deployed on Railway as
+`df35e1b3-1990-4862-ab47-1b90df2d1e38`, using the externally verified image
+`sha256:3fb51a5aee4556c9b54a696f4dc0d823119edba431e46b75aa0b5b82bbff9e26`.
+All 164 addon/runtime files match. Activation reused the verified image; addon
+and database schema remain `18.0.2.15.5`. Portal source remains `f8c23ef` because
+this follow-up changes only engine operations and independent packaging.
+
+- **PASSED — build and regression:** production Docker image builds; 17 backup
+  automation tests, nine launcher tests and 20 capture tests pass. Two optional
+  database fixture checks were skipped; actual production-copy restore is a
+  separate gate. The isolated backup SDK audit reported zero vulnerabilities.
+  Windows direct execution of Linux-only tests is unsupported; tests passed in
+  the Linux production image. Build verification caught and fixed the excluded
+  capture script; executable adapter line endings are pinned to LF.
+- **PASSED — initial encrypted delivery:** dedicated private Railway bucket,
+  installation-scoped 30-day retention, public certificate only on the engine.
+  Run `66ae52fd-43cf-42b4-aeeb-863049885206` completed at
+  `2026-10-12T06:16:53Z`. Its 71,076,426-byte remote object was independently
+  downloaded and matched SHA-256
+  `4c596dd18990e8b389aece2558d5fcc3816ff7e7e7833440b6aedbfcf8e988e2`.
+  All ten live table fingerprints match before/after capture. No plaintext
+  staging directory remains. Daily scheduler is running; next capture is
+  `2026-10-12T19:00Z` (13 October, 03:00 Singapore).
+- **PASSED — delivered-bundle recovery:** decrypted the actual downloaded S3
+  object and verified all 516 manifest entries. Isolated PostgreSQL 18.6 restore
+  took 54.062 seconds; all ten tables matched the capture-time source and all
+  513 physical filestore members matched. Native `18.0.2.15.5` loaded under the
+  restricted application role. Rollback-only permission checks allowed scoped
+  Administrator controls and denied identity, currency, lifecycle, lower-role
+  and foreign-company writes. Seven financial tables, 1,811 audits and 32,076
+  audit details remained intact. Rehearsal used the retained same-source local
+  image below, not an unavailable pull URL for Railway's OCI image.
+  Clone containers, private network and anonymous volume were removed and
+  checked absent. Automatic approval review blocked private temporary-folder
+  deletion with `blocked by policy`; decrypted rehearsal material remains in
+  protected `tcsi-auto-restore-20261012-141307` outside Git. No retry or bypass
+  was attempted. The temporary release SSH key was revoked and its local
+  copies removed; the separate backup decryption key remains protected.
+- **PASSED — actual failure notification:** separate monitor execution
+  `1c4adc79-57d3-47ed-b936-7410110e77a0` failed against the empty bucket.
+  Railway recorded the matching project/service/environment notification and
+  both EMAIL and INAPP deliveries as SENT. This proves provider delivery status,
+  not that the operator opened the message. Early schedule polls were
+  insufficient evidence of execution or scheduler failure.
+- **PASSED — unattended monitor:** during the temporary five-minute schedule,
+  execution `3e31c790-ee2c-473e-8276-5001be226cb5` was automatically created at
+  `06:20:48Z`, before the operator redeploy request, and exited successfully at
+  `06:20:55Z`. Provider dispatch lag explains the earlier missing-run observation;
+  a schedule/manifest defect was not established by that observation.
+  Final monitor deployment `424eb993-0c63-473d-9735-6dd1c8659762` reports SUCCESS;
+  applied manifest and service instance both use `15 * * * *`, next run 07:15Z.
+  The controlled-failure notification automatically resolved; its delivery
+  history remains available. Temporary five-minute configuration was removed.
+- **PASSED — independent local runtime:** same-source image
+  `sha256:6f7ca833f3fe9a9252d015e5b3a82c4c4322c9e32d41f8071239ca84218b66e7`
+  runs healthy with automatic backup disabled by default. Existing volumes,
+  credentials and all ten pre/post table fingerprints are preserved. A private
+  source archive and local image archive are retained; this local image has
+  different OCI bytes from Railway and is not represented as its registry image.
+- **PASSED — release protection:** Railway engine Git auto-deploy is disabled
+  and verified false. Its older `main` trigger was removed by Railway's disable
+  operation; repository linkage remains. No rebuild or deployment occurred.
+  This prevents an unrelated main push from replacing the verified CLI release.
+  Vercel automatic custom-domain assignment remains disabled; the public portal
+  still returns the verified `f8c23ef` revision. Future production changes require
+  explicit verified deployment/promotion and updated backup source/image values.
+
+Single-owner operation and same-provider monitoring remain explicit limits:
+Kurt Gavin is the verified operator and recovery contact, without a separate
+deputy. The bucket is outside the live volumes but shares Railway's account and
+provider; complete provider/control-plane loss needs independent monitoring.
+Trial status remains visible; client identity, taxes, reports and real-books
+acceptance are not inferred from this demonstration deployment.
 
 ## 11–12 October 2026 independent TCSI demonstration candidate
 
