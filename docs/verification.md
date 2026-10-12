@@ -1,5 +1,52 @@
 # Full local verification
 
+## 11–12 October 2026 independent TCSI demonstration candidate
+
+Scope: one independent TCSI demonstration, followed by fresh installations in
+future clients' own hosting accounts. No shared SaaS release or five-company
+deployment is claimed. Candidate `18.0.2.15.5` builds on audit fixes at `f164225`
+in an isolated worktree. No commit, push or public deployment was performed by
+this verification run; the existing hosted JFC environment is separate.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Web/contracts/worker regression | **PASSED** | 93 tests: 83 web, four contracts, six worker. |
+| Lint, types, production builds | **PASSED** | Configured ESLint paths `apps packages scripts`, workspace typechecks, Next.js and worker builds. |
+| Native presentation harness | **PASSED** | 67 branding, assistant, app catalog, design-token, platform-console and settings tests. |
+| Package and portable checks | **PASSED** | 67 addon resources; readiness four, saved-demo two, benchmark 14 and Python branding seven tests. |
+| Optional portal intake trust boundary | **PASSED** | 11 migration chain applied to disposable PostgreSQL 17; anonymous direct writes denied, secret-checked RPC and real concurrent client/global limits verified. Eleven route tests cover server credentials, trusted ingress identity, limits and truthful failures. No live portal migration is claimed. |
+| Production npm dependencies | **PASSED** | Production-only audit found zero vulnerabilities. |
+| Development npm dependencies | **KNOWN FAILURE** | Strict full audit still reports GHSA-vfj7-8cjw-p6xm in the ESLint-only braces chain. Seven regression tests verify the CI exception is limited to that exact high-severity advisory and dependency graph; unknown or escalated findings fail. This warning is not described as a repaired vulnerability. The independent Odoo runtime does not include Node tooling. |
+| Independent deployment package | **PASSED** | Seven isolation/role-initialization checks, including real PostgreSQL password rotation and privilege reconvergence; two later static regressions cover blank required secrets and recovery guards. Dedicated restricted database role, loopback-only Odoo, private database, separate volumes and pinned runtime image. |
+| Demo installation, upgrade and restart | **PASSED** | Fresh installation loaded 63 modules. The final demo runs addon `18.0.2.15.5` with two workers. PostgreSQL completed crash recovery after the workstation restart; invoice total/residual remained PHP1,000/PHP750 and bill total/residual PHP400/PHP300. |
+| Accounting workflow and PDF acceptance | **PASSED** | Actual company Accountant posted invoice/bill and partial payments; all corresponding moves balance. Readonly writes/posting and Encoder posting/posted edits were denied. Native invoice and P&L PDFs contain correct identity, totals and trial marking; posted income PHP1,000 less expenses PHP400 gives PHP600. |
+| Company controls browser journey | **PASSED** | Company Administrator can open, save and reload allowed controls; company identity and currency remain protected. The persisted action keeps the restricted form after refresh. Native mobile actions expose validation through the action menu; settled 390px layout has no page overflow. Earlier invoice checks passed at desktop and 390px, including first native table-cell bounds. |
+| Full native addon regression | **PASSED** | Final fresh PostgreSQL 16 run: 212 post-install tests, zero failures/errors, exit 0, 311.13 seconds. Restricted application role; no published ports. Includes all nine company-controls tests. Earlier harness-only errors were corrected before this complete rerun. Logs, result and source fingerprint are retained outside Git under `tcsi-native-final-green-20261012-131030`; final addon source SHA-256 `e953ac58da10ef93a049a1bd2f4ab1b995edce92450b7fc74fdeeaa1926a6d31`. |
+| Coordinated backup and isolated restore | **PASSED** | Executed the documented Linux recipes against the final image. Paired backup `independentsmokea-20261012T051137Z` restored into a fresh isolated project with HTTP/cron disabled. Seven accounting tables matched exactly: 51 accounts, seven journals, four moves, eight lines, two payments, two partial reconciliations and zero full reconciliations. All 540 stored-attachment rows and all 435 unique physical files matched. Native ORM loaded addon `18.0.2.15.5`. Original demo database/filestore volumes retained and source restarted healthy. Private comparison evidence: `runbook-recovery-comparison.json`. |
+
+Final running and recovered application image:
+`sha256:bf0c3e9e4269697deedb5811d4243a4c662a273eb06b82c027a29cb7175bf14b`.
+The dashboard still showed PHP750 receivables, PHP300 payables and PHP600 net
+result after image replacement; `/tcsi/setup` returned 404. Independent source
+review found no actionable authorization/data-integrity issue in the changed
+setup, company-controls and optional intake paths.
+
+An earlier interrupted restore was not counted as success. Its prior image
+subsequently became unavailable, and the runbook correctly refused to substitute
+another image. A fresh final-image backup and complete restore produced the
+passing evidence above. Retain the exact application image with client backups.
+Disposable native-test and restore containers, networks, volumes and temporary
+credentials were removed after verification. The final backup hashes were
+rechecked successfully; the independent demo remained healthy with HTTP 200.
+Automatic approval review blocked deletion of the older interrupted
+`.20261011T155334Z-522284bc.partial` directory with the reason `blocked by policy`;
+it remains outside Git and is not a verified backup.
+
+Future real-books acceptance still requires each client's approved identity,
+chart/tax decisions, report samples, migration reconciliation, named users,
+hosting security, backup schedule and recovery sign-off. Trial outputs retain
+their visible marking; no statutory approval was fabricated for this demo.
+
 ## 28 September 2026 isolated pilot checks
 
 These checks used the `ThirdCode-Accounting-pilot-release` checkout and synthetic
@@ -310,6 +357,10 @@ from this workspace.
 - Hosted HTTP tests exposed Odoo18's `UpgradeRequired.get_headers` signature incompatibility with its installed Werkzeug. The WSGI error path now preserves426/body/`Sec-WebSocket-Version` directly; native and real-hosted regression gates retain assertions for this behavior. Final CI/deployment results remain pending.
 
 ## QA audit remediation — 11 October 2026 (local only)
+
+Historical baseline evidence. The independent TCSI demonstration section at
+the top records subsequent G01 completion, the narrower F11 CI exception, and
+the current candidate's verification results.
 
 The 10 October audit was against main `9e116d2bb988`. This working tree upgrades
 the addon to `18.0.2.15.1`; no commit, push, hosted migration or deployment was

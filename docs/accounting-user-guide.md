@@ -117,11 +117,17 @@ values merely to make a check pass.
    and withholding taxes, enter the effective date and accountant owner, and
    select **Configure** only after reviewing the basis. The software does not
    choose tax rates for the business.
-5. In the company form's **Third Code Accounting** tab, record the assessed BIR
+5. As Administrator, select the company, then open **TCSI Accounting → Controls → Company controls**. Record the assessed BIR
    acknowledgement/control number, EIS classification, signatory, numbering
    owner, retention setting, and backup/restore owners. Use **Validate
    configuration** to surface missing fields. Official invoice/receipt output
    remains guarded until required company approvals exist.
+   The company Administrator can edit these business controls only for an
+   assigned, selected company. Company identity, trial mode and platform
+   lifecycle remain system-operator tasks. Accountant, Encoder and Read-only
+   roles cannot edit company controls. Payment approval needs a positive
+   threshold when enabled; retention must be positive. Year-end settings accept
+   only that company's equity account and general journal.
 6. In **TCSI Accounting → Controls → Report samples**, attach the approved
    statement, financial, invoice, receipt, and reconciliation samples with
    revisions. The Administrator uses **Approve sample** after the actual

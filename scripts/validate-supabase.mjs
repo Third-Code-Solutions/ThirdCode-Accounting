@@ -30,6 +30,8 @@ const selfProvisioningMigrationPath = await findMigration("_disable_unreleased_w
 const selfProvisioningSql = await readFile(selfProvisioningMigrationPath, "utf8");
 const intakeMigrationPath = await findMigration("_harden_demo_request_intake.sql");
 const intakeSql = await readFile(intakeMigrationPath, "utf8");
+const trustedIntakeMigrationPath = await findMigration("_require_trusted_demo_intake.sql");
+const trustedIntakeSql = await readFile(trustedIntakeMigrationPath, "utf8");
 const jobClaimsMigrationPath = await findMigration("_scope_job_run_claims_by_workspace.sql");
 const jobClaimsSql = await readFile(jobClaimsMigrationPath, "utf8");
 const receivablesMigrationPath = await findMigration("_add_workspace_receivables_summary.sql");
@@ -86,6 +88,11 @@ const hardeningChecks = {
     intakeSql.includes("create trigger demo_requests_enforce_intake") &&
     intakeSql.includes("pg_advisory_xact_lock") &&
     intakeSql.includes("Demo request rate limit exceeded"),
+  trustedIntakeOnly:
+    trustedIntakeSql.includes("revoke insert on public.demo_requests from anon, authenticated") &&
+    trustedIntakeSql.includes("drop policy demo_requests_insert_public") &&
+    trustedIntakeSql.includes("Intake authentication required") &&
+    trustedIntakeSql.includes("global_count >= 100 or client_count >= 5"),
   tenantScopedJobClaims:
     jobClaimsSql.includes("unique nulls not distinct (workspace_id, job_name, run_key)"),
   receivablesSummary:

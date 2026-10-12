@@ -1,7 +1,343 @@
 # TCSI platform deployment
 
-> Current scope amendment (5 October 2026): the approved target is Vercel portal/proxy, Railway Odoo Community/PostgreSQL and persistent filestore, preserving Supabase responsibilities. On-premise/client-owned-server/LAN-only mismatch findings are withdrawn. Historical local claims below are not refreshed production evidence. Use [the refreshed traceability and release record](prd-alignment-2026-10-05/REPORT.md) and [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md). Product readiness for white-label turnover is distinct from each future client's accounting configuration and acceptance.
+## Independent TCSI demonstration and future client copies
 
+Current scope (11 October 2026): prepare one independent TCSI demonstration
+system. After a sale, deploy a fresh copy into that client's hosting account.
+Five companies in the shared pilot are not five independent installations.
+White-label SaaS, shared customer hosting, subscriptions and the optional Node
+worker are outside this delivery. The earlier hosted pilot below remains a
+separate environment; do not convert or copy its customer books into a demo.
+
+`docker-compose.independent.yml` runs one Odoo engine and one PostgreSQL server
+per installation. Each Compose project owns separate database/filestore volumes
+and its own network. The database has no published port; the engine binds only
+to loopback for an operator-managed TLS reverse proxy. No Next.js portal,
+Supabase project or Node worker is required for native `/workspace` accounting.
+The existing system-owner console remains an operator tool, not a customer SaaS
+signup flow. Demonstrate the business workspace with a company-role account.
+
+1. Build `docker/odoo/Dockerfile` from the verified source revision. A local
+   rehearsal may set `TCSI_ODOO_IMAGE` to Docker's immutable `sha256:<image-id>`.
+   For turnover, publish the image and use
+   `registry.example/accounting@sha256:<manifest-digest>`. Mutable tags are for
+   development only. Retain the application image identity with the release;
+   the base Odoo image digest is not the accounting application's identity.
+   Keep that exact image available in the client's registry or an offline
+   `docker image save` archive for the entire backup-retention period. Recording
+   a digest alone cannot restore an image that has been removed. The restore
+   procedure deliberately refuses a different image.
+   The launcher refuses databases with an addon version newer than the image.
+   Before upgrading an older hosted installation, install this startup guard
+   in its current release first. That guarded release becomes the immediate
+   fallback: it fails closed after a schema upgrade instead of serving older
+   authorization code against newer permissions. Do not select older unguarded
+   images for rollback. Prefer forward repair after customer writes resume.
+2. Copy `config/independent.env.example` to protected storage outside Git. Set
+   a unique project name, database name, loopback port and distinct random
+   passwords (at least 24 characters). Set `TCSI_ODOO_IMAGE` to the built image
+   digest. Use separate credentials for PostgreSQL administration, Odoo's
+   restricted database role, initial system-owner login and database manager.
+3. Start with `docker compose --env-file /private/tcsi.env -f
+   docker-compose.independent.yml up -d`. The database initialization service
+   creates the restricted application role before Odoo starts. Preserve both
+   volumes across updates. Never run `down --volumes` against retained books.
+4. Configure the external TLS proxy for the engine and WebSocket upgrades; it
+   must replace untrusted forwarded host, scheme and client-address headers.
+   Set Odoo's `web.base.url` to the approved HTTPS URL and
+   `web.base.url.freeze=True`. Keep the database and internal worker ports private.
+5. Using the operator account, provision only the intended demonstration company
+   and named business-role users. Use trial mode for synthetic demonstrations;
+   retain the visible TRIAL COPY marking. Do not invent statutory approvals.
+   Run `check_company_readiness.py` as its company Administrator with
+   `--expected-companies 1 --trial` and explicit expected country/currency.
+6. Before sharing the demonstration, verify login, role denials, invoice/bill
+   posting, receipts/payments, reversals, reports, recurrence and restart
+   persistence against that installation. Rehearse a coordinated database plus
+   filestore restore into an isolated target. Public hosting additionally needs
+   TLS, verified backups, failure alerts and a named operator.
+
+For a client sale, clone the verified application configuration and image, not
+the TCSI demo database, filestore, session cookies or credentials. Start with
+empty volumes in the client's account. Repeat identity/chart/tax/role setup,
+approved migration and report acceptance, backup delivery and recovery tests.
+Use the company preflight without `--trial` before real books. A demo pass does
+not establish client accounting acceptance, a parallel month or statutory approval.
+
+### Coordinated independent backup and isolated restore
+
+Run this from the repository root on the Linux Docker host. It stops only the
+selected installation's Odoo writer, always attempts to restart it through the
+`EXIT` trap, captures a PostgreSQL custom archive and matching filestore, and
+records deterministic accounting and physical-attachment evidence. Keep the
+private env file and backup root outside Git.
+
+```bash
+set -Eeuo pipefail
+umask 077
+
+SOURCE_ENV=/private/tcsi.env
+BACKUP_ROOT=/private/tcsi-backups
+source_compose=(docker compose --env-file "$SOURCE_ENV" -f docker-compose.independent.yml)
+
+SOURCE_CONFIG="$("${source_compose[@]}" config --format json)"
+SOURCE_PROJECT="$(printf '%s' "$SOURCE_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')"
+SOURCE_DB="$(printf '%s' "$SOURCE_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["odoo"]["environment"]["PGDATABASE"])')"
+SOURCE_APP_ROLE="$(printf '%s' "$SOURCE_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["odoo"]["environment"]["PGUSER"])')"
+SOURCE_IMAGE="$(printf '%s' "$SOURCE_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["odoo"]["image"])')"
+SOURCE_PG_IMAGE="$(printf '%s' "$SOURCE_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["db"]["image"])')"
+unset SOURCE_CONFIG
+
+case "$SOURCE_DB" in ''|*[!a-zA-Z0-9_]*) echo 'Unsafe database name' >&2; exit 64;; esac
+SOURCE_ODOO_CONTAINER="$("${source_compose[@]}" ps -q odoo)"
+test -n "$SOURCE_ODOO_CONTAINER"
+CONFIG_IMAGE_ID="$(docker image inspect --format '{{.Id}}' "$SOURCE_IMAGE")"
+LIVE_IMAGE_ID="$(docker inspect --format '{{.Image}}' "$SOURCE_ODOO_CONTAINER")"
+if [ "$CONFIG_IMAGE_ID" != "$LIVE_IMAGE_ID" ]; then
+  echo 'Refusing backup: configured Odoo image differs from running container image' >&2
+  exit 65
+fi
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+partial="$BACKUP_ROOT/${SOURCE_PROJECT}-${stamp}.partial"
+final="$BACKUP_ROOT/${SOURCE_PROJECT}-${stamp}"
+mkdir -p "$BACKUP_ROOT"
+test ! -e "$final"
+mkdir "$partial"
+
+cat > "$partial/accounting-fingerprint.sql" <<'SQL'
+\set ON_ERROR_STOP on
+SET ROLE :"app_role";
+SELECT jsonb_build_object('type','addon','state',state,'version',latest_version)::text
+  FROM ir_module_module WHERE name = 'thirdcode_accounting';
+SELECT jsonb_build_object('type','move','id',id,'company',company_id,'name',name,
+                          'move_type',move_type,'state',state,'total',amount_total,
+                          'residual',amount_residual)::text
+  FROM account_move WHERE state = 'posted' ORDER BY id;
+SELECT jsonb_build_object('type','balance','company',m.company_id,'account',l.account_id,
+                          'lines',count(*),'debit',coalesce(sum(l.debit),0),
+                          'credit',coalesce(sum(l.credit),0),'balance',coalesce(sum(l.balance),0))::text
+  FROM account_move_line l JOIN account_move m ON m.id = l.move_id
+ WHERE m.state = 'posted' GROUP BY m.company_id,l.account_id ORDER BY m.company_id,l.account_id;
+SQL
+cat > "$partial/attachment-inventory.sql" <<'SQL'
+\set ON_ERROR_STOP on
+SET ROLE :"app_role";
+SELECT store_fname,checksum FROM ir_attachment
+ WHERE store_fname IS NOT NULL ORDER BY store_fname,checksum;
+SQL
+
+source_stopped=0
+restart_source() {
+  if [ "$source_stopped" -eq 1 ]; then
+    "${source_compose[@]}" start odoo >/dev/null || echo 'CRITICAL: restart Odoo manually' >&2
+  fi
+}
+trap restart_source EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+source_stopped=1
+"${source_compose[@]}" stop odoo
+
+"${source_compose[@]}" exec -T db sh -ceu \
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_dump --format=custom --no-owner --no-acl --username="$POSTGRES_USER" --dbname="$1"' \
+  sh "$SOURCE_DB" > "$partial/database.dump"
+"${source_compose[@]}" run --rm --no-deps --entrypoint sh odoo -ceu \
+  'test -d "/var/lib/odoo/filestore/$1"; exec tar -C /var/lib/odoo/filestore -czf - -- "$1"' \
+  sh "$SOURCE_DB" > "$partial/filestore.tar.gz"
+
+"${source_compose[@]}" exec -T db sh -ceu \
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -qAt --username="$POSTGRES_USER" --dbname="$2" --set=app_role="$1"' \
+  sh "$SOURCE_APP_ROLE" "$SOURCE_DB" < "$partial/accounting-fingerprint.sql" \
+  > "$partial/accounting-fingerprint.tsv"
+"${source_compose[@]}" exec -T db sh -ceu \
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -qAt -F "|" --username="$POSTGRES_USER" --dbname="$2" --set=app_role="$1"' \
+  sh "$SOURCE_APP_ROLE" "$SOURCE_DB" < "$partial/attachment-inventory.sql" \
+  > "$partial/attachment-inventory.tsv"
+"${source_compose[@]}" run -T --rm --no-deps --entrypoint sh odoo -ceu '
+  while IFS="|" read -r name expected; do
+    case "$name" in ""|/*|*..*) exit 65;; esac
+    file="/var/lib/odoo/filestore/$1/$name"
+    test -f "$file"
+    actual="$(sha1sum "$file" | cut -d " " -f 1)"
+    test "$actual" = "$expected"
+    printf "%s|%s\n" "$name" "$actual"
+  done' sh "$SOURCE_DB" < "$partial/attachment-inventory.tsv" \
+  > "$partial/attachment-files.tsv"
+
+printf '%s\n' "$SOURCE_DB" > "$partial/database-name.txt"
+printf '%s\n' "$SOURCE_IMAGE" > "$partial/image-reference.txt"
+printf '%s\n' "$LIVE_IMAGE_ID" > "$partial/image-id.txt"
+printf '%s\n' "$SOURCE_PG_IMAGE" > "$partial/postgres-image.txt"
+(cd "$partial" && find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' \
+  | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+"${source_compose[@]}" start odoo
+source_stopped=0
+trap - EXIT INT TERM
+mv "$partial" "$final"
+printf 'Backup ready: %s\n' "$final"
+```
+
+Copy the completed directory to protected off-host storage using the operator's
+approved encryption and retention controls. Never treat a `.partial` directory
+as a backup. Test recovery with another private env file whose project name,
+credentials and loopback port are unique. Keep `PGDATABASE` equal to the captured
+name so the restored filestore path matches. The following refuses any existing
+target containers, volumes or network, verifies the archive first, requires the
+same application image and PostgreSQL image, and starts only PostgreSQL:
+
+```bash
+set -Eeuo pipefail
+umask 077
+
+BACKUP_DIR=/private/tcsi-backups/company-accounting-YYYYMMDDTHHMMSSZ
+TARGET_ENV=/private/tcsi-restore.env
+target_compose=(docker compose --env-file "$TARGET_ENV" -f docker-compose.independent.yml)
+(cd "$BACKUP_DIR" && sha256sum -c SHA256SUMS)
+
+TARGET_CONFIG="$("${target_compose[@]}" config --format json)"
+TARGET_PROJECT="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')"
+TARGET_DB="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["odoo"]["environment"]["PGDATABASE"])')"
+TARGET_APP_ROLE="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["odoo"]["environment"]["PGUSER"])')"
+TARGET_IMAGE="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["odoo"]["image"])')"
+TARGET_PG_IMAGE="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["db"]["image"])')"
+TARGET_DB_VOLUME="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["volumes"]["db-data"]["name"])')"
+TARGET_ODOO_VOLUME="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["volumes"]["odoo-data"]["name"])')"
+TARGET_NETWORK="$(printf '%s' "$TARGET_CONFIG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["networks"]["backend"]["name"])')"
+unset TARGET_CONFIG
+
+test "$TARGET_DB" = "$(cat "$BACKUP_DIR/database-name.txt")"
+test "$TARGET_PG_IMAGE" = "$(cat "$BACKUP_DIR/postgres-image.txt")"
+test "$(docker image inspect --format '{{.Id}}' "$TARGET_IMAGE")" = "$(cat "$BACKUP_DIR/image-id.txt")"
+test -z "$("${target_compose[@]}" ps -aq)"
+for volume in "$TARGET_DB_VOLUME" "$TARGET_ODOO_VOLUME"; do
+  if docker volume inspect "$volume" >/dev/null 2>&1; then
+    echo "Refusing pre-existing restore volume: $volume" >&2
+    exit 65
+  fi
+done
+if docker network inspect "$TARGET_NETWORK" >/dev/null 2>&1; then
+  echo "Refusing pre-existing restore network: $TARGET_NETWORK" >&2
+  exit 65
+fi
+
+target_created=1
+restore_verified=0
+RESTORE_WORK="$(mktemp -d)"
+cleanup_failed_restore() {
+  if [ "$target_created" -eq 1 ] && [ "$restore_verified" -eq 0 ]; then
+    "${target_compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  fi
+  rm -rf -- "$RESTORE_WORK"
+}
+trap cleanup_failed_restore EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+"${target_compose[@]}" up -d --wait db
+"${target_compose[@]}" run --rm --no-deps db-init
+"${target_compose[@]}" exec -T db sh -ceu \
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec pg_restore --exit-on-error --single-transaction --no-owner --no-acl --role="$1" --username="$POSTGRES_USER" --dbname="$2"' \
+  sh "$TARGET_APP_ROLE" "$TARGET_DB" < "$BACKUP_DIR/database.dump"
+"${target_compose[@]}" run -T --rm --no-deps --entrypoint sh odoo -ceu \
+  'test ! -e "/var/lib/odoo/filestore/$1"; mkdir -p /var/lib/odoo/filestore; exec tar -C /var/lib/odoo/filestore -xzf -' \
+  sh "$TARGET_DB" < "$BACKUP_DIR/filestore.tar.gz"
+
+"${target_compose[@]}" exec -T db sh -ceu \
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -qAt --username="$POSTGRES_USER" --dbname="$2" --set=app_role="$1"' \
+  sh "$TARGET_APP_ROLE" "$TARGET_DB" < "$BACKUP_DIR/accounting-fingerprint.sql" \
+  > "$RESTORE_WORK/accounting-fingerprint.tsv"
+"${target_compose[@]}" exec -T db sh -ceu \
+  'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -qAt -F "|" --username="$POSTGRES_USER" --dbname="$2" --set=app_role="$1"' \
+  sh "$TARGET_APP_ROLE" "$TARGET_DB" < "$BACKUP_DIR/attachment-inventory.sql" \
+  > "$RESTORE_WORK/attachment-inventory.tsv"
+"${target_compose[@]}" run -T --rm --no-deps --entrypoint sh odoo -ceu '
+  while IFS="|" read -r name expected; do
+    case "$name" in ""|/*|*..*) exit 65;; esac
+    file="/var/lib/odoo/filestore/$1/$name"
+    test -f "$file"
+    actual="$(sha1sum "$file" | cut -d " " -f 1)"
+    test "$actual" = "$expected"
+    printf "%s|%s\n" "$name" "$actual"
+  done' sh "$TARGET_DB" < "$RESTORE_WORK/attachment-inventory.tsv" \
+  > "$RESTORE_WORK/attachment-files.tsv"
+
+cmp "$BACKUP_DIR/accounting-fingerprint.tsv" "$RESTORE_WORK/accounting-fingerprint.tsv"
+cmp "$BACKUP_DIR/attachment-inventory.tsv" "$RESTORE_WORK/attachment-inventory.tsv"
+cmp "$BACKUP_DIR/attachment-files.tsv" "$RESTORE_WORK/attachment-files.tsv"
+
+"${target_compose[@]}" run -T --rm --no-deps --entrypoint sh odoo -ceu '
+  exec odoo shell --no-http --max-cron-threads=0 \
+    --db_host="$PGHOST" --db_port="$PGPORT" --db_user="$PGUSER" \
+    --db_password="$PGPASSWORD" -d "$PGDATABASE" \
+    --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons' <<'PY'
+import json
+module = env['ir.module.module'].search([('name', '=', 'thirdcode_accounting')], limit=1)
+assert module.state == 'installed'
+result = {
+    'addon_version': module.latest_version,
+    'companies': env['res.company'].search_count([]),
+    'posted_moves': env['account.move'].search_count([('state', '=', 'posted')]),
+    'payments': env['account.payment'].search_count([]),
+}
+print(json.dumps(result, sort_keys=True))
+PY
+
+restore_verified=1
+trap - EXIT INT TERM
+rm -rf -- "$RESTORE_WORK"
+printf 'Verified isolated target: project=%s database=%s\n' "$TARGET_PROJECT" "$TARGET_DB"
+```
+
+The source project and its volumes are never removed. The target Odoo service
+remains stopped throughout verification, so HTTP, cron and queued mail do not
+run. Review the exact move and per-account/company balance comparison plus every
+attachment's database checksum and physical SHA-1 before acceptance. After
+sign-off, either keep the isolated target for controlled recovery work or remove
+only that target with `"${target_compose[@]}" down --volumes --remove-orphans`.
+The legacy local `backup.ps1`/`restore.ps1` defaults are not an independent
+recovery procedure. Schedule encrypted off-host copies, retention, failure
+alerts, named operators and tested RPO/RTO before client production use.
+
+The privileged `/tcsi/setup` endpoint is disabled in this package. Other
+operator-controlled deployments may explicitly supply a per-installation
+`TCSI_SETUP_TOKEN_SHA256` (64 lowercase hex characters) through their private
+runtime environment. Never reuse the old repository-wide setup credential.
+Remove the environment value and restart after provisioning. Existing owner
+console provisioning remains available without enabling the anonymous endpoint.
+
+> Historical hosted-pilot note (5 October 2026): the existing pilot uses Vercel,
+> Railway and Supabase. It is separate from the independent TCSI demonstration
+> and is not the target for future client-owned copies. Hosted sections below are
+> retained as operator history, not independent-installation instructions. See
+> [the historical release record](prd-alignment-2026-10-05/REPORT.md) and
+> [hosted recovery procedure](prd-alignment-2026-10-05/HOSTED-OPERATIONS.md).
+
+
+## Optional marketing contact intake
+
+The independent Odoo package has no Supabase dependency. If retaining the
+separate Next.js marketing portal, apply the full Supabase migration chain,
+including `20261011151215_require_trusted_demo_intake.sql`, before deploying
+the matching contact API. Direct anonymous/authenticated table inserts are
+revoked. The API uses a narrow intake RPC, not a service-role credential.
+
+Generate a dedicated random 32-byte token encoded as 64 lowercase hex
+characters. Set it privately as `TCSI_DEMO_INTAKE_SECRET` on the web server;
+insert the SHA-256 digest of that exact UTF-8 string into the singleton row of
+`private.demo_intake_config` through the database administrator. Never commit
+the secret or put it in a `NEXT_PUBLIC_` variable. Missing/mismatched
+configuration returns an honest 503 and stores no lead. Rotate the private
+digest and runtime secret together; delete the row to disable intake.
+
+Database limits are three submissions per normalized email, five per trusted
+client identity and 100 globally per hour, including concurrent requests.
+On Vercel the server trusts only the provider-overwritten
+`x-vercel-forwarded-for` header; elsewhere all requests share the bounded unknown
+client bucket until a trusted ingress integration is implemented. Generic
+forwarded headers cannot choose a new bucket. Verify one real form submission,
+direct-write denial and rate-limit recovery after portal deployment. This
+configuration is not needed for an accounting-only client installation.
 
 ## Customer app launcher
 
@@ -91,7 +427,7 @@ Startup upgrades the custom module when its manifest version exceeds the
 installed version. Take paired database and filestore snapshots before rollout;
 verify startup upgrade, login, accounting access, and health routes afterward.
 
-## Hosted pilot (approved deployment architecture)
+## Existing hosted pilot (separate historical architecture)
 
 The customer pilot uses the existing TCSI-branded accounting engine. The new
 portal is deployed separately; it is not the replacement ledger.

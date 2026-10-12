@@ -18,14 +18,64 @@ through a cursor of their own - which is what the next request does in
 production.
 """
 
+import hashlib
+import io
 from unittest import mock
 
 from odoo import SUPERUSER_ID, Command, api, fields
 from odoo.exceptions import AccessDenied, AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.addons.thirdcode_accounting.controllers import setup
 
 THROTTLE_TABLE = "thirdcode_auth_throttle"
 IP_SCOPE = "login-ip"
+
+
+@tagged("post_install", "-at_install")
+class TestSetupCredentialIsolation(TransactionCase):
+    def test_setup_requires_installation_specific_credential(self):
+        token = "first-installation-operator-token"
+        digest = hashlib.sha256(token.encode()).hexdigest()
+        for configured in ("", "invalid", digest.upper(), digest + "\n"):
+            with mock.patch.dict(setup.os.environ, {"TCSI_SETUP_TOKEN_SHA256": configured}):
+                self.assertFalse(setup._token_authorized(token))
+        with mock.patch.dict(setup.os.environ, {"TCSI_SETUP_TOKEN_SHA256": digest}):
+            self.assertTrue(setup._token_authorized(token))
+            self.assertFalse(setup._token_authorized("second-installation-operator-token"))
+            self.assertFalse(setup._token_authorized(""))
+        with mock.patch.dict(setup.os.environ, {}, clear=True):
+            self.assertFalse(setup._token_authorized(token))
+        replacement = "replacement-installation-operator-token"
+        with mock.patch.dict(setup.os.environ, {
+            "TCSI_SETUP_TOKEN_SHA256": hashlib.sha256(replacement.encode()).hexdigest(),
+        }):
+            self.assertFalse(setup._token_authorized(token))
+            self.assertTrue(setup._token_authorized(replacement))
+
+    def test_disabled_setup_never_touches_privileged_service(self):
+        with mock.patch.dict(setup.os.environ, {}, clear=True), \
+                mock.patch.object(setup, "request", new=mock.MagicMock()) as request:
+            request.make_json_response.return_value = setup.http.Response()
+            setup.ThirdCodeSetupController().tcsi_setup()
+            request.make_json_response.assert_called_once_with(
+                {"ok": False, "error": "not found"}, status=404)
+            request.env.__getitem__.assert_not_called()
+
+    def test_setup_bounds_body_without_content_length(self):
+        with mock.patch.dict(setup.os.environ, {"TCSI_SETUP_TOKEN_SHA256": "a" * 64}), \
+                mock.patch.object(setup, "request", new=mock.MagicMock()) as request, \
+                mock.patch.object(setup, "_ip_allowed", return_value=True), \
+                mock.patch.object(setup, "_param_int", side_effect=lambda name, default: default):
+            request.make_json_response.return_value = setup.http.Response()
+            limiter = request.env.__getitem__.return_value.sudo.return_value
+            limiter._tcsi_blocked_seconds.return_value = 0
+            request.httprequest.content_length = None
+            request.httprequest.stream = io.BytesIO(b" " * (setup._MAX_BODY_BYTES + 20))
+            setup.ThirdCodeSetupController().tcsi_setup()
+            request.make_json_response.assert_called_once_with(
+                {"ok": False, "error": "payload too large"}, status=413)
+            self.assertEqual(request.httprequest.stream.tell(), setup._MAX_BODY_BYTES + 1)
+            request.env.__getitem__.assert_called_once_with("thirdcode.auth.throttle")
 
 
 @tagged("post_install", "-at_install")

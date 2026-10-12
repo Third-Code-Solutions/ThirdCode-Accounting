@@ -2,8 +2,8 @@
 
 Hardening applied after the production audit (finding M5):
 
-* the accepted token digests are a tuple, so a token can be rotated without a
-  code-change window (add the new digest, deploy, verify, then remove the old);
+* setup is disabled unless this installation's operator supplies a token digest
+  through ``TCSI_SETUP_TOKEN_SHA256``; no shared credential ships with the addon;
 * an optional IP allowlist (``tcsi.setup_allow_ips``) restricts the endpoint to
   known operator addresses;
 * a database-backed throttle blocks repeated unauthorised attempts - the stock
@@ -15,18 +15,14 @@ import hashlib
 import hmac
 import json
 import logging
+import os
+import re
 import traceback
 
 from odoo import SUPERUSER_ID, http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
-
-# SHA-256 digests of the operational setup tokens. The plaintext tokens are held
-# by the pilot operator (outside the repository) and are required for every call.
-_SETUP_TOKEN_SHA256S = (
-    "f07adcd6202f89bd091beb906bf552c57039bddfc095cf25323b4837ae69f3e6",
-)
 
 _SETUP_SCOPE = "setup-ip"
 _SETUP_ALLOW_IPS_PARAM = "tcsi.setup_allow_ips"
@@ -40,10 +36,11 @@ _DEFAULT_BLOCK_SECONDS = 900
 
 
 def _token_authorized(token):
-    if not token:
+    configured = os.environ.get("TCSI_SETUP_TOKEN_SHA256", "")
+    if not token or not re.fullmatch(r"[0-9a-f]{64}", configured):
         return False
     digest = hashlib.sha256(token.encode()).hexdigest()
-    return any(hmac.compare_digest(digest, known) for known in _SETUP_TOKEN_SHA256S)
+    return hmac.compare_digest(digest, configured)
 
 
 def _param(name, default):
@@ -92,6 +89,8 @@ class ThirdCodeSetupController(http.Controller):
         save_session=False,
     )
     def tcsi_setup(self, **kwargs):
+        if not re.fullmatch(r"[0-9a-f]{64}", os.environ.get("TCSI_SETUP_TOKEN_SHA256", "")):
+            return request.make_json_response({"ok": False, "error": "not found"}, status=404)
         remote_addr = request.httprequest.remote_addr or "unknown"
         limiter = request.env["thirdcode.auth.throttle"].sudo()
 
@@ -120,8 +119,11 @@ class ThirdCodeSetupController(http.Controller):
             return reject(401, "unauthorized")
         if (request.httprequest.content_length or 0) > _MAX_BODY_BYTES:
             return reject(413, "payload too large")
+        body = request.httprequest.stream.read(_MAX_BODY_BYTES + 1)
+        if len(body) > _MAX_BODY_BYTES:
+            return reject(413, "payload too large")
         try:
-            payload = json.loads(request.httprequest.get_data() or b"{}")
+            payload = json.loads(body or b"{}")
         except ValueError:
             return reject(400, "invalid json")
         if not isinstance(payload, dict):

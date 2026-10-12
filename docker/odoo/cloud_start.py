@@ -100,9 +100,11 @@ def main():
         manifest = ast.literal_eval(pathlib.Path("/opt/extra-addons/thirdcode_accounting/__manifest__.py").read_text())
         deployed_version = tuple(map(int, manifest["version"].split(".")))
         installed_version = tuple(map(int, (module[1] or "0").split(".")))
+        if installed_version > deployed_version:
+            raise RuntimeError("Database addon version is newer than this image; refusing unsafe downgrade")
         if installed_version < deployed_version:
             # Additive schema changes must finish before serving requests with new code.
-            # A failed upgrade prevents readiness; rollback keeps the previous schema.
+            # A failed upgrade prevents readiness; older images refuse newer databases.
             subprocess.run(base + ["-u", "thirdcode_accounting", "--without-demo=all", "--no-http", "--stop-after-init"], check=True)
     # Persist the first-admin marker in the database, so restarts and restores
     # never reset an existing administrator's credentials.

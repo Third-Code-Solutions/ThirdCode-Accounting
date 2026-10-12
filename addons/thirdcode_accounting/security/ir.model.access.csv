@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_thirdcode_company_controls_admin,thirdcode.company.controls.admin,base.model_res_company,thirdcode_accounting.group_thirdcode_administrator,1,1,0,0
 access_thirdcode_period_readonly,thirdcode.period.readonly,model_thirdcode_accounting_period,thirdcode_accounting.group_thirdcode_readonly,1,0,0,0
 access_thirdcode_period_encoder,thirdcode.period.encoder,model_thirdcode_accounting_period,thirdcode_accounting.group_thirdcode_encoder,1,0,0,0
 access_thirdcode_period_accountant,thirdcode.period.accountant,model_thirdcode_accounting_period,thirdcode_accounting.group_thirdcode_accountant,1,0,0,0
