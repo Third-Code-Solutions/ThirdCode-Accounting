@@ -1,6 +1,8 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from .write_tokens import PAYMENT_APPROVAL_TOKEN
+
 
 class PaymentBatch(models.Model):
     _name = "thirdcode.payment.batch"
@@ -62,7 +64,12 @@ class PaymentBatch(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].next_by_code("thirdcode.payment.batch") or "New"
+                company = self.env["res.company"].browse(
+                    vals.get("company_id") or self.default_get(["company_id"])["company_id"]
+                )
+                vals["name"] = self.env["ir.sequence"].with_company(company).next_by_code(
+                    "thirdcode.payment.batch"
+                ) or company.get_next_batch_payment_communication()
         return super().create(vals_list)
 
     def write(self, vals):
@@ -178,6 +185,10 @@ class PaymentBatch(models.Model):
         for batch in self:
             if batch.state != "pending_approval":
                 raise UserError(_("Only a batch pending approval may be approved."))
+            if not self.env.su and batch.create_uid == self.env.user:
+                raise UserError(
+                    _("A payment batch cannot be approved by the user who created it.")
+                )
             batch.sudo().write(
                 {
                     "state": "approved",
@@ -193,6 +204,10 @@ class PaymentBatch(models.Model):
                 "active_model": "account.move",
                 "active_ids": [line.move_id.id],
                 "active_id": line.move_id.id,
+                # Posting this batch already passed the Administrator approval
+                # gate; the token lets the created payment pass the threshold
+                # control it would otherwise fail.
+                "thirdcode_payment_approval_token": PAYMENT_APPROVAL_TOKEN,
             }
             wizard = self.env["account.payment.register"].with_context(**context).create(
                 {
@@ -247,7 +262,9 @@ class PaymentBatch(models.Model):
             payment_currency = (
                 self.journal_id.currency_id or self.company_id.currency_id
             )
-            payment = self.env["account.payment"].create(
+            payment = self.env["account.payment"].with_context(
+                thirdcode_payment_approval_token=PAYMENT_APPROVAL_TOKEN
+            ).create(
                 {
                     "date": self.date,
                     "amount": self.company_id.currency_id._convert(
@@ -285,6 +302,10 @@ class PaymentBatch(models.Model):
                 raise UserError(_("This payment batch requires Administrator approval first."))
             if batch.state not in ("approved", "draft"):
                 continue
+            if batch.line_ids.payment_id:
+                raise UserError(
+                    _("An unposted batch already contains payment links. Review those payments before creating a new batch; they will not be posted again.")
+                )
             if batch.state == "draft":
                 batch.action_submit()
             if batch.state == "pending_approval":
@@ -312,7 +333,15 @@ class PaymentBatch(models.Model):
             return
         self.env.flush_all()
         self.env.cr.execute(
-            "SELECT id FROM thirdcode_payment_batch WHERE id IN %s FOR UPDATE",
+            "SELECT id FROM thirdcode_payment_batch WHERE id IN %s ORDER BY id FOR UPDATE",
+            [tuple(self.ids)],
+        )
+        # Child-only edits must change the parent's tuple version too. Otherwise
+        # a REPEATABLE READ submit/post can keep stale lines after waiting for
+        # this lock. A no-op update triggers serialization retry without changing
+        # business values or the batch's audit timestamp.
+        self.env.cr.execute(
+            "UPDATE thirdcode_payment_batch SET write_date = write_date WHERE id IN %s",
             [tuple(self.ids)],
         )
         self.invalidate_recordset()
@@ -359,7 +388,11 @@ class PaymentBatchLine(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        batch_ids = {vals.get("batch_id") for vals in vals_list if vals.get("batch_id")}
+        defaults = self.default_get(["batch_id", "payment_id"])
+        values_list = [{**defaults, **vals} for vals in vals_list]
+        if any(values.get("payment_id") for values in values_list):
+            raise AccessError(_("The posted payment link is system-managed."))
+        batch_ids = {values["batch_id"] for values in values_list if values.get("batch_id")}
         batches = self.env["thirdcode.payment.batch"].browse(list(batch_ids))
         batches._lock_for_posting()
         if any(batch.state != "draft" for batch in batches):
@@ -368,6 +401,8 @@ class PaymentBatchLine(models.Model):
 
     def write(self, vals):
         batches = self.mapped("batch_id")
+        if vals.get("batch_id"):
+            batches |= self.env["thirdcode.payment.batch"].browse(vals["batch_id"])
         batches._lock_for_posting()
         if "payment_id" in vals and not self.env.su:
             raise AccessError(_("The posted payment link is system-managed."))

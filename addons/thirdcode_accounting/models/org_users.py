@@ -23,6 +23,26 @@ ROLE_SELECTION = [
 MIN_PASSWORD_LENGTH = 8
 
 
+def _thirdcode_admin_may_manage(actor, target):
+    """Tenant administrators manage accounts fully inside their own companies.
+
+    A target whose memberships reach outside the administrator's companies
+    would let a password reset leak a login into another organization, and a
+    peer administrator (or the platform owner) is never tenant-managed: those
+    stay with the platform owner.
+    """
+    if target.id == actor.id:
+        return True
+    if (
+        target.has_group(SYSTEM_GROUP)
+        or target.has_group(ADMIN_GROUP)
+        or target.thirdcode_platform_owner
+    ):
+        return False
+    target_companies = set(target.company_ids.ids)
+    return bool(target_companies) and target_companies <= set(actor.company_ids.ids)
+
+
 class ThirdcodeEmployeeWizard(models.TransientModel):
     _name = "thirdcode.employee.wizard"
     _description = "Create an employee account"
@@ -51,12 +71,12 @@ class ThirdcodeEmployeeWizard(models.TransientModel):
         if len((self.password or "").strip()) < MIN_PASSWORD_LENGTH:
             raise UserError(_("Use a password with at least %s characters.") % MIN_PASSWORD_LENGTH)
         company = self._target_company()
-        if not company:
-            raise UserError(_("Choose a company for this account."))
+        if not company or company.sudo().thirdcode_is_platform:
+            raise UserError(_("Choose a customer company for this account."))
         provisioned = (
             self.env["thirdcode.setup.service"]
             .sudo()
-            .provision_user(
+            ._provision_user(
                 login=self.login,
                 name=self.name,
                 password=self.password,
@@ -89,10 +109,12 @@ class ThirdcodeEmployeePasswordWizard(models.TransientModel):
         if not self.env.user.has_group(SYSTEM_GROUP):
             if not self.env.user.has_group(ADMIN_GROUP):
                 raise AccessError(_("Only company administrators can reset passwords."))
-            if target.has_group(SYSTEM_GROUP) or not (
-                set(target.company_ids.ids) & set(self.env.user.company_ids.ids)
-            ):
-                raise AccessError(_("You can only manage accounts of your own company."))
+            if not _thirdcode_admin_may_manage(self.env.user, target):
+                raise AccessError(
+                    _(
+                        "Administrator accounts, and accounts whose companies are not all inside your companies, can only be managed by the platform owner."
+                    )
+                )
         if len((self.new_password or "").strip()) < MIN_PASSWORD_LENGTH:
             raise UserError(_("Use a password with at least %s characters.") % MIN_PASSWORD_LENGTH)
         target.sudo().write({"password": self.new_password})
@@ -111,6 +133,61 @@ class ThirdcodeEmployeePasswordWizard(models.TransientModel):
         }
 
 
+class ThirdcodeExpenseProfileWizard(models.TransientModel):
+    _name = "thirdcode.expense.profile.wizard"
+    _description = "Configure an employee expense profile"
+
+    user_id = fields.Many2one("res.users", string="Employee account", required=True, readonly=True)
+    expense_manager_id = fields.Many2one(
+        "res.users", string="Expense approver", required=True,
+        domain=lambda self: [
+            ("company_ids", "in", self.env.company.ids), ("share", "=", False),
+            ("thirdcode_platform_owner", "=", False),
+            ("groups_id", "in", self.env.ref("hr_expense.group_hr_expense_team_approver").ids),
+            ("groups_id", "not in", self.env.ref(SYSTEM_GROUP).ids),
+        ],
+    )
+
+    def _check_profile_user(self, user):
+        if not self.env.user.has_group(ADMIN_GROUP) and not self.env.user.has_group(SYSTEM_GROUP):
+            raise AccessError(_("Only company administrators can configure expense profiles."))
+        company = self.env.company
+        user = user.sudo().exists()
+        if (
+            not user or not user.active or user.share
+            or user.has_group(SYSTEM_GROUP) or user.thirdcode_platform_owner
+            or company not in user.company_ids or company.sudo().thirdcode_is_platform
+        ):
+            raise AccessError(_("Choose an active employee account belonging to the current company."))
+        return user
+
+    def _profile(self, user):
+        return self.env["hr.employee"].sudo().with_context(
+            {}, allowed_company_ids=self.env.company.ids, active_test=False,
+        ).search([
+            ("user_id", "=", user.id), ("company_id", "=", self.env.company.id),
+        ])
+
+    def action_save_profile(self):
+        self.ensure_one()
+        self.check_access("write")
+        user = self._check_profile_user(self.user_id)
+        manager = self._check_profile_user(self.expense_manager_id)
+        if not manager.has_group("hr_expense.group_hr_expense_team_approver"):
+            raise UserError(_("The expense approver must have expense approval permissions."))
+        employee = self._profile(user)
+        if employee and not employee.active:
+            raise UserError(_("This employee profile is archived. Ask the platform owner to restore it before configuring expenses."))
+        if employee:
+            employee.write({"expense_manager_id": manager.id})
+        else:
+            self.env["hr.employee"].sudo().with_context({}, allowed_company_ids=self.env.company.ids).create({
+                "name": user.partner_id.name, "user_id": user.id, "company_id": self.env.company.id,
+                "expense_manager_id": manager.id,
+            })
+        return {"type": "ir.actions.act_window_close"}
+
+
 class ResUsers(models.Model):
     _inherit = "res.users"
 
@@ -121,6 +198,17 @@ class ResUsers(models.Model):
         "managed only by the platform owner (superadmin).",
     )
 
+    def action_thirdcode_expense_profile(self):
+        self.ensure_one()
+        wizard = self.env["thirdcode.expense.profile.wizard"]
+        user = wizard._check_profile_user(self)
+        employee = wizard._profile(user)
+        return {
+            "type": "ir.actions.act_window", "name": _("Expense profile"),
+            "res_model": "thirdcode.expense.profile.wizard", "view_mode": "form", "target": "new",
+            "context": {"default_user_id": user.id, "default_expense_manager_id": employee.expense_manager_id.id},
+        }
+
     def action_thirdcode_toggle_active(self):
         for user in self:
             if not self.env.user.has_group(SYSTEM_GROUP):
@@ -128,10 +216,12 @@ class ResUsers(models.Model):
                     raise AccessError(_("Only company administrators can enable or disable accounts."))
                 if user.id == self.env.user.id:
                     raise UserError(_("You cannot disable your own account."))
-                if user.has_group(SYSTEM_GROUP) or not (
-                    set(user.company_ids.ids) & set(self.env.user.company_ids.ids)
-                ):
-                    raise AccessError(_("You can only manage accounts of your own company."))
+                if not _thirdcode_admin_may_manage(self.env.user, user):
+                    raise AccessError(
+                        _(
+                            "Administrator accounts, and accounts whose companies are not all inside your companies, can only be managed by the platform owner."
+                        )
+                    )
             user.sudo().write({"active": not user.active})
         return True
 

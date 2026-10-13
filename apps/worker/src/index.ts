@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createServer } from "node:http";
 
 import { loadWorkerEnv } from "./env.js";
+import { workerReadiness } from "./readiness.js";
 
 const env = loadWorkerEnv();
 const port = env.PORT ?? env.WORKER_PORT;
@@ -23,7 +24,7 @@ function respond(response: import("node:http").ServerResponse, status: number, b
   response.end(JSON.stringify(body));
 }
 
-const server = createServer((request, response) => {
+const server = createServer(async (request, response) => {
   if (request.method !== "GET") {
     respond(response, 405, { error: "method_not_allowed" });
     return;
@@ -35,10 +36,9 @@ const server = createServer((request, response) => {
   }
 
   if (request.url === "/ready") {
-    respond(response, env.configured ? 200 : 503, {
-      status: env.configured ? "ready" : "configuration_required",
+    respond(response, 503, {
+      ...await workerReadiness(supabase),
       service: "tcsi-worker",
-      checks: { supabase: env.configured },
     });
     return;
   }
@@ -50,19 +50,9 @@ server.listen(port, () => {
   log("worker_started", { port, configured: env.configured, environment: env.WORKER_ENV });
 });
 
-const scheduler = setInterval(() => {
-  if (!supabase) {
-    log("scheduler_waiting_for_configuration");
-    return;
-  }
-
-  // Accounting jobs are added as vertical slices. The idempotent claim/finish
-  // helpers are the only path scheduled jobs may use to write job state.
-  log("scheduler_ready", { pollIntervalMs: env.WORKER_POLL_INTERVAL_MS });
-}, env.WORKER_POLL_INTERVAL_MS);
+log("scheduler_disabled", { reason: "No released job handlers; accounting schedules run in Odoo" });
 
 function shutdown(signal: string) {
-  clearInterval(scheduler);
   log("worker_stopping", { signal });
   server.close(() => process.exit(0));
 }

@@ -3,7 +3,105 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { test } from "node:test";
 
+const errorSource = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/tcsi_error_branding.js", import.meta.url), "utf8");
+
+function errorDialogHarness() {
+    class ErrorDialog {
+        constructor(props) { this.props = props; }
+        showTooltip() { this.copied = true; }
+    }
+    class RPCErrorDialog extends ErrorDialog {}
+    class ClientErrorDialog extends ErrorDialog {}
+    class NetworkErrorDialog extends ErrorDialog {}
+    class WarningDialog {}
+    class RedirectWarningDialog {}
+    let clipboard;
+    const context = {
+        ErrorDialog, RPCErrorDialog, ClientErrorDialog, NetworkErrorDialog,
+        WarningDialog, RedirectWarningDialog,
+        _t: (text) => text,
+        browser: { navigator: { clipboard: { writeText: (text) => { clipboard = text; } } } },
+        patch: (target, extension) => Object.defineProperties(target, Object.getOwnPropertyDescriptors(extension)),
+    };
+    runInNewContext(errorSource.replace(/^import[\s\S]*?from\s+"[^"]+";\s*/gm, ""), context);
+    return { ...context, get clipboard() { return clipboard; } };
+}
+
+test("server error display brands the message and diagnostic heading without changing exception identifiers", () => {
+    const { RPCErrorDialog } = errorDialogHarness();
+    const props = Object.freeze({
+        message: "Odoo Server Error",
+        traceback: "RPC_ERROR: Odoo Server Error\n  at /odoo/addons/web/file.js:42\nodoo.exceptions.ValidationError: Invalid entry",
+    });
+    const dialog = new RPCErrorDialog(props);
+    dialog.title = "TCSI Server Error";
+    assert.equal(dialog.tcsiTitle, "TCSI Server Error");
+    assert.equal(dialog.tcsiMessage, "TCSI Server Error");
+    assert.equal(dialog.tcsiTraceback, props.traceback.replace("Odoo Server Error", "TCSI Server Error"));
+    assert.equal(props.message, "Odoo Server Error", "original diagnostic payload stays intact");
+});
+
+test("client and network errors use branded static titles and preserve actionable messages", () => {
+    const { ClientErrorDialog, NetworkErrorDialog } = errorDialogHarness();
+    for (const [Dialog, title] of [[ClientErrorDialog, "TCSI Client Error"], [NetworkErrorDialog, "TCSI Network Error"]]) {
+        const dialog = new Dialog({ message: "Connection lost. Check your connection." });
+        assert.equal(dialog.tcsiTitle, title);
+        assert.equal(dialog.tcsiMessage, "Connection lost. Check your connection.");
+        assert.equal(dialog.tcsiTraceback, undefined);
+    }
+});
+
+test("raw client diagnostics retain runtime identifiers and paths in display and copied reports", () => {
+    const harness = errorDialogHarness();
+    for (const message of ["odoo is not defined", "Cannot read properties of undefined (reading 'odoo')", "Failed at /odoo/addons/web/file.js:42"]) {
+        const dialog = new harness.ClientErrorDialog({ message });
+        assert.equal(dialog.tcsiMessage, message);
+        dialog.onClickClipboard();
+        assert.ok(harness.clipboard.includes(message));
+    }
+});
+
+test("copied base and RPC reports use branded headings and retain the complete combined traceback", () => {
+    const harness = errorDialogHarness();
+    for (const Dialog of [harness.ErrorDialog, harness.RPCErrorDialog]) {
+        const dialog = new Dialog({ name: "RPC_ERROR", message: "Odoo Server Error", traceback: "client stack" });
+        dialog.contextDetails = "Occurred on model account.move";
+        dialog.traceback = "odoo.exceptions.ValidationError: Keep this reason\nRPC_ERROR: Odoo Server Error\nclient stack";
+        dialog.onClickClipboard();
+        assert.equal(harness.clipboard, "RPC_ERROR\n\nTCSI Server Error\n\nOccurred on model account.move\n\nodoo.exceptions.ValidationError: Keep this reason\nRPC_ERROR: TCSI Server Error\nclient stack");
+        assert.equal(dialog.copied, true);
+    }
+});
+
+test("warning fallback keeps the real validation reason when arguments are missing", () => {
+    const harness = errorDialogHarness();
+    const dialog = { message: "Odoo Server Error", props: { data: { arguments: null, message: "Posted accounting entries cannot be deleted." } } };
+    harness.liftRealMessage(dialog);
+    assert.equal(dialog.message, "Posted accounting entries cannot be deleted.");
+});
+
 const source = readFileSync(new URL("../addons/thirdcode_accounting/static/src/js/tcsi_brand.js", import.meta.url), "utf8");
+
+test("workspace picker removes Insights, People and Settings and preserves Dashboard's authorized target", () => {
+    const context = {
+        TCSI_APP_XMLID: "thirdcode_accounting.menu_thirdcode_accounting_root",
+        DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
+        brandedLabel: name => name,
+    };
+    runInNewContext(source.slice(source.indexOf("function workspaceAppLabel"), source.indexOf("function makeAppButton")), context);
+    const dashboard = { id: 7, name: "TCSI Accounting", xmlid: context.TCSI_APP_XMLID };
+    const revenue = { id: 8, name: "Revenue", xmlid: "account.menu_finance" };
+    const apps = [dashboard, revenue,
+        { id: 9, xmlid: context.DASHBOARDS_APP_XMLID }, { id: 10, xmlid: "hr.menu_hr_root" }, { id: 11, xmlid: "base.menu_administration" }];
+    const filtered = context.workspaceApps({ getApps: () => apps });
+    assert.equal(filtered.length, 2);
+    assert.equal(filtered[0], dashboard);
+    assert.equal(filtered[1], revenue);
+    assert.equal(context.workspaceAppLabel(dashboard), "Dashboard");
+    assert.equal(context.workspaceAppLabel(revenue), "Revenue");
+    assert.equal(context.workspaceApps({ getApps: () => [] }).length, 0);
+    assert.equal(apps.length, 5);
+});
 
 test("workspace router brands root, query, fragment and record links", () => {
     const router = { stateToUrl: (value) => value, urlToState: (url) => url.href };
@@ -19,7 +117,7 @@ test("workspace router brands root, query, fragment and record links", () => {
 
 test("navbar branding does not trigger another mutation for unchanged text", () => {
     const start = source.indexOf("function updateNavbarContext()");
-    const end = source.indexOf("function syncSidebarActiveState()", start);
+    const end = source.indexOf("function syncSidebarActiveState(", start);
     let writes = 0;
     let label = "Finance workspace";
     const page = {
@@ -220,4 +318,100 @@ test("native form titles prefer the actual record heading over the field label",
     assert.equal(context.getNativeRouteTitle(manager), "FY 2026", "breadcrumb precedes a generic field label");
     breadcrumb = "";
     assert.equal(context.getNativeRouteTitle(manager), "Company Name", "field label remains a final fallback");
+});
+
+test("owner console exposes a working Settings link only when the native Settings app is allowed", async () => {
+    const root = { id: 10, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root", name: "TCSI Accounting" };
+    const settings = { id: 20, xmlid: "base.menu_administration", name: "Settings" };
+    const general = { id: 21, xmlid: "base_setup.menu_config", name: "General Settings", actionID: 99 };
+    const organization = { id: 30, xmlid: "thirdcode_accounting.menu_thirdcode_organization", name: "Organization" };
+    function element() {
+        return {
+            dataset: {}, children: [], events: {},
+            classList: { add() {}, remove() {}, toggle() {} },
+            append(...children) { this.children.push(...children); },
+            replaceChildren(...children) { this.children = children; },
+            addEventListener(name, handler) { this.events[name] = handler; },
+            setAttribute() {},
+        };
+    }
+    for (const allowed of [true, false]) {
+        const selected = [];
+        const nav = element();
+        const label = element();
+        const sidebar = { querySelector: selector => ({ ".tcsi-sidebar-nav": nav, ".tcsi-sidebar-app-name": label })[selector] || null };
+        const menu = {
+            getApps: () => allowed ? [root, settings] : [root],
+            getCurrentApp: () => root,
+            getMenuAsTree: id => ({ childrenTree: id === settings.id ? [general] : [organization] }),
+            selectMenu: async item => { if (item.actionID) selected.push(item); },
+        };
+        const context = {
+            document: { createElement: element, body: element() },
+            window: { location: { pathname: "/workspace/console" } },
+            TCSI_APP_XMLID: root.xmlid, DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
+            TCSI_WEB_PREFIX: "/workspace", INTERNAL_WEB_PREFIX: "/odoo",
+            makeIcon: element, brandedLabel: text => text, syncSidebarActiveState() {},
+        };
+        runInNewContext(source.slice(source.indexOf("function makeSidebarLink"), source.indexOf("function filterSidebarNavigation")), context);
+        context.renderSidebar(sidebar, menu, { isOwner: true, active: true, sections: [] });
+        const link = nav.children.find(child => child.dataset.tcsiMenuXmlid === general.xmlid);
+        assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === organization.xmlid), false);
+        assert.equal(Boolean(link), allowed);
+        if (allowed) {
+            await link.events.click();
+            assert.equal(link.title, "Settings");
+            assert.deepEqual(selected, [general], "select the actionable settings leaf even when its app has no action");
+            general.actionID = false;
+            assert.equal(context.getSettingsMenu(menu), null, "do not show a dead or unauthorized settings link");
+            general.actionID = 99;
+        }
+        context.renderSidebar(sidebar, menu, { isOwner: false, active: false, sections: [] });
+        assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === organization.xmlid), true, "customer organization tools remain accessible");
+    }
+});
+
+test("Settings sections replace the inner navigation in the main sidebar and restore on exit", () => {
+    function element() {
+        return { dataset: {}, children: [], events: {}, attributes: {},
+            classList: { toggle() {}, remove() {} },
+            append(...items) { this.children.push(...items); },
+            replaceChildren(...items) { this.children = items; },
+            addEventListener(name, handler) { this.events[name] = handler; },
+            setAttribute(name, value) { this.attributes[name] = value; },
+        };
+    }
+    const root = { id: 1, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root", name: "Dashboard" };
+    const app = { id: 2, xmlid: "base.menu_administration", name: "Settings" };
+    const general = { id: 3, xmlid: "base_setup.menu_config", name: "General Settings" };
+    const nav = element(), label = element(), body = element();
+    const toggles = [];
+    body.classList.toggle = (...args) => toggles.push(args);
+    const sidebar = { querySelector: selector => ({ ".tcsi-sidebar-nav": nav, ".tcsi-sidebar-app-name": label })[selector] };
+    const menu = { getCurrentApp: () => app, getApps: () => [root, app], getMenuAsTree: () => ({ childrenTree: [general] }) };
+    const jumps = [], modules = [];
+    const settings = { active: true, activeSection: "emails", selectedModule: "general_settings",
+        modules: [{ key: "general_settings", string: "TCSI Settings" }], sections: [{ id: "emails", label: "Emails" }],
+        openSection: id => jumps.push(id), selectModule: id => modules.push(id),
+    };
+    const context = {
+        document: { createElement: element, body }, window: { location: { pathname: "/workspace/settings" } },
+        TCSI_APP_XMLID: root.xmlid, DASHBOARDS_APP_XMLID: "spreadsheet_dashboard.spreadsheet_dashboard_menu_root",
+        TCSI_WEB_PREFIX: "/workspace", INTERNAL_WEB_PREFIX: "/odoo",
+        makeIcon: element, brandedLabel: text => text, syncSidebarActiveState() {},
+    };
+    runInNewContext(source.slice(source.indexOf("function makeSidebarLink"), source.indexOf("function filterSidebarNavigation")), context);
+    context.renderSidebar(sidebar, menu, { isOwner: true, active: false }, settings);
+    const link = nav.children.find(child => child.dataset.tcsiSettingsSection === "emails");
+    assert.ok(link); link.events.click();
+    assert.deepEqual(jumps, ["emails"]);
+    const moduleLink = nav.children.find(child => child.attributes["aria-pressed"] === "true");
+    moduleLink.events.click(); assert.deepEqual(modules, ["general_settings"]);
+    assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === general.xmlid), false);
+    assert.deepEqual(toggles.at(-1), ["tcsi-settings-in-main-sidebar", true]);
+    settings.active = false;
+    context.renderSidebar(sidebar, menu, { isOwner: true, active: false }, settings);
+    assert.equal(nav.children.some(child => child.dataset.tcsiSettingsSection), false);
+    assert.equal(nav.children.some(child => child.dataset.tcsiMenuXmlid === general.xmlid), true);
+    assert.deepEqual(toggles.at(-1), ["tcsi-settings-in-main-sidebar", false]);
 });

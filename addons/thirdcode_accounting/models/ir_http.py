@@ -22,6 +22,8 @@ from odoo.http import Response, request
 from odoo.addons.bus.websocket import UpgradeRequired
 from werkzeug.exceptions import HTTPException, NotFound
 
+from .platform_access import is_platform_owner
+
 _logger = logging.getLogger(__name__)
 
 DB_MANAGER_PREFIX = "/web/database"
@@ -40,6 +42,11 @@ SECURITY_HEADERS = (
 
 class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
+
+    def session_info(self):
+        info = super().session_info()
+        info["tcsi_platform_owner"] = is_platform_owner(self.env)
+        return info
 
     # ------------------------------------------------------------------
     # Helpers
@@ -114,6 +121,19 @@ class IrHttp(models.AbstractModel):
 
     @classmethod
     def _handle_error(cls, exception):
+        # Separate transaction: evidence survives the failed request's rollback.
+        # Expected validation/access failures are not server incidents.
+        from odoo.exceptions import UserError, AccessError, AccessDenied
+        if not isinstance(exception, (UserError, AccessError, AccessDenied, HTTPException)):
+            try:
+                with request.env.registry.cursor() as incident_cr:
+                    from odoo import api
+                    incident_env = api.Environment(incident_cr, SUPERUSER_ID, {})
+                    incident_env["thirdcode.platform.incident"]._capture(
+                        type(exception).__name__, request.httprequest.path)
+                    incident_cr.commit()
+            except Exception:
+                _logger.warning("TCSI Sentry capture unavailable", exc_info=False)
         response = super()._handle_error(exception)
         try:
             if isinstance(response, UpgradeRequired) and response.response is None:

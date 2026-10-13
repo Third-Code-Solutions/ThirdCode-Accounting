@@ -14,6 +14,7 @@
                 <field name="interval_number"/>
                 <field name="interval_type"/>
                 <field name="active"/>
+                <field name="last_cron_error_at" optional="show"/>
             </list>
         </field>
     </record>
@@ -44,6 +45,8 @@
                             <field name="interval_number"/>
                             <field name="interval_type"/>
                             <field name="last_run" readonly="1"/>
+                            <field name="last_cron_error_at" invisible="not last_cron_error"/>
+                            <field name="last_cron_error" invisible="not last_cron_error"/>
                             <field name="narration"/>
                         </group>
                     </div>
@@ -56,7 +59,7 @@
                                     <field name="account_id"/>
                                     <field name="quantity"/>
                                     <field name="price_unit"/>
-                                    <field name="tax_ids" widget="many2many_tags"/>
+                                    <field name="tax_ids" widget="many2many_tags" domain="[('company_id', '=', parent.company_id), ('type_tax_use', '=', 'sale' if parent.move_type == 'out_invoice' else 'purchase')]" options="{'no_create': True}"/>
                                 </list>
                             </field>
                         </page>

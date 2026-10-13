@@ -1338,8 +1338,7 @@ button:disabled { cursor: not-allowed; opacity: 0.64; }
    portal and the accounting workspace read as one product in both modes. The
    accent stays a background colour; accent text switches to the light violet
    that keeps AA contrast on dark surfaces. */
-@media (prefers-color-scheme: dark) {
-  :root {
+html[data-portal-theme="dark"] {
     color-scheme: dark;
 
     --tcsi-canvas: #101720;
@@ -1381,7 +1380,6 @@ button:disabled { cursor: not-allowed; opacity: 0.64; }
     --landing-purple-deep: #6343b3;
     --landing-purple-soft: #302947;
     --landing-accent-text: #bca6ff;
-  }
 
   html { background: var(--tcsi-canvas); }
 

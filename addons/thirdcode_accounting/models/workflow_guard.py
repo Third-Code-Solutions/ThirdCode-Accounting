@@ -15,9 +15,11 @@ class WorkflowGuardMixin(models.AbstractModel):
     @api.model_create_multi
     def create(self, vals_list):
         if not self.env.su:
+            defaults = self.default_get(list(self._workflow_protected_fields))
             for vals in vals_list:
+                values = {**defaults, **vals}
                 if self._workflow_state_field:
-                    state = vals.get(
+                    state = values.get(
                         self._workflow_state_field, self._workflow_initial_state
                     )
                     if state not in (None, self._workflow_initial_state):
@@ -27,7 +29,7 @@ class WorkflowGuardMixin(models.AbstractModel):
                 metadata_fields = self._workflow_protected_fields - {
                     self._workflow_state_field
                 }
-                if any(vals.get(field) for field in metadata_fields):
+                if any(values.get(field) for field in metadata_fields):
                     raise AccessError(
                         _("Workflow metadata can only be set by an authorized action.")
                     )

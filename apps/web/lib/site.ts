@@ -12,4 +12,4 @@ export function siteOrigin(): string {
 }
 
 /** Marketing routes that are actually served by the hosted pilot portal. */
-export const publicPortalSitemapPaths = ["/", "/platform", "/controls", "/pilot", "/contact"];
+export const publicPortalSitemapPaths = ["/", "/platform", "/controls", "/pilot", "/contact", "/updates"];

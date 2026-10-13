@@ -1,5 +1,14 @@
 # TCSI Accounting Platform checklist
 
+## Error dialog branding — 6 October 2026
+
+- Objective: use TCSI in customer-facing error titles, messages and copied reports; retain diagnostic identifiers and accounting behavior.
+- Reproduced: a synthetic native RPC error on production showed a TCSI detail heading but retained the original vendor's server-error text in the message and stack heading. No server mutation was used.
+- Root cause: the existing patch changed titles and warnings; the shared error template and clipboard handlers still used the original message.
+- Implemented: branded presentation getters, shared clipboard formatting, and a native error-template extension. Original exception payloads remain unchanged.
+- Verified: three new regression tests failed before the fix; 16 branding and 8 token JS cases, 7 Python checks, package validation and scoped lint pass. Exact candidate JS/XML rendered through the native browser runtime; server/client/network dialogs, validation reason and copy behavior checked. Review approved after diagnostic-preservation fix.
+- Remaining: release CI, production deployment and post-deploy browser verification.
+
 ## Form input visibility — 5 October 2026
 
 - Objective: repair hidden editable amounts across native workspace forms, tables and dialogs; preserve permissions, computed fields and palette; deploy to production.
@@ -47,3 +56,14 @@
 - [ ] Supabase migration/RLS verification
 - [ ] Browser checks at 320/768/1024/1440px
 - [ ] Worker idempotency and rollback checks
+
+## Public landing page — 6 October 2026
+
+- Objective: company-focused landing page, complete verified core features, explicit light/dark switch (light default), production deployment.
+- Design contract: `docs/landing-page-design.md`.
+- Base: current production/main `55c58eb`; isolated branch `codex/accounting-landing`. User documents in original checkout preserved.
+- Implemented: outcome-led hero, interactive sample product preview, 12 capability groups, controls, Orvexa, rollout, FAQs, demo CTAs, shared public navigation/footer, cookie-backed server-rendered theme.
+- Verified: lint/typecheck, 62 unit tests, 19 branding/palette tests, initial production build, 10 responsive size/theme checks, preview keyboard navigation, FAQ disclosure, zero axe WCAG A/AA violations in light desktop and dark mobile. Evidence: `docs/landing-page-verification.md`.
+- Final local verification: full web/worker build, final web build after contrast corrections, 10 public route/theme axe scans (zero violations), final 10 responsive checks, keyboard theme/preview controls, cached navigation and readable form input passed.
+- Next: PR #12 release CI; merge, deploy and verify live production.
+- Blockers: none. Vercel connector has project access; local CLI is signed into a different account, so prefer existing Git deployment and connector verification.

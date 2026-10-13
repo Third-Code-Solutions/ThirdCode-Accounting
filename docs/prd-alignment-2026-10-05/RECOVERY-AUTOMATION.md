@@ -1,6 +1,38 @@
 # Hosted recovery capture and monitoring
 
-`scripts/hosted_backup.py` implements an operator capture command, a failed/missed-run monitor, and decrypted-bundle hash verification. It is **not enabled in production**. A verified one-off backup does not close NF-08–10 or AC-09. Provider adapters and disabled scheduler templates now exist in [RECOVERY-PROVIDER-INTEGRATION.md](RECOVERY-PROVIDER-INTEGRATION.md). Proposed engineering defaults do not establish client approval; real destination access, recipients, named operator/deputy, deployment integration and accepted recovery policy still require recorded evidence.
+`scripts/hosted_backup.py` implements coordinated capture, failed/missed-run monitoring, and decrypted-bundle hash verification. The hosted image includes **opt-in** automatic capture and private S3 delivery; independent installations remain disabled by default. Source availability or a verified one-off backup does not prove an active schedule or close NF-08–10 / AC-09. Record deployed configuration, successful delivery, real failure notifications and restore evidence separately. Third-party provider adapters and disabled scheduler templates also exist in [RECOVERY-PROVIDER-INTEGRATION.md](RECOVERY-PROVIDER-INTEGRATION.md); proposed engineering defaults do not establish client approval.
+
+## Opt-in hosted automation
+
+The launcher starts a separately supervised process under `odoo` only when `TCSI_BACKUP_ENABLED=1` and all configuration validates. Its failure cannot stop Odoo/nginx. It runs once daily at **03:00 Asia/Singapore** (19:00 UTC on the preceding date), never immediately at boot. A failed attempt retries at most twice, 15 minutes apart. Captures are synchronous and the existing exclusive lock prevents overlap with manual capture. The writer pause is capped at 120 seconds; existing watchdog/resume, idle-session and single-writer checks remain unchanged. Busy or unsafe capture fails instead of weakening those checks. The target RPO is 24 hours; failures can exceed that target and require operator intervention. Actual recovery remains operator-led and must be measured in rehearsals.
+
+Required engine and independent monitor variables:
+
+| Variable | Value |
+| --- | --- |
+| `TCSI_BACKUP_S3_ENDPOINT` | HTTPS S3 endpoint from the dedicated private Railway bucket |
+| `TCSI_BACKUP_S3_REGION` | Bucket region |
+| `TCSI_BACKUP_S3_BUCKET` | Bucket name |
+| `TCSI_BACKUP_S3_ACCESS_KEY_ID` | Bucket-only access key; never an account API token |
+| `TCSI_BACKUP_S3_SECRET_ACCESS_KEY` | Bucket-only secret |
+| `TCSI_BACKUP_PREFIX` | Unique installation prefix, 1–64 letters/digits/underscore/hyphen; starts alphanumeric |
+| `TCSI_BACKUP_MONITOR_ID` | Actual separately configured monitor service ID |
+
+Engine-only variables: `TCSI_BACKUP_ENABLED=1`, `TCSI_BACKUP_PUBLIC_CERTIFICATE` (PEM public certificate, never its private key), `TCSI_BACKUP_OPERATOR`, `TCSI_BACKUP_RESTORE_CONTACT`, `TCSI_RELEASE_SHA` (verified 40-character source revision), and `TCSI_RELEASE_IMAGE` (immutable image/deployment reference ending in `@sha256:<digest>`). When Railway exposes only a digest, record `railway://project/<project>/deployment/<deployment>@sha256:<actualdigest>` truthfully; this is a provider identity, not a public Docker pull address. Provider image availability/retention must be verified separately. A retained local rebuild from identical source is not proof of identical OCI bytes. A single verified person may be both contacts; that is **single-owner operation**, not an independent deputy or completed two-person handover. Keep the decryption key off the host and preserve it separately from the bucket. Existing PG configuration supplies the database; no second ledger worker is created.
+
+These release values are trusted operator attestations, not in-container image introspection. For CLI releases without provider Git metadata, the launcher supplies the explicitly verified `TCSI_RELEASE_SHA` to its Odoo child's `RAILWAY_GIT_COMMIT_SHA`, retaining the existing process/policy equality check. A conflicting provider revision or missing/invalid immutable image fails backup configuration. Build/deploy disabled first, obtain the actual deployed image digest and verify source externally, then enable using that exact image; verify any provider redeploy reuses it. Never insert a guessed digest or empty revision.
+
+The current hosted release uses manual deployment/promotion. Railway engine Git auto-deploy is disabled to prevent the older repository main branch from replacing it. Before enabling automatic releases, align the source branch, release checks and source/image attestation updates with this capture contract. Do not recreate an old Git trigger as an incidental configuration repair.
+
+Delivery uses the isolated, hash-pinned Boto3 SDK. It uploads the encrypted object, downloads and hashes its bytes, persists and reads back a receipt, then publishes durable status. Retention runs only after a new verified delivery and removes objects older than 30 days with valid matching receipts under this installation's prefix. Unreceipted objects and other prefixes are untouched. The bucket has no assumed object lock/versioning/lifecycle policy; it is outside live volumes but shares the Railway account/provider failure domain.
+
+Configure a **separate Railway cron service** using this image/source with start command `python3 /opt/tcsi/backup_runtime.py monitor`, hourly UTC schedule, no HTTP healthcheck, and restart policy `NEVER`. It needs only the shared bucket/monitor variables above, no PG credentials or live-volume mount. Configure native failed/crashed execution notifications to the verified operator. The checker fails on absent/malformed/failed status, receipt mismatch, age over 27 hours (or future timestamps), missing encrypted object, or mismatching size/SHA metadata. Full remote bytes are verified at delivery; the hourly checker verifies existence and recorded digest metadata, not another full download.
+
+Verify the applied schedule and actual service/environment execution records after changes. `nextCronRunAt` advancing is not execution evidence; allow provider dispatch lag before diagnosing a missed run. The live drill observed a successful automatic execution about 48 seconds after its schedule boundary. A manual run proves the checker/notification path, while a separately observed automatic run proves scheduler dispatch.
+
+The capture alert adapter acknowledges **durable asynchronous attention status acceptance** only after the bucket writes and reads back the failure state. `accepted:true` is not a claim that email arrived. The independent checker turns that state into a failed execution routed through provider notifications. Its hourly polling can delay notification by up to an hour; subsequent successful capture supersedes failed status. Test an actual failed monitor execution and its provider notification before enabling the scheduler. If bucket delivery of attention also fails, no acknowledgment is returned; capture fails and freshness still detects a missing backup. A same-provider monitor cannot report complete Railway/control-plane loss or its own skipped invocations. External dead-man monitoring requires a separately configured account/heartbeat and remains an explicit coverage limit.
+
+Activation gates: provision dedicated private bucket and actual monitor; validate real notification delivery; deploy with capture disabled; verify source/image provenance and single-writer topology; enable exact image; run `python3 /opt/tcsi/backup_runtime.py capture` once as `odoo`; run the independent checker; decrypt and verify/rehearse that delivered bundle; confirm the next scheduled run. Protect generated `/var/lib/odoo/recovery-state` (0700) and its policy/credential files (0600). The public certificate is stored there; the private key never is. Do not configure the main accounting service itself as a Railway cron service.
 
 ## Implemented boundary
 
@@ -15,7 +47,7 @@ These checks are not proof that external writers do not exist. **Activation requ
 
 ## Prerequisites and configuration
 
-Run as the same `odoo` OS user as the hosted runtime. The generated Odoo configuration is private and owned by that user; invoking this tool as root intentionally does not bypass ownership checks. The current image already supplies Python, psycopg2, PostgreSQL client tools and OpenSSL. Linux kernel/Python must support pidfds. CI exercises the tool in the production image; installing the tool or activating a scheduler remains a separate release operation.
+Run as the same `odoo` OS user as the hosted runtime. The generated Odoo configuration is private and owned by that user; invoking this tool as root intentionally does not bypass ownership checks. The current image supplies Python, psycopg2, PostgreSQL client tools, OpenSSL and the opt-in backup tools. Linux kernel/Python must support pidfds. Activation remains a separate verified release operation.
 
 The policy and state directory must be owned by the invoking user and inaccessible to group/other users (0600 files, 0700 directories). Adapter programs must be absolute, executable regular files, never group/world-writable. Public certificate may be distributed to the host; keep its private key on the approved recovery system. Policy files, credentials, raw archives, financial material and private keys never belong in public Git.
 
@@ -47,13 +79,13 @@ The following schema is deliberately disabled and incomplete. Empty values are u
 }
 ```
 
-Time values above illustrate field types only; choose them against measured capture duration, the approved maintenance window and RPO. `max_pause_seconds` is bounded to 5–300 seconds. The complete deployed image must be identified by `registry/image@sha256:<64 hex>`; a mutable image tag or the base-image digest alone is not a recovery image. The 40-character Git revision must match the runtime's `RAILWAY_GIT_COMMIT_SHA`.
+Time values above illustrate field types only; choose them against measured capture duration, the approved maintenance window and RPO. `max_pause_seconds` is bounded to 5–300 seconds. Identify the complete deployed image with an immutable reference ending in `@sha256:<64 hex>`; a mutable tag or base-image digest alone is insufficient. The 40-character Git revision must match the runtime's `RAILWAY_GIT_COMMIT_SHA`, using the explicitly verified CLI operator attestation described above when provider metadata is absent.
 
 Selected recovery environment variables are PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE, TCSI_ADMIN_LOGIN, TCSI_ADMIN_PASSWORD, TCSI_MASTER_PASSWORD, TCSI_WORKERS, PORT, TCSI_DB_MAXCONN and TCSI_LIMIT_TIME_REAL. The Odoo config itself preserves current database, addon and process settings. The immutable deployed image preserves the pinned Odoo/OCA/addon/runtime versions; ensure that image and its registry access remain available for the entire retention period. Portal/Supabase/platform secrets and other external services require their own protected recovery inventory; this command does not opportunistically collect them.
 
 ## Delivery and alert interfaces
 
-Adapters are explicit executable paths, launched without a shell and with only a minimal PATH/LANG environment. Credentials must come from their own protected configuration. Each command runs in an owned process session; timeout or interruption terminates its process group. Adapters must remain synchronous, must not detach/daemonize, and must terminate their child processes when cancelled. No provider adapter is configured or enabled by this change.
+Adapters are explicit executable paths, launched without a shell and with only a minimal PATH/LANG environment. Credentials must come from their own protected configuration. Each command runs in an owned process session; timeout or interruption terminates its process group. Adapters must remain synchronous, must not detach/daemonize, and must terminate their child processes when cancelled. The opt-in S3 adapter reads its generated private configuration; other destinations need an explicit adapter.
 
 Delivery receives this JSON on stdin:
 
@@ -73,7 +105,7 @@ The alert adapter receives `{"event":"backup_attention","status":"failed or miss
 
 ## Scheduling and missed-run checks
 
-After isolated validation and approvals, configure an external scheduler to invoke:
+For installations using their own scheduler instead of the hosted daily process, after validation configure it to invoke:
 
 ```sh
 python3 /approved/path/hosted_backup.py capture --config /private/path/recovery-policy.json
@@ -104,4 +136,6 @@ Automated production restore is deliberately absent: restoring bytes cannot appr
 
 `python3 scripts/test_hosted_backup.py` tests private policy validation, explicit prerequisites, manifest tampering/missing/extra files, filestore links/deadlines, certificate failure before pause, actual public-certificate encryption/decryption, durable delivery acknowledgment, redacted failures, missed/corrupt status and cleanup. Linux-only tests use disposable processes to prove normal failure, timeout and killed-parent resume. An opt-in `TCSI_RECOVERY_TEST_PG=disposable-only` fixture requires loopback PostgreSQL and creates/drops only its UUID-prefixed databases; it verifies real dump/restore, matching filestore/hashes and refusal of an open transaction. Set PGHOST=127.0.0.1, PGPORT, PGUSER and PGPASSWORD in the disposable CI environment.
 
-Remaining: actual provider activation with verified delivery/alert evidence, approved policy/recipients, immutable deployed-image retention, external scheduler and independent monitor IDs, protected destination receipt verification, native Odoo representative rehearsal, operator/deputy handover and failure/restore drill. None is represented by invented approvals, policy placeholders or a passing unit test.
+`python3 scripts/test_backup_automation.py` covers configuration boundaries, daily schedule/retry behavior, remote byte verification, failed delivery, freshness, durable attention acceptance and scoped retention. `python3 scripts/test_hosted_runtime.py` covers optional backup process failure without accounting shutdown. Offline tests do not prove provider notification delivery.
+
+Remaining activation evidence per installation: actual provider activation with verified delivery/alert evidence, configured destination/policy/recipients, immutable deployed-image retention, actual scheduler and monitor, remote receipts, representative native restore, contact handover and real failure drill. Same-provider monitoring and single-owner operation remain explicit limits unless independently addressed. None is represented by invented approvals, placeholders or unit-test success.

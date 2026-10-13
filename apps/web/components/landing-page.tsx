@@ -1,187 +1,68 @@
 import Link from "next/link";
+import { ArrowRight, ArrowUpRight, BookOpen, Building2, CalendarClock, Check, ChevronDown, CircleCheck, FileChartColumn, FileText, Fingerprint, FolderInput, Landmark, Layers3, Receipt, ShieldCheck, SlidersHorizontal, Terminal, Users, Wallet } from "lucide-react";
 
 import { MarketingFooter, MarketingHeader } from "./marketing-layout";
+import { ProductPreview } from "./product-preview";
 
-type FeatureKind = "ledger" | "review" | "evidence";
+const capabilities = [
+  { icon: BookOpen, title: "General ledger", copy: "Your chart of accounts, journals, balanced entries, and source records. Connected from the start.", detail: "Accounts · Journals · Multi-currency" },
+  { icon: FileText, title: "Invoicing & receivables", copy: "Prepare invoices and credit notes. Follow customer balances, collections, and statements of account.", detail: "Invoices · Credits · Customer statements" },
+  { icon: Wallet, title: "Bills & payments", copy: "Keep supplier bills, payment batches, and receipt records together, with a clear settlement history.", detail: "Payables · Payment batches · Receipts" },
+  { icon: Landmark, title: "Bank reconciliation", copy: "Match statement lines to accounting entries, review differences, and trace adjustments to their source.", detail: "Statements · Matching · Adjustments" },
+  { icon: Receipt, title: "Expense management", copy: "Keep employee expenses, supporting documents, and review steps connected to your accounting work.", detail: "Expenses · Evidence · Review" },
+  { icon: FileChartColumn, title: "Financial reporting", copy: "See profit and loss, balance sheet, cash flow, trial balance, general ledger, and ageing in context.", detail: "Financial statements · PDF & XLSX exports" },
+  { icon: CalendarClock, title: "Recurring workflows", copy: "Set up recurring journals, invoices, and bills. Keep repeatable work on a defined schedule.", detail: "Schedules · Templates · Draft review" },
+  { icon: SlidersHorizontal, title: "Tax & period controls", copy: "Configure tax profiles, review VAT and withholding summaries, and manage period and year-end close.", detail: "Tax profiles · Period locks · Year-end" },
+  { icon: Users, title: "Company directory", copy: "Give customer, supplier, and product information a shared home, close to the documents that use it.", detail: "Customers · Suppliers · Products" },
+  { icon: Building2, title: "Multi-company work", copy: "Move between your authorized companies while keeping records and access tied to the right business.", detail: "Company scope · Workspace switching" },
+  { icon: Fingerprint, title: "Roles & audit history", copy: "Separate data entry, accounting, and oversight. Follow who changed a record and when.", detail: "Role permissions · Audit trail · Posting rules" },
+  { icon: FolderInput, title: "Guided migration", copy: "Stage your source records in migration batches, validate mappings, and reconcile balances before cutover.", detail: "Import validation · Mapping · Reconciliation" },
+];
 
-function TCSIMark({ compact = false }: { compact?: boolean }) {
-  return <span className={`landing-mark${compact ? " landing-mark--compact" : ""}`} aria-hidden="true">TC</span>;
-}
-
-function ArrowIcon() {
-  return (
-    <svg aria-hidden="true" className="landing-arrow" viewBox="0 0 16 16" fill="none">
-      <path d="M2.5 8h10.2M8.8 3.8 13 8l-4.2 4.2" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-function PreviewGlyph({ kind }: { kind: "overview" | "ledger" | "review" }) {
-  if (kind === "ledger") {
-    return <span className="preview-glyph preview-glyph--ledger" aria-hidden="true"><i /><i /><i /></span>;
-  }
-  if (kind === "review") {
-    return <span className="preview-glyph preview-glyph--review" aria-hidden="true"><i /><i /></span>;
-  }
-  return <span className="preview-glyph" aria-hidden="true"><i /><i /><i /></span>;
-}
-
-function FeatureIcon({ kind }: { kind: FeatureKind }) {
-  if (kind === "review") {
-    return (
-      <svg aria-hidden="true" className="feature-icon" viewBox="0 0 24 24" fill="none">
-        <path d="M6 4.5h9.2L18.5 7v12.5H6V4.5Z" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M15 4.5V8h3.5M9 11h6M9 14h4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-      </svg>
-    );
-  }
-  if (kind === "evidence") {
-    return (
-      <svg aria-hidden="true" className="feature-icon" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="m8.5 12.2 2.2 2.2 4.8-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
-      </svg>
-    );
-  }
-  return (
-    <svg aria-hidden="true" className="feature-icon" viewBox="0 0 24 24" fill="none">
-      <path d="M4.5 7.5h15M4.5 12h15M4.5 16.5h9" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-      <path d="M4.5 4.5h15v15h-15v-15Z" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function ProductPreview() {
-  return (
-    <div className="landing-preview" aria-label="Preview of the TCSI Accounting workspace">
-      <div className="preview-topbar">
-        <div className="preview-brand"><TCSIMark compact /><span>Finance workspace</span></div>
-        <span className="preview-status"><i /> Sample view</span>
-      </div>
-      <div className="preview-body">
-        <aside className="preview-rail" aria-label="Preview navigation">
-          <span className="preview-rail-label">Workspace</span>
-          <span className="preview-rail-item preview-rail-item--active"><PreviewGlyph kind="overview" />Overview</span>
-          <span className="preview-rail-item"><PreviewGlyph kind="ledger" />Ledger</span>
-          <span className="preview-rail-item"><PreviewGlyph kind="review" />Review</span>
-          <span className="preview-rail-item"><PreviewGlyph kind="ledger" />Controls</span>
-        </aside>
-        <div className="preview-main">
-          <div className="preview-heading">
-            <div><span>Today</span><strong>Command center</strong></div>
-            <span className="preview-date">Sep 22, 2026</span>
-          </div>
-          <div className="preview-kpis">
-            <div><span>Cash position</span><strong>$198,420</strong><small>Across posted accounts</small></div>
-            <div><span>Open invoices</span><strong>24</strong><small>8 need review</small></div>
-            <div><span>Month close</span><strong>72%</strong><small>On track</small></div>
-          </div>
-          <div className="preview-lower">
-            <div className="preview-chart-panel">
-              <div className="preview-panel-head"><span>Cash movement</span><small>Last 30 days</small></div>
-              <svg className="preview-chart" viewBox="0 0 520 144" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0 32h520M0 72h520M0 112h520" stroke="#f0edf5" />
-                <path d="M0 116C42 108 52 96 88 103c38 7 54-26 88-20 38 7 53 2 85-21 34-24 56 15 87-2 25-14 52-35 78-31 29 5 45-7 94-23v138H0V116Z" fill="#f1edff" />
-                <path d="M0 116C42 108 52 96 88 103c38 7 54-26 88-20 38 7 53 2 85-21 34-24 56 15 87-2 25-14 52-35 78-31 29 5 45-7 94-23" stroke="#7152d6" strokeLinecap="round" strokeWidth="2" />
-                <circle cx="426" cy="36" r="3.5" fill="#7152d6" />
-              </svg>
-              <div className="preview-axis"><span>Aug 24</span><span>Sep 08</span><span>Sep 22</span></div>
-            </div>
-            <div className="preview-activity">
-              <div className="preview-panel-head"><span>Activity</span><small>View all</small></div>
-              <div className="preview-activity-row"><span className="preview-activity-dot" /><div><strong>Reconciliation</strong><small>Ready for review</small></div><time>09:40</time></div>
-              <div className="preview-activity-row"><span className="preview-activity-dot preview-activity-dot--soft" /><div><strong>Invoice review</strong><small>3 new documents</small></div><time>08:15</time></div>
-              <div className="preview-activity-row"><span className="preview-activity-dot preview-activity-dot--muted" /><div><strong>Statement export</strong><small>Completed</small></div><time>Yesterday</time></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const features: Array<{ kind: FeatureKind; label: string; title: string; copy: string }> = [
-  {
-    kind: "ledger",
-    label: "01 / Ledger control",
-    title: "See what moved, and why.",
-    copy: "Bring journals, balances, and account activity into one readable operating view for the day.",
-  },
-  {
-    kind: "review",
-    label: "02 / Review flows",
-    title: "Make the next action obvious.",
-    copy: "Create and follow invoices, payments, and close work with focused queues instead of scattered handoffs.",
-  },
-  {
-    kind: "evidence",
-    label: "03 / Clear evidence",
-    title: "Leave a trail people can trust.",
-    copy: "Give every financial conversation a source, status, owner, and audit event before it reaches the close.",
-  },
+const questions = [
+  { question: "Who is TCSI Accounting built for?", answer: "Company finance teams that need a connected place for daily bookkeeping, customer and supplier activity, bank reconciliation, and financial reporting. The demo helps your finance lead and decision-makers evaluate the workflows against your own requirements." },
+  { question: "Can we manage more than one company?", answer: "Yes. Authorized users can switch between their assigned companies. Records and actions remain subject to company scope and role permissions, so access can match each person’s responsibilities." },
+  { question: "Can we bring our existing accounting data?", answer: "TCSI includes migration batches, mapping checks, and validation tools. Your rollout needs an agreed source export, opening balances, cutover date, and reconciliation with your finance team. We review those requirements with you before moving data." },
+  { question: "Which reports can our team review?", answer: "The workspace includes profit and loss, balance sheet, cash flow, trial balance, general ledger, journal listing, customer and supplier ageing, statements of account, and tax summaries. Available exports include PDF and XLSX, depending on the report. Company-specific formats and tax classifications are reviewed during setup." },
+  { question: "How do demos, pricing, and access work?", answer: "Request a demo with your company details and the workflows you want to see. We’ll discuss your team, companies, data, and rollout needs, then confirm scope and pricing with you. Workspace access is provided by invitation; requesting a demo does not create an accounting account." },
 ];
 
 export function LandingPage() {
   return (
-    <main className="landing">
+    <div className="landing marketing-home">
       <div className="landing-frame">
         <MarketingHeader />
-
-        <section className="landing-hero" id="top" aria-labelledby="landing-title">
-          <div className="landing-hero-copy">
-            <p className="landing-kicker"><span /> TCSI ACCOUNTING <b>/</b> CUSTOMER PILOT</p>
-            <h1 id="landing-title">Clear books for the work <em>behind the numbers.</em></h1>
-            <p className="landing-lede">TCSI Accounting connects the everyday financial work: prepare entries, follow invoices, reconcile activity, and understand what is ready for close.</p>
-            <div className="landing-actions">
-              <a className="landing-button landing-button--primary" href="/web/login">Open the accounting workspace <ArrowIcon /></a>
-              <Link className="landing-button landing-button--quiet" href="/platform">See the platform <ArrowIcon /></Link>
-            </div>
-            <dl className="landing-hero-details">
-              <div><dt>Access</dt><dd>Invitation-only pilot</dd></div>
-              <div><dt>Designed for</dt><dd>Review · reconcile · close</dd></div>
-            </dl>
-          </div>
+        <main id="main-content">
+          <section className="home-hero" aria-labelledby="landing-title">
+            <p className="home-eyebrow"><span /> ACCOUNTING, WITH A CLEARER PERSPECTIVE</p>
+            <h1 id="landing-title">Clarity for every<br /><span>financial decision.</span></h1>
+            <p className="home-hero-lede">Bring your books, payments, and reporting into one connected workspace. Give your team the clarity to move business forward.</p>
+            <div className="home-actions"><Link className="landing-button landing-button--primary" href="/contact">Request a demo <ArrowRight size={17} /></Link><a className="landing-button home-button-secondary" href="#platform">Explore the platform <ArrowRight size={17} /></a></div>
+            <p className="home-hero-note"><Check size={14} /> A guided demo, built around your company.</p>
+          </section>
           <ProductPreview />
-        </section>
+          <div className="home-value-strip" aria-label="Platform foundations"><span>ONE WORKSPACE.<br /><strong>EVERY PART OF YOUR FINANCIAL DAY.</strong></span><p><Layers3 /> Connected accounting</p><p><ShieldCheck /> Clear controls</p><p><FileChartColumn /> Reporting with context</p></div>
 
-        <section className="landing-intro" id="platform" aria-labelledby="platform-title">
-          <div className="landing-intro-heading">
-            <p className="landing-kicker">THE OPERATING VIEW</p>
-            <h2 id="platform-title">One place for the financial day.</h2>
-          </div>
-          <div className="landing-intro-copy">
-            <p>TCSI Accounting puts the state of your work in front of you without adding another layer of noise. Start with what needs attention, then follow the evidence through the ledger.</p>
-            <Link className="landing-text-link" href="/controls">A clearer way to work <ArrowIcon /></Link>
-          </div>
-        </section>
+          <section className="home-section home-platform" id="platform" aria-labelledby="capabilities-title">
+            <div className="home-section-heading"><div><p className="home-eyebrow">THE CONNECTED PLATFORM</p><h2 id="capabilities-title">From the first entry.<br />To the bigger picture.</h2></div><p>The everyday essentials, connected with purpose. Follow the work from a source document to the financial conversation it informs.</p></div>
+            <div className="home-capabilities">{capabilities.map(({ icon: Icon, title, copy, detail }) => <article key={title}><Icon size={24} strokeWidth={1.5} aria-hidden="true" /><h3>{title}</h3><p>{copy}</p><span>{detail}</span></article>)}</div>
+          </section>
 
-        <section className="landing-feature-grid" id="controls" aria-label="Platform capabilities">
-          {features.map((feature) => (
-            <article className="landing-feature" key={feature.kind}>
-              <div className="landing-feature-top"><FeatureIcon kind={feature.kind} /><span>{feature.label}</span></div>
-              <h3>{feature.title}</h3>
-              <p>{feature.copy}</p>
-              <span className="landing-feature-rule" aria-hidden="true" />
-            </article>
-          ))}
-        </section>
+          <section className="home-control-section home-section" id="why-tcsi" aria-labelledby="control-title">
+            <div className="home-control-copy"><p className="home-eyebrow">CONFIDENCE IS IN THE DETAILS</p><h2 id="control-title">Give your team freedom.<br /><span>Keep the right controls.</span></h2><p>Good accounting depends on clear responsibilities. TCSI keeps draft work, posting authority, and company access distinct, so every person knows their part.</p><ul><li><CircleCheck /> Role-based access for encoders, accountants, administrators, and viewers.</li><li><CircleCheck /> Protected posted records and period controls that support a disciplined close.</li><li><CircleCheck /> Audit history and source references that help explain the numbers.</li></ul><Link className="home-text-link" href="/controls">Explore accounting controls <ArrowRight size={16} /></Link></div>
+            <div className="home-control-visual"><div className="control-visual-top"><span className="control-visual-icon"><ShieldCheck size={25} /></span><span>BUILT-IN ACCOUNTABILITY</span></div><h3>Clear at every step.</h3><p>From preparation to financial review.</p><ol>{[{ title: "Prepare", role: "Encoder", copy: "Capture records and save drafts." }, { title: "Review & post", role: "Accountant", copy: "Check entries and post authorized work." }, { title: "Oversee", role: "Administrator", copy: "Manage access and accounting controls." }].map((item, index) => <li key={item.title}><span>{String(index + 1).padStart(2, "0")}</span><div><h4>{item.title}<small>{item.role}</small></h4><p>{item.copy}</p></div></li>)}</ol><div className="control-visual-footer"><Fingerprint size={17} /><span>One record. A traceable history.</span></div></div>
+          </section>
 
-        <section className="landing-signal" aria-label="TCSI operating principles">
-          <div><p className="landing-kicker">BUILT AROUND YOUR CLOSE</p><h2>Less searching. More certainty.</h2></div>
-          <div className="landing-signal-items">
-            <div><strong>01</strong><span>One operating view</span></div>
-            <div><strong>02</strong><span>Reviewable handoffs</span></div>
-            <div><strong>03</strong><span>Clear next steps</span></div>
-          </div>
-        </section>
+          <section className="home-orvexa" aria-labelledby="orvexa-title"><div className="home-orvexa-copy"><p className="home-eyebrow"><Terminal size={14} /> MEET ORVEXA</p><h2 id="orvexa-title">A direct line to<br />your accounting work.</h2><p>Read your finance summary, find invoices, surface overdue balances, or prepare an invoice draft with explicit commands. Orvexa works within your company access and permissions.</p><Link className="home-text-link" href="/contact">See Orvexa in your demo <ArrowUpRight size={16} /></Link></div><div className="orvexa-example"><div><span className="orvexa-monogram">O</span><strong>ORVEXA</strong><span>WORKSPACE ASSISTANT</span></div><code><span>&gt;</span> /overdue</code><p>Find posted customer invoices past their due date, within your authorized company.</p><div className="orvexa-boundaries"><Check size={14} /><span>Rule-based commands. Source-linked results.<br />Drafts require confirmation. Posting stays with your team.</span></div><small>Command example · No live accounting data</small></div></section>
 
-        <section className="landing-cta" id="pilot" aria-labelledby="pilot-title">
-          <div><p className="landing-kicker">READY WHEN YOU ARE</p><h2 id="pilot-title">Bring the month-end conversation into one workspace.</h2></div>
-          <div className="landing-cta-action"><p>See how the product fits your close, review, and reporting workflow before you commit to a rollout.</p><Link className="landing-button landing-button--primary" href="/contact">Request a demo <ArrowIcon /></Link></div>
-        </section>
+          <section className="home-section home-rollout" id="rollout" aria-labelledby="rollout-title"><div className="home-section-heading"><div><p className="home-eyebrow">A THOUGHTFUL START</p><h2 id="rollout-title">Your business first.<br />Your rollout, with a plan.</h2></div><p>Start with a conversation about how your team works. Build the path to your workspace around the people, records, and reports that matter.</p></div><ol className="home-rollout-steps"><li><span>01</span><h3>See your workflow</h3><p>Walk through the product with your finance lead. Focus the demo on your daily work and month-end needs.</p></li><li><span>02</span><h3>Shape your setup</h3><p>Agree on companies, roles, accounts, tax settings, report formats, and any migration requirements.</p></li><li><span>03</span><h3>Validate, then begin</h3><p>Review opening balances and sample outputs with your team. Confirm access and readiness before rollout.</p></li></ol></section>
 
+          <section className="home-faq home-section" aria-labelledby="faq-title"><div><p className="home-eyebrow">BEFORE WE TALK</p><h2 id="faq-title">Good questions.<br />Clear answers.</h2><p>Have a workflow in mind?<br /><Link className="home-text-link" href="/contact">Let’s talk it through <ArrowUpRight size={15} /></Link></p></div><div className="home-faq-list">{questions.map(({ question, answer }) => <details key={question}><summary>{question}<ChevronDown size={18} aria-hidden="true" /></summary><p>{answer}</p></details>)}</div></section>
+
+          <section className="home-final-cta" aria-labelledby="demo-title"><span className="home-eyebrow">A CLEARER FINANCIAL DAY STARTS HERE</span><h2 id="demo-title">Let’s put your business<br />in perspective.</h2><p>See how TCSI Accounting fits your team, your processes, and your next stage of growth.</p><Link className="landing-button landing-button--primary" href="/contact">Request your company demo <ArrowRight size={17} /></Link><small>A focused conversation. A practical next step.</small></section>
+        </main>
         <MarketingFooter />
       </div>
-    </main>
+    </div>
   );
 }

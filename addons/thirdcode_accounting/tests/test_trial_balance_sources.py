@@ -6,7 +6,7 @@ from lxml import html
 from odoo import Command
 from odoo.exceptions import AccessError
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
 
 
 @tagged("post_install", "-at_install")
@@ -68,7 +68,7 @@ class TestTrialBalanceSources(AccountTestInvoicingCommon):
 
     def test_html_export_rechecks_active_company(self):
         wizard = self.env["trial.balance.report.wizard"].create({"company_id": self.env.company.id})
-        other = self.env["res.company"].create({"name": "Inactive report company"})
+        other = self.env["res.company"].sudo().create({"name": "Inactive report company"})
         wizard.company_id = other
         self.assertNotIn(other.id, wizard.with_context(allowed_company_ids=[self.env.company.id]).env.companies.ids)
         with self.assertRaises(AccessError):

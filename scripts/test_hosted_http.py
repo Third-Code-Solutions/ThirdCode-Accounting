@@ -49,6 +49,8 @@ def main():
         assert "Secure" in cookie and "HttpOnly" in cookie and "SameSite=Lax" in cookie
         assert response.getheader("Strict-Transport-Security")
         http.close()
+        from test_platform_http import verify_platform
+        verify_platform(port, cookie, database)
         # The evented worker starts separately from prefork HTTP workers.
         # Wait for its protocol validation response, never accept a proxy error.
         evented_deadline = time.monotonic() + 30

@@ -5,6 +5,7 @@
             <t t-foreach="docs" t-as="o">
                 <t t-call="web.external_layout">
                     <div class="page">
+                        <p><strong>Issued by:</strong> <span t-field="o.company_id.name"/></p>
                         <div class="row mb-3">
                             <div class="col-7"><h2>Invoice</h2><p t-if="o.company_id.thirdcode_trial_mode" class="text-danger">TRIAL COPY - NOT AN OFFICIAL INVOICE (no BIR registration)</p><p t-elif="o.company_id._thirdcode_approved_sample('invoice')" class="text-muted">Approved layout revision: <span t-esc="o.company_id.thirdcode_invoice_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
                             <div class="col-5 text-end"><strong>Document:</strong> <span t-esc="o.name"/><br/><strong>Date:</strong> <span t-esc="o.invoice_date or o.date"/><br/><strong>Control number:</strong> <span t-esc="o.company_id.thirdcode_bir_ack_control_number if o.company_id.thirdcode_bir_ack_approved else ('TRIAL COPY - NOT REGISTERED' if o.company_id.thirdcode_trial_mode else 'PENDING ACCOUNTANT CONFIGURATION')"/></div>
@@ -28,8 +29,10 @@
     <template id="report_thirdcode_receipt">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="p">
+                <t t-set="o" t-value="p"/>
                 <t t-call="web.external_layout">
                     <div class="page">
+                        <p><strong>Issued by:</strong> <span t-field="p.company_id.name"/></p>
                         <div class="text-center"><h2>OFFICIAL RECEIPT</h2><p t-if="p.company_id.thirdcode_trial_mode" class="text-danger">TRIAL COPY - NOT AN OFFICIAL RECEIPT (no BIR registration)</p><p t-elif="p.company_id._thirdcode_approved_sample('receipt')" class="text-muted">Approved layout revision: <span t-esc="p.company_id.thirdcode_receipt_layout_revision or 'unspecified'"/></p><p t-else="" class="text-danger">DRAFT LAYOUT - client sample approval pending</p></div>
                         <table class="table table-sm mt-4"><tr><th>Receipt number</th><td><span t-esc="p.thirdcode_receipt_number"/></td><th>Date</th><td><span t-esc="p.date"/></td></tr><tr><th>Payer / TIN</th><td colspan="3"><span t-esc="p.partner_id.name"/> - <span t-esc="p.thirdcode_receipt_customer_tin or 'not configured'"/></td></tr><tr><th>Amount in figures</th><td colspan="3"><span t-field="p.amount"/></td></tr><tr><th>Amount in words</th><td colspan="3"><span t-esc="p.thirdcode_amount_in_words"/></td></tr><tr><th>VAT amount</th><td colspan="3"><span t-field="p.thirdcode_receipt_vat_amount"/></td></tr><tr><th>VAT breakdown</th><td colspan="3"><span t-esc="p.thirdcode_receipt_vat_breakdown"/></td></tr><tr><th>BIR acknowledgement control number</th><td colspan="3"><span t-esc="p.thirdcode_receipt_control_number if p.company_id.thirdcode_bir_ack_approved else ('TRIAL COPY - NOT REGISTERED' if p.company_id.thirdcode_trial_mode else 'PENDING ACCOUNTANT CONFIGURATION')"/></td></tr></table>
                         <div class="row mt-5"><div class="col-6">VAT is derived only from configured invoice tax lines; accountant review remains required.</div><div class="col-6 text-end">____________________________<br/><span t-esc="p.company_id.thirdcode_receipt_signatory_name or 'Signatory not configured'"/><br/><span t-esc="p.company_id.thirdcode_receipt_signatory_title or ''"/></div></div>
@@ -46,6 +49,7 @@
                 <t t-set="data" t-value="o.get_report_data()"/>
                 <t t-call="web.external_layout">
                     <div class="page">
+                        <p><strong>Company:</strong> <span t-field="o.company_id.name"/> — <strong>Currency:</strong> <span t-field="o.company_id.currency_id.name"/></p>
                         <div class="text-center">
                             <h2 t-esc="data['title']"/>
                             <p><strong>Period:</strong> <span t-esc="data['date_from']"/> to <span t-esc="data['date_to']"/> | <span t-esc="data['target_move']"/></p>

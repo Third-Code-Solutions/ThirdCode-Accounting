@@ -1,0 +1,122 @@
+[
+  {
+    "route": "/contact",
+    "heading": "Show us the work behind your numbers.",
+    "scrollWidth": 375,
+    "theme": "dark",
+    "title": "Request a demo · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 25,
+      "violations": []
+    }
+  },
+  {
+    "route": "/contact",
+    "heading": "Show us the work behind your numbers.",
+    "scrollWidth": 375,
+    "theme": "light",
+    "title": "Request a demo · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 25,
+      "violations": []
+    }
+  },
+  {
+    "route": "/platform",
+    "heading": "The accounting workbench for the whole financial day.",
+    "scrollWidth": 375,
+    "theme": "dark",
+    "title": "Platform · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 23,
+      "violations": []
+    }
+  },
+  {
+    "route": "/platform",
+    "heading": "The accounting workbench for the whole financial day.",
+    "scrollWidth": 375,
+    "theme": "light",
+    "title": "Platform · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 23,
+      "violations": []
+    }
+  },
+  {
+    "route": "/controls",
+    "heading": "Clear roles. Reviewable actions. A stronger close.",
+    "scrollWidth": 375,
+    "theme": "dark",
+    "title": "Controls · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 23,
+      "violations": []
+    }
+  },
+  {
+    "route": "/controls",
+    "heading": "Clear roles. Reviewable actions. A stronger close.",
+    "scrollWidth": 375,
+    "theme": "light",
+    "title": "Controls · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 23,
+      "violations": []
+    }
+  },
+  {
+    "route": "/pilot",
+    "heading": "Start with the workflow your team already knows.",
+    "scrollWidth": 375,
+    "theme": "dark",
+    "title": "Customer pilot · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 23,
+      "violations": []
+    }
+  },
+  {
+    "route": "/pilot",
+    "heading": "Start with the workflow your team already knows.",
+    "scrollWidth": 375,
+    "theme": "light",
+    "title": "Customer pilot · TCSI Accounting",
+    "width": 390,
+    "scan": {
+      "passes": 23,
+      "violations": []
+    }
+  },
+  {
+    "route": "/",
+    "heading": "Clarity for everyfinancial decision.",
+    "scrollWidth": 375,
+    "theme": "dark",
+    "title": "TCSI Accounting | Clarity for every financial decision",
+    "width": 390,
+    "scan": {
+      "passes": 27,
+      "violations": []
+    }
+  },
+  {
+    "route": "/",
+    "heading": "Clarity for everyfinancial decision.",
+    "scrollWidth": 375,
+    "theme": "light",
+    "title": "TCSI Accounting | Clarity for every financial decision",
+    "width": 390,
+    "scan": {
+      "passes": 27,
+      "violations": []
+    }
+  }
+]

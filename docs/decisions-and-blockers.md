@@ -20,8 +20,9 @@ infrastructure owner. The PRD is still version 0.1 review draft.
 | Migration is source-identifier driven | Validation, dry-run, explicit `--apply`, duplicate-safe load, and reconciliation records precede any real cutover. |
 | Backup/restore targets are explicit and disposable | The scripts cover database, filestore, config, image metadata, hashes, and restore inspection; production scheduling is still client-owned. |
 | Trial mode relaxes only the legal-approval output gates | Companies flagged `thirdcode_trial_mode` may print invoice/receipt/statement output without BIR control numbers or approved client samples; every such print carries a visible TRIAL COPY marking and the readiness preflight reports the legal items as trial-deferred instead of blocking. Production companies keep the original gates. |
-| Privileged pilot provisioning rides a token-gated module endpoint | `/tcsi/setup` (plaintext token held by the operator outside the repository; only its SHA-256 is in the addon) provisions companies, charts, journals, open periods and named users idempotently on the hosted engine, so pilot setup does not depend on the technical administrator's password. |
+| Privileged provisioning is opt-in per installation | `/tcsi/setup` is disabled unless the operator configures `TCSI_SETUP_TOKEN_SHA256` privately. No shared digest ships in the addon. Independent deployments leave it disabled and use authenticated owner-console provisioning. |
 | Official-receipt numbering is per company | Each company lazily gets its own `thirdcode.official.receipt` sequence copy (`res.company._thirdcode_receipt_sequence()`), so every trial org numbers receipts from OR/00000001 independently; the seeded sequence stays bound to the main company. |
+| Independent demonstration precedes client-owned installations | One synthetic TCSI demo uses a dedicated Odoo/PostgreSQL stack. Future clients receive the verified image/configuration with fresh volumes and credentials in their own hosting accounts; demo books are never cloned. White-label SaaS is outside this delivery. |
 
 ## Client decisions required before acceptance or production
 
@@ -56,9 +57,10 @@ infrastructure owner. The PRD is still version 0.1 review draft.
   accounting month was available.
 - No client report sample, tax rate, BIR acknowledgement/control value, EIS
   classification, statutory/legal review, or client sign-off was available.
-- Browser visual acceptance was not completed because the available browser
-  automation kernel failed to initialize (`failed to write kernel assets: path
-  not found`). Server-side/API and report rendering checks did run.
+- Local independent-demo browser checks passed on 12 October 2026, including
+  dashboard balances, native invoice layout and company-controls save/reload
+  at desktop and mobile widths. Client browser/device acceptance remains open;
+  see `verification.md` for the tested scope.
 - The local benchmark and backup/restore use synthetic data and local Docker;
   client hardware, second-device backup, restore ownership, and production
   operations are not proven.

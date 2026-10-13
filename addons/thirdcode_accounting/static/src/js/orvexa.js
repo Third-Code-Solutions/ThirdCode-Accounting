@@ -112,7 +112,8 @@ class OrvexaLauncher extends Component {
         try {
             const partnerId = this.store.odoobot?.id;
             if (!partnerId) throw new Error("Assistant not loaded");
-            const thread = await this.store.getChat({ partnerId });
+            // The system persona has no tenant-visible res.users record.
+            const thread = await this.store.joinChat(partnerId);
             thread?.open();
         } catch {
             this.notification.add("ORVEXA chat could not open. Please retry after the workspace reconnects.", { type: "warning" });

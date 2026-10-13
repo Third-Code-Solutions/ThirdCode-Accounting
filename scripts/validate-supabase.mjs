@@ -26,6 +26,16 @@ const workspaceHardeningMigrationPath = await findMigration("_harden_workspace_f
 const workspaceHardeningSql = await readFile(workspaceHardeningMigrationPath, "utf8");
 const privateSchemaMigrationPath = await findMigration("_grant_private_schema_usage.sql");
 const privateSchemaSql = await readFile(privateSchemaMigrationPath, "utf8");
+const selfProvisioningMigrationPath = await findMigration("_disable_unreleased_workspace_self_provisioning.sql");
+const selfProvisioningSql = await readFile(selfProvisioningMigrationPath, "utf8");
+const intakeMigrationPath = await findMigration("_harden_demo_request_intake.sql");
+const intakeSql = await readFile(intakeMigrationPath, "utf8");
+const trustedIntakeMigrationPath = await findMigration("_require_trusted_demo_intake.sql");
+const trustedIntakeSql = await readFile(trustedIntakeMigrationPath, "utf8");
+const jobClaimsMigrationPath = await findMigration("_scope_job_run_claims_by_workspace.sql");
+const jobClaimsSql = await readFile(jobClaimsMigrationPath, "utf8");
+const receivablesMigrationPath = await findMigration("_add_workspace_receivables_summary.sql");
+const receivablesSql = await readFile(receivablesMigrationPath, "utf8");
 
 const requiredTables = [
   "workspaces",
@@ -71,6 +81,24 @@ const hardeningChecks = {
   workspaceInvokerWrapper: workspaceHardeningSql.includes("security invoker") && workspaceHardeningSql.includes("private.create_workspace"),
   workspacePrivateGrant: workspaceHardeningSql.includes("grant execute on function private.create_workspace(text, text) to authenticated"),
   privateSchemaUsage: privateSchemaSql.includes("grant usage on schema private to authenticated"),
+  workspaceSelfProvisioningRevoked:
+    selfProvisioningSql.includes("revoke execute on function public.create_workspace(text, text) from authenticated") &&
+    selfProvisioningSql.includes("revoke execute on function private.create_workspace(text, text) from authenticated"),
+  directIntakeGuard:
+    intakeSql.includes("create trigger demo_requests_enforce_intake") &&
+    intakeSql.includes("pg_advisory_xact_lock") &&
+    intakeSql.includes("Demo request rate limit exceeded"),
+  trustedIntakeOnly:
+    trustedIntakeSql.includes("revoke insert on public.demo_requests from anon, authenticated") &&
+    trustedIntakeSql.includes("drop policy demo_requests_insert_public") &&
+    trustedIntakeSql.includes("Intake authentication required") &&
+    trustedIntakeSql.includes("global_count >= 100 or client_count >= 5"),
+  tenantScopedJobClaims:
+    jobClaimsSql.includes("unique nulls not distinct (workspace_id, job_name, run_key)"),
+  receivablesSummary:
+    receivablesSql.includes("get_workspace_receivables_due") &&
+    receivablesSql.includes("security invoker") &&
+    receivablesSql.includes("grant execute on function public.get_workspace_receivables_due(uuid) to authenticated"),
 };
 
 if (Object.values(portalChecks).some((check) => !check)) {

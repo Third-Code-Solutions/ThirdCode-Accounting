@@ -1,12 +1,16 @@
 import base64
 import hashlib
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
+
+from lxml import etree
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
-from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.tests import Form, tagged
+from odoo.tools.safe_eval import safe_eval
+from .common import AccountTestInvoicingCommon
 
 from ..models.cutover_math import build_cutover_plan, CutoverPolicyError
 
@@ -16,6 +20,7 @@ class TestAccountingCompletion(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        (cls.partner_a | cls.partner_b).write({"company_id": cls.env.company.id})
         cls.company = cls.company_data["company"]
         cls.admin = cls.env["res.users"].create({"name": "Completion administrator", "login": "completion-admin",
             "company_id": cls.company.id, "company_ids": [Command.set(cls.company.ids)],
@@ -28,6 +33,122 @@ class TestAccountingCompletion(AccountTestInvoicingCommon):
                 Command.create({"account_id": self.company_data["default_account_assets"].id, "debit": amount, "name": "Asset"}),
                 Command.create({"account_id": self.company_data["default_account_revenue"].id, "credit": amount, "name": "Income"}),
             ]})
+
+    def test_migration_form_recomputes_readonly_row_results(self):
+        batches = self.env["thirdcode.migration.batch"].with_user(self.admin)
+        with Form(batches) as form:
+            form.source_system = "csv"
+            with form.row_ids.new() as row:
+                row.source_identifier = "FORM-MATCH"
+                row.target_model = "account.move"
+                row.source_debit = 10
+                row.source_credit = 10
+                row.target_debit = 10
+                row.target_credit = 10
+        batch = form.record
+        self.assertEqual(batch.row_ids.state, "matched")
+        self.assertFalse(batch.row_ids.error_message)
+        self.assertNotEqual(batch.name, "New")
+        with Form(batch) as form:
+            with form.row_ids.edit(0) as row:
+                row.target_credit = 9
+        self.assertEqual(batch.row_ids.state, "error")
+        with self.assertRaises(UserError), self.cr.savepoint():
+            batch.action_validate()
+        with Form(batch) as form:
+            with form.row_ids.edit(0) as row:
+                row.target_credit = 10
+        batch.action_validate()
+        self.assertEqual(batch.state, "validated")
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            batches.env["thirdcode.migration.row"].create({
+                "batch_id": batches.create({"source_system": "csv"}).id,
+                "source_identifier": "FORGED-MATCH", "target_model": "account.move",
+                "state": "matched",
+            })
+        with patch.object(type(self.env["ir.sequence"]), "next_by_code", return_value=False):
+            first, second = batches.create([{"source_system": "csv"}, {"source_system": "csv"}])
+        self.assertNotEqual(first.name, second.name)
+        self.assertEqual(first.name, f"MIG/{first.company_id.id}/{first.id:06d}")
+
+    def test_workspace_roles_can_prepare_journal_entries(self):
+        self.assertTrue(self.admin.has_group("account.group_account_user"))
+        foreign_company = self.env["res.company"].sudo().create({"name": "Journal visibility foreign company"})
+        for role in ("administrator", "accountant", "encoder"):
+            with self.subTest(role=role):
+                user = self.admin if role == "administrator" else self.env["res.users"].create({
+                    "name": "Journal " + role, "login": "journal-" + role,
+                    "company_id": self.company.id, "company_ids": [Command.set(self.company.ids)],
+                    "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_" + role).ids)],
+                })
+                moves = self.env["account.move"].with_user(user).with_context(default_move_type="entry")
+                with self.assertRaises(AccessError), self.cr.savepoint():
+                    moves.with_context(allowed_company_ids=foreign_company.ids).create({"company_id": foreign_company.id})
+                arch = etree.fromstring(moves.get_view(view_id=self.env.ref("account.view_move_form").id, view_type="form")["arch"])
+                self.assertTrue(arch.xpath("//page[@name='aml_tab']/field[@name='line_ids']"))
+                self.assertTrue(arch.xpath("//div[@name='journal_div']/field[@name='journal_id']"))
+                with Form(moves) as form:
+                    form.journal_id = self.company_data["default_journal_misc"]
+                    with form.line_ids.new() as line:
+                        line.account_id = self.company_data["default_account_assets"]
+                        line.debit = 100
+                    with form.line_ids.new() as line:
+                        line.account_id = self.company_data["default_account_revenue"]
+                        line.credit = 100
+                move = form.record
+                self.assertEqual(move.state, "draft")
+                self.assertEqual(sum(move.line_ids.mapped("balance")), 0)
+                if role == "encoder":
+                    self.assertFalse(user.has_group("account.group_account_readonly"))
+                    with self.assertRaises(AccessError), self.cr.savepoint():
+                        move.action_post()
+                else:
+                    move.action_post()
+                    self.assertEqual(move.state, "posted")
+
+    def test_expense_profile_configuration_is_scoped_and_idempotent(self):
+        self.assertEqual(
+            self.env.ref("thirdcode_accounting.action_thirdcode_employee_list").view_id,
+            self.env.ref("thirdcode_accounting.view_thirdcode_employee_list"),
+        )
+        employee_user = self.env["res.users"].create({
+            "name": "Expense encoder", "login": "profile-encoder",
+            "company_id": self.company.id, "company_ids": [Command.set(self.company.ids)],
+            "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_encoder").ids)],
+        })
+        action = employee_user.with_user(self.admin).action_thirdcode_expense_profile()
+        wizard_model = self.env["thirdcode.expense.profile.wizard"].with_user(self.admin)
+        wizard = wizard_model.with_context(**action["context"]).create({"expense_manager_id": self.admin.id})
+        wizard.action_save_profile()
+        employees = self.env["hr.employee"].sudo().search([
+            ("user_id", "=", employee_user.id), ("company_id", "=", self.company.id),
+        ])
+        self.assertEqual(len(employees), 1)
+        self.assertEqual(employees.name, "Expense encoder")
+        self.assertEqual(employees.expense_manager_id, self.admin)
+        employees.write({"private_email": "private-profile@example.invalid"})
+        wizard.action_save_profile()
+        self.assertEqual(self.env["hr.employee"].sudo().search_count([
+            ("user_id", "=", employee_user.id), ("company_id", "=", self.company.id),
+        ]), 1)
+        self.assertEqual(employees.private_email, "private-profile@example.invalid")
+        self.assertFalse(self.admin.has_group("hr.group_hr_user"))
+        self.assertEqual(employee_user.with_user(self.admin).action_thirdcode_expense_profile()["context"]["default_expense_manager_id"], self.admin.id)
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            employee_user.with_user(employee_user).action_thirdcode_expense_profile()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            wizard_model.create({"user_id": employee_user.id, "expense_manager_id": employee_user.id}).action_save_profile()
+        foreign_company = self.env["res.company"].sudo().create({"name": "Expense profile foreign company"})
+        foreign_user = self.env["res.users"].sudo().create({
+            "name": "Foreign expense account", "login": "profile-foreign",
+            "company_id": foreign_company.id, "company_ids": [Command.set(foreign_company.ids)],
+            "groups_id": [Command.set(self.env.ref("thirdcode_accounting.group_thirdcode_administrator").ids)],
+        })
+        for target, manager in ((foreign_user, self.admin), (employee_user, foreign_user)):
+            with self.assertRaises(AccessError), self.cr.savepoint():
+                wizard_model.create({"user_id": target.id, "expense_manager_id": manager.id}).action_save_profile()
+        with self.assertRaises(AccessError), self.cr.savepoint():
+            wizard.with_context(allowed_company_ids=foreign_company.ids).action_save_profile()
 
     def test_continuous_numbering_year_boundary_failure_and_reversal(self):
         first = self._entry(day="2034-12-31"); first.action_post()
@@ -89,6 +210,23 @@ class TestAccountingCompletion(AccountTestInvoicingCommon):
         target = source.line_ids.filtered(lambda line: line.account_id == outstanding)
         statement = self.env["account.bank.statement.line"].with_user(self.admin).create({"journal_id": bank.id, "date": fields.Date.today(), "amount": 100, "payment_ref": "Statement deposit"})
         original = [(line.id, line.account_id.id, line.balance) for line in statement.move_id.line_ids]
+        wizard_model = self.env["thirdcode.statement.match.wizard"].with_user(self.admin).with_context(
+            default_statement_line_id=statement.id
+        )
+        wizard = Form(wizard_model)
+        wizard.journal_id = self.company_data["default_journal_misc"]
+        arch = etree.fromstring(wizard_model.get_view(view_type="form")["arch"])
+        selector = arch.xpath("//field[@name='line_ids']/list/field[@name='move_line_id']")[0]
+        child_model = self.env["thirdcode.statement.match.wizard.line"].with_user(self.admin)
+        domain = safe_eval(selector.get("domain") or child_model._fields["move_line_id"].domain, {
+            "parent": SimpleNamespace(company_id=wizard.company_id.id), "company_id": False,
+        })
+        choices = self.env["account.move.line"].with_user(self.admin).name_search(source.name, domain)
+        self.assertIn(target.id, [choice[0] for choice in choices])
+        self.assertTrue(safe_eval(selector.get("options", "{}"))["no_create"])
+        with wizard.line_ids.new() as allocation:
+            allocation.move_line_id = target
+            self.assertEqual(allocation.amount, 150)
         values = [{"line_id": target.id, "amount": 100}]
         adjustment_id = statement.action_match_thirdcode_items(values, self.company_data["default_journal_misc"].id, str(fields.Date.today()))
         self.assertTrue(statement.is_reconciled)

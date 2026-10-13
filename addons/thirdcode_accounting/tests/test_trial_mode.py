@@ -1,7 +1,15 @@
-from odoo import Command, fields
+from lxml import html
+
+from odoo import SUPERUSER_ID, Command, fields
 from odoo.exceptions import AccessError, UserError
+from odoo.service.model import get_public_method
 from odoo.tests import tagged
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import AccountTestInvoicingCommon
+
+from odoo.addons.thirdcode_accounting.models.setup_service import (
+    SETUP_ENTRY_CONTEXT_KEY,
+    SETUP_ENTRY_SENTINEL,
+)
 
 
 @tagged("post_install", "-at_install")
@@ -47,6 +55,9 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
         action = invoice.action_print_thirdcode_invoice()
         self.assertEqual(action["type"], "ir.actions.report")
+        rendered, _ = self.env["ir.actions.report"]._render_qweb_html(action["report_name"], invoice.ids)
+        pages = html.fromstring(rendered).xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' page ')]")
+        self.assertTrue(any("Issued by:" in page.text_content() and self.company.name in page.text_content() for page in pages))
 
         self.company.sudo().write({"thirdcode_trial_mode": False})
         with self.assertRaises(UserError):
@@ -67,6 +78,9 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
         action = payment.action_print_thirdcode_receipt()
         self.assertEqual(action["type"], "ir.actions.report")
+        rendered, _ = self.env["ir.actions.report"]._render_qweb_html(action["report_name"], payment.ids)
+        pages = html.fromstring(rendered).xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' page ')]")
+        self.assertTrue(any("Issued by:" in page.text_content() and self.company.name in page.text_content() for page in pages))
 
         self.company.sudo().write({"thirdcode_trial_mode": False})
         with self.assertRaises(UserError):
@@ -85,27 +99,99 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
         self.assertEqual(wizard().report_status, "trial")
         self.assertIn("TRIAL COPY", wizard().get_report_data()["layout_status"])
+        for report_type in ("balance_sheet", "profit_loss", "cash_flow"):
+            report = wizard()
+            report.report_type = report_type
+            action = report.action_export_pdf()
+            rendered, _ = self.env["ir.actions.report"]._render_qweb_html(action["report_name"], report.ids)
+            pages = html.fromstring(rendered).xpath("//div[contains(concat(' ', normalize-space(@class), ' '), ' page ')]")
+            self.assertTrue(any(
+                "Company:" in page.text_content() and self.company.name in page.text_content()
+                and "Currency:" in page.text_content() and self.company.currency_id.name in page.text_content()
+                for page in pages
+            ))
 
         self.company.sudo().write({"thirdcode_trial_mode": False})
         self.assertEqual(wizard().report_status, "draft")
         self.assertIn("DRAFT LAYOUT", wizard().get_report_data()["layout_status"])
 
+    def test_system_financial_report_dependencies_are_read_only_and_scoped(self):
+        self.assertTrue(self.env.user.has_group("base.group_system"))
+        self.assertFalse(self.env.user.has_group("thirdcode_accounting.group_thirdcode_accountant"))
+        allocations = self.env["thirdcode.cash.flow.allocation"]
+        closings = self.env["thirdcode.year.end.close"]
+        for model in (allocations, closings):
+            self.assertTrue(model.check_access_rights("read", raise_exception=False))
+            for operation in ("create", "write", "unlink"):
+                self.assertFalse(model.check_access_rights(operation, raise_exception=False))
+
+        records = []
+        other_company_data = self.setup_other_company()
+        for data in (self.company_data, other_company_data):
+            company = data["company"]
+            move = self.env["account.move"].sudo().with_company(company).create({
+                "company_id": company.id,
+                "journal_id": data["default_journal_bank"].id,
+                "date": fields.Date.today(),
+                "line_ids": [
+                    Command.create({"account_id": data["default_journal_bank"].default_account_id.id,
+                                    "debit": 25}),
+                    Command.create({"account_id": data["default_account_revenue"].id, "credit": 25}),
+                ],
+            })
+            move.action_post()
+            allocation = allocations.sudo().create({
+                "move_id": move.id, "category": "operating", "amount": 25,
+                "explanation": "System report access regression",
+            })
+            equity = self.env["account.account"].sudo().create({
+                "name": "System report retained earnings", "code": "SYSRE",
+                "account_type": "equity", "company_ids": [Command.set(company.ids)],
+            })
+            close = closings.sudo().create({
+                "company_id": company.id, "date_end": fields.Date.today(),
+                "journal_id": data["default_journal_misc"].id,
+                "retained_earnings_account_id": equity.id,
+            })
+            records.append((allocation, close))
+        for own, foreign in zip(records[0], records[1]):
+            model = self.env[own._name].with_context(allowed_company_ids=self.company.ids)
+            self.assertEqual(model.search([("id", "in", (own | foreign).ids)]).ids, own.ids)
+            with self.assertRaises(AccessError):
+                model.browse(foreign.id).read(["company_id"])
+        report = self.env["thirdcode.financial.report.wizard"].create({
+            "report_type": "cash_flow", "company_id": self.company.id,
+            "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+        })
+        self.assertEqual(report.get_report_data()["cash_movement"], "25.00")
+
     def test_setup_service_requires_token_context(self):
-        service = self.env["thirdcode.setup.service"]
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID)
 
         with self.assertRaises(AccessError):
             service.dispatch("status", {})
 
-        result = service.with_context(tcsi_setup_token_ok=True).dispatch("status", {})
+        # The legacy context flag is forgeable through the web API and no
+        # longer authorizes anything.
+        with self.assertRaises(AccessError):
+            service.with_context(tcsi_setup_token_ok=True).dispatch("status", {})
+
+        # The entry point itself is out of reach for remote calls.
+        self.assertTrue(getattr(type(service), "dispatch")._api_private)
+        with self.assertRaises(AccessError):
+            get_public_method(service, "dispatch")
+
+        entered = service.with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
+        result = entered.dispatch("status", {})
         self.assertIn("companies", result)
         self.assertIn("users", result)
 
         with self.assertRaises(UserError):
-            service.with_context(tcsi_setup_token_ok=True).dispatch("not-an-action", {})
+            entered.dispatch("not-an-action", {})
 
     def test_setup_service_create_user_and_batch(self):
         company = self.env["res.company"].sudo().create({"name": "Trial service company"})
-        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
 
         result = service.dispatch(
             "create_user",
@@ -152,7 +238,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
     def test_setup_service_period_and_journal_helpers(self):
         company = self.env["res.company"].sudo().create({"name": "Trial period company"})
-        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
 
         journal_steps = service._ensure_journals(company)
         self.assertTrue(any("journals created" in step for step in journal_steps))
@@ -173,8 +259,30 @@ class TestTrialMode(AccountTestInvoicingCommon):
         rerun_steps = service._ensure_period(company, {})
         self.assertTrue(any("reused" in step for step in rerun_steps))
 
+    def test_setup_service_enables_only_company_bank_suspense_reconciliation(self):
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID)
+        bank = self.company_data["default_journal_bank"]
+        suspense = bank.suspense_account_id
+        self.assertTrue(suspense)
+        suspense.reconcile = False
+        other_company = self.env["res.company"].sudo().create({"name": "Other suspense company"})
+        other = self.env["account.account"].sudo().create({
+            "name": "Other suspense", "code": "OTHSUSP", "account_type": "asset_current",
+            "company_ids": [Command.set(other_company.ids)], "reconcile": False,
+        })
+        unrelated = self.env["account.account"].create({
+            "name": "Unrelated current asset", "code": "UNRSUSP", "account_type": "asset_current",
+            "company_ids": [Command.set(self.company.ids)], "reconcile": False,
+        })
+        steps = service._ensure_journals(self.company)
+        self.assertTrue(suspense.reconcile)
+        self.assertFalse(other.reconcile)
+        self.assertFalse(unrelated.reconcile)
+        self.assertIn("enabled statement matching on bank/cash suspense accounts", steps)
+        self.assertNotIn("enabled statement matching on bank/cash suspense accounts", service._ensure_journals(self.company))
+
     def test_maintenance_locks_reports_backends(self):
-        service = self.env["thirdcode.setup.service"].with_context(tcsi_setup_token_ok=True)
+        service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID).with_context({SETUP_ENTRY_CONTEXT_KEY: SETUP_ENTRY_SENTINEL})
         result = service._action_maintenance({"op": "locks"})
         self.assertIn("backends", result)
         self.assertIsInstance(result["backends"], list)
@@ -341,7 +449,7 @@ class TestTrialMode(AccountTestInvoicingCommon):
     def test_platform_owner_accounts_are_hidden_and_protected(self):
         company_d = self.env["res.company"].sudo().create({"name": "Tenant D"})
         admin_d = self._provision_admin("tenant-d-admin", company_d)
-        platform = self.env["res.users"].sudo().create(
+        platform = self.env["res.users"].with_user(SUPERUSER_ID).create(
             {
                 "name": "Platform Guard",
                 "login": "platform-guard-test",
@@ -359,8 +467,9 @@ class TestTrialMode(AccountTestInvoicingCommon):
             }
         )
 
-        # The platform account is invisible to the tenant even though the
-        # company overlaps.
+        # Owner provisioning discards the requested customer membership.
+        self.assertEqual(platform.company_ids, self.env.ref("thirdcode_accounting.company_platform"))
+        # The platform account is invisible to the tenant.
         self.assertFalse(
             self.env["res.users"].with_user(admin_d).search([("id", "=", platform.id)])
         )

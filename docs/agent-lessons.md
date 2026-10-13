@@ -1,5 +1,13 @@
 # Verified implementation lessons
 
+## Error branding must cover rendered and copied diagnostics — 6 October 2026
+
+- Trigger: server errors still showed the upstream product name after dialog titles were branded.
+- Cause: the native error template and both clipboard handlers read the original message and traceback; title-only patches missed those paths.
+- Remedy: use branded presentation getters and clipboard formatting, retaining original payloads, exception identifiers and file paths. Apply native template inheritance to the title, message and diagnostic heading.
+- Prevention: test display and clipboard together; only replace known branding phrases in raw diagnostics. Verify native rendering because class stubs and XML source checks cannot prove template compilation.
+- Scope/evidence: `scripts/test-branding.mjs`, `scripts/test-branding.py`, and `docs/error-branding-2026-10-06/README.md`; synthetic native dialogs and copy behavior verified without accounting mutations.
+
 ## Editable amounts hidden by currency overlays — 5 October 2026
 
 - Trigger: bank reconciliation and other monetary inputs appeared empty and unresponsive, although the live input was enabled, focused and held `0.00`.
@@ -72,3 +80,37 @@
 - Remedy: accept absent/null result only for the exact empty-parameter destroy call, retaining HTTP 200, JSON-RPC 2.0, exact integer request-ID, no-error and applicable-cookie checks. Authentication and model reads still require their normal result.
 - Prevention: test invalid envelopes, unexpected logout parameters, strict authentication/model decoding, valid session cleanup and the missing-cookie failure. HTTP 200 alone remains insufficient.
 - Scope/evidence: independently reviewed private baseline verifier; fresh 12:19 UTC production read-only check and session cleanup passed. Original incomplete evidence remains retained.
+
+
+## Public theme changes must cover destination pages — 6 October 2026
+
+- Trigger: homepage passed light/dark checks, but its demo CTA opened a white form panel with pale text in dark mode; detail-page labels also failed contrast.
+- Cause: public form surfaces and accent labels used fixed light/background or background-accent colors outside the shared theme tokens. Color transitions briefly interpolated text through low-contrast values during mode changes.
+- Remedy: use surface/muted/accent-text tokens for form panels, fields, placeholders and public section labels; keep color changes immediate. Read active theme from the document when mounting a prefetched destination's toggle.
+- Prevention: follow the primary CTA and check every public route in both themes, including typed input, keyboard toggles, reloads and prefetched navigation. Do not accept a homepage-only theme scan.
+- Scope/evidence: Next.js public marketing; all 10 public route/theme combinations passed axe A/AA scans in `docs/landing-page-evidence/public-route-checks.json`; final width matrix in `responsive-checks.json`.
+
+## ORM state and platform authorization — 6 October 2026
+
+- Trigger: native tests found incident recurrence losing its state/count after direct SQL; a publication revision check read stale database state. Generic RPC also accepted a forged setup-context marker before the owner check was added.
+- Cause: pending ORM values were not flushed before SQL, and a caller-controlled context marker had been treated as authorization.
+- Remedy: flush incident rows before upsert and invalidate without another flush; flush publication revision before row locking. Require the full owner predicate before setup dispatch and keep internal user provisioning private to RPC.
+- Prevention: retain recurrence/revision regressions, tenant/group-only/public denial tests, and forged-context tests. The controller's trusted identity and token check remain separate boundaries.
+- Evidence: native CI 37381190163 passed 138 tests and 59 integration checks; hosted HTTP CI exercised owner/tenant denial, actual organization provisioning, snapshot publication isolation and capture after rollback.
+
+## Tenant contacts and native elevated serializers — 6 October 2026
+
+- Trigger: native partner rules exposed company-less contacts and internal-user identities; strict rules then uncovered automatic chat subscription assumptions.
+- Cause: native shared-contact exceptions apply to ORM searches, while mail persona serializers deliberately use elevated access. Shared-channel broadcasts are constructed once under the sender, so sender-only filtering cannot protect receivers.
+- Remedy: global contact/user/bank scope plus explicit shared grants; narrowly elevated automatic-membership lookup intersected with actor-visible contacts; actor-scoped Store serialization and recipient-scoped bus metadata filtering. Preserve message rows/IDs and prune dependent hidden call references.
+- Prevention: two-company direct-read/search/export/dropdown, archived-identity, shared-accounting, native Store and receiver-bus regressions. Foreign-company test fixtures provision as installer; business assertions retain tenant users.
+- Evidence: CI37392179294 contact/mail/shared-accounting cases passed; isolated 14.0-to-14.1 upgrade preserved selected business projections. Final full-suite/deployment status is tracked in `docs/contact-isolation-evidence/README.md`.
+
+
+## Settings initialization through the hosted proxy — 7 October 2026
+
+- Trigger: owner Settings click stayed on the console; browser reported `ConnectionLostError` for `/base_setup/data`.
+- Cause: the native Settings initialization RPC prefix was absent from the portal rewrite and middleware bypass; its POST received portal HTML.
+- Remedy: register `base_setup` with accounting routes and exclude it from portal middleware. Preserve private/no-store response headers.
+- Prevention: explicit `/base_setup/data` rewrite, POST passthrough and no-cache regressions in `apps/web/proxy.test.ts`; verify Settings by clicking from the live console.
+- Evidence: pre-fix browser error plus HTTP HTML response; 49 proxy tests pass locally. Live release verification recorded in `docs/console-navigation-fix-2026-10-07.md`.

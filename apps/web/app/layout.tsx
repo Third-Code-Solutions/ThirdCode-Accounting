@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+
+import { portalThemeCookie, resolvePortalTheme } from "../lib/portal-theme";
 
 import "./globals.css";
+import "./marketing.css";
 
 export const metadata: Metadata = {
   title: {
@@ -21,9 +25,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const theme = resolvePortalTheme((await cookies()).get(portalThemeCookie)?.value);
   return (
-    <html lang="en">
+    <html lang="en" data-portal-theme={theme} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );
