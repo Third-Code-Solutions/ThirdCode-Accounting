@@ -268,7 +268,10 @@ from odoo import api
 odoo.tools.config.parse_config(['-c', sys.argv[1], '--no-http', '--max-cron-threads', '0'])
 registry = odoo.registry(sys.argv[2])
 with registry.cursor() as cursor:
-    env = api.Environment(cursor, 2, {'allowed_company_ids': [1]})
+    # The hosted clone's admin is the platform owner, who is confined to the
+    # platform company by design; seeding synthetic books in the main company
+    # therefore runs with superuser privileges while keeping the admin's uid.
+    env = api.Environment(cursor, 2, {'allowed_company_ids': [1]}, su=True)
     env['ir.cron'].search([]).write({'active': False})
     env['ir.mail_server'].search([]).write({'active': False})
     os.environ['ALIGNMENT_MODE'] = 'seed'

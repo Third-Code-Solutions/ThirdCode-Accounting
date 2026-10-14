@@ -34,15 +34,25 @@ class PlatformCompany(models.Model):
         if any(v.get("thirdcode_is_platform", self.env.context.get("default_thirdcode_is_platform")) for v in values_list):
             require_platform_owner(self.env)
         self.check_access("create")
-        # Native create links the new company to the acting user before returning.
-        # Only an already-authorized owner uses the installer for that native step.
-        creator = self.with_user(SUPERUSER_ID) if is_platform_owner(self.env) else self
-        companies = super(PlatformCompany, creator).create(values_list)
+        # Native creation writes the company partner and its related fields
+        # before the acting user has any scope on the new record; the contact
+        # isolation rules cannot grant that intermediate write, so the framework
+        # step runs with the installer once the create itself is authorized
+        # above. Only an already-authorized creator reaches this point.
+        actor = self.env.user
+        companies = super(PlatformCompany, self.with_user(SUPERUSER_ID)).create(values_list)
         home = self.env.ref("thirdcode_accounting.company_platform", raise_if_not_found=False)
         if home:
             # Native company creation can automatically extend system users' scope.
             owners = self.env["res.users"].with_user(SUPERUSER_ID).search([("thirdcode_platform_owner", "=", True)])
             owners.write({"company_id": home.id, "company_ids": [Command.set(home.ids)]})
+        if companies and not is_platform_owner(self.env):
+            # Reproduce the native link of the new company to its creator, which
+            # runs with the installer alongside this create. The installer is
+            # already linked by that native step, so only the creator is left.
+            self.env["res.users"].browse(actor.id).with_user(SUPERUSER_ID).write({
+                "company_ids": [Command.link(company.id) for company in companies],
+            })
         return companies
 
     def write(self, values):

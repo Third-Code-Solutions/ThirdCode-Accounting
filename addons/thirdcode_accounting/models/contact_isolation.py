@@ -170,7 +170,17 @@ class ContactIsolation(models.Model):
         if "company_id" in values and self:
             # Changing a tree's scope may expose hidden children through native
             # sudo synchronization. Ownership transfers require owner review.
-            if any(p.company_id.id != values["company_id"] for p in self):
+            # Native user life-cycle synchronization aligns a personal contact
+            # with its user's company (res.users create/write); that alignment
+            # is not an ownership transfer of a business contact.
+            target = values["company_id"]
+            misaligned = self.filtered(lambda partner: partner.company_id.id != target)
+            persona = self.env["res.users"].sudo().search([
+                ("partner_id", "in", misaligned.ids),
+                ("company_id", "=", target),
+            ]).partner_id
+            misaligned -= persona
+            if misaligned:
                 raise AccessError(_("Contact ownership changes require platform owner review."))
 
     @api.model_create_multi

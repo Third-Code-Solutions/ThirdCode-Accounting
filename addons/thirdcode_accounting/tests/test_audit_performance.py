@@ -249,6 +249,10 @@ class TestAuditMetadataPerformance(AccountTestInvoicingCommon):
         # Raw relation IDs need no label fetches at all.
         for records in (invoice, invoice.line_ids):
             with self.subTest(raw_ids=records._name):
+                # Prime the framework's lazy per-read lookups (the ir.default
+                # cache key resolves env.company) so both snapshots start from
+                # an identical warm state; the prefetch stays a raw-mode no-op.
+                self._snapshot(records, True, load="_classic_write")
                 self.assertEqual(
                     self._snapshot(records, True, load="_classic_write"),
                     self._snapshot(records, False, load="_classic_write"),
