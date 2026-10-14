@@ -1,0 +1,10 @@
+[Unit]
+Description=TCSI independent recovery check every fifteen minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+AccuracySec=1s
+Unit=tcsi-recovery-monitor.service
+
+# Monitor this timer's execution from a separate operations/dead-man service too.

@@ -1,0 +1,10 @@
+[Unit]
+Description=TCSI proposed nightly recovery schedule
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 Asia/Manila
+AccuracySec=1s
+Persistent=true
+Unit=tcsi-recovery-capture.service
+
+# Disabled template: no automatic enable/install action.

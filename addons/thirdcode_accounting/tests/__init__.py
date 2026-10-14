@@ -11,6 +11,8 @@ from . import test_role_matrix
 from . import test_company_controls
 from . import test_rbac_hardening
 from . import test_audit_performance
+from . import test_monthly_reconciliation
+
 
 from . import test_platform_operations
 
