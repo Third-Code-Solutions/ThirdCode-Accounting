@@ -12,8 +12,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.116.0",
+    "@supabase/supabase-js": "2.117.3",
     "@tcsi/contracts": "0.1.0",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   }
 }
