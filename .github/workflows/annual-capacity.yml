@@ -1,0 +1,132 @@
+name: Optional synthetic annual capacity
+
+on:
+  pull_request:
+    branches: [main]
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Explicit fixed engineering scenario
+        required: true
+        default: diagnostic
+        type: choice
+        options: [diagnostic, capacity]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: annual-capacity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  annual-capacity:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.action == 'labeled' &&
+       (github.event.label.name == 'run-capacity-benchmark' || github.event.label.name == 'run-capacity-diagnostic'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      TCSI_ANNUAL_CAPACITY_CI: >-
+        ${{ (inputs.scenario == 'capacity' || github.event.label.name == 'run-capacity-benchmark') && 'engineering-only' || 'diagnostic-only' }}
+    services:
+      postgres:
+        image: postgres:18.6-alpine
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: ci-disposable-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U odoo"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Record the engineering workload and runner resources
+        run: |
+          mkdir -p "$RUNNER_TEMP/tcsi-capacity-evidence"
+          git rev-parse HEAD > "$RUNNER_TEMP/tcsi-capacity-evidence/source-revision.txt"
+          {
+            printf '%s\n' 'Synthetic engineering capacity only; no client or hosted acceptance.' \
+              "Selected fixed scenario: $TCSI_ANNUAL_CAPACITY_CI" \
+              'Capacity: 3750 documents/1250 settlements/10000 lines, 3300s seed/3600s outer.' \
+              'Diagnostic: 192 documents/64 settlements/512 lines, 720s seed/900s outer.' \
+              'PDF target remains under 30s; native accounting and audit controls remain enabled.'
+            nproc
+            free -m
+            df -h
+          } > "$RUNNER_TEMP/tcsi-capacity-evidence/resources-before.log"
+      - name: Build the pinned accounting runtime
+        timeout-minutes: 5
+        run: docker build -f docker/odoo/Dockerfile -t tcsi-annual-capacity-ci .
+      - name: Install accounting in the disposable source database
+        timeout-minutes: 5
+        run: |
+          set -o pipefail
+          docker run --rm --network host --entrypoint odoo \
+            --mount type=volume,source=tcsi-capacity-ci-data,target=/var/lib/odoo tcsi-annual-capacity-ci \
+            --db_host=127.0.0.1 --db_user=odoo --db_password=ci-disposable-only \
+            -d tcsi_orvexa_ci --addons-path=/opt/extra-addons,/usr/lib/python3/dist-packages/odoo/addons \
+            -i thirdcode_accounting --without-demo=all --stop-after-init --no-http --max-cron-threads=0 \
+            2>&1 | tee "$RUNNER_TEMP/tcsi-capacity-evidence/install.log"
+      - name: Prepare the private runtime evidence directory
+        run: |
+          docker run --rm --user root --entrypoint sh \
+            --mount "type=bind,source=$RUNNER_TEMP/tcsi-capacity-evidence,target=/tcsi-evidence" \
+            tcsi-annual-capacity-ci -c 'chown odoo:odoo /tcsi-evidence && chmod 700 /tcsi-evidence'
+      - name: Run the selected fixed native annual scenario
+        timeout-minutes: 62
+        run: >-
+          docker run --init --name tcsi-annual-capacity-run --network host --entrypoint python3
+          --env PGHOST=127.0.0.1 --env PGPORT=5432 --env PGUSER=odoo
+          --env PGPASSWORD=ci-disposable-only --env PGDATABASE=tcsi_orvexa_ci
+          --env GITHUB_ACTIONS=true --env TCSI_ANNUAL_NATIVE_CI=disposable-only
+          --env TCSI_ANNUAL_CAPACITY_CI
+          --env TCSI_ANNUAL_EVIDENCE=/tcsi-evidence/annual
+          --mount type=volume,source=tcsi-capacity-ci-data,target=/var/lib/odoo
+          --mount "type=bind,source=$PWD/scripts,target=/tcsi-tests,readonly"
+          --mount "type=bind,source=$RUNNER_TEMP/tcsi-capacity-evidence,target=/tcsi-evidence"
+          tcsi-annual-capacity-ci /tcsi-tests/test_annual_native.py
+      - name: Retain process and resource failures and stop the owned container
+        if: always()
+        run: |
+          cleanup_status=0
+          if docker container inspect tcsi-annual-capacity-run > /dev/null 2>&1; then
+            # Capture state before cleanup, including exit code and OOMKilled.
+            docker inspect --format '{{json .State}}' tcsi-annual-capacity-run > "$RUNNER_TEMP/tcsi-capacity-state.json" || cleanup_status=1
+            docker logs tcsi-annual-capacity-run > "$RUNNER_TEMP/tcsi-capacity-container.log" 2>&1 || cleanup_status=1
+            docker stop --time 30 tcsi-annual-capacity-run || cleanup_status=1
+          fi
+          if docker image inspect tcsi-annual-capacity-ci > /dev/null 2>&1; then
+            docker run --rm --user root --entrypoint chown \
+              --mount "type=bind,source=$RUNNER_TEMP/tcsi-capacity-evidence,target=/tcsi-evidence" \
+              tcsi-annual-capacity-ci -R "$(id -u):$(id -g)" /tcsi-evidence || cleanup_status=1
+          fi
+          {
+            free -m
+            df -h
+            docker system df
+          } > "$RUNNER_TEMP/tcsi-capacity-resources-after.log"
+          exit "$cleanup_status"
+      - name: Retain synthetic evidence without config or filestore credentials
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: annual-engineering-capacity-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/tcsi-capacity-evidence/source-revision.txt
+            ${{ runner.temp }}/tcsi-capacity-evidence/*.log
+            ${{ runner.temp }}/tcsi-capacity-evidence/annual/summary.json
+            ${{ runner.temp }}/tcsi-capacity-evidence/annual/*.log
+            ${{ runner.temp }}/tcsi-capacity-evidence/annual/annual-results/
+            ${{ runner.temp }}/tcsi-capacity-state.json
+            ${{ runner.temp }}/tcsi-capacity-container.log
+            ${{ runner.temp }}/tcsi-capacity-resources-after.log
+          if-no-files-found: warn
+          retention-days: 14

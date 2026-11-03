@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_monthly_bank_reconciliation_button" model="ir.ui.view">
+        <field name="name">thirdcode.bank.reconciliation.monthly.report</field>
+        <field name="model">thirdcode.bank.reconciliation</field>
+        <field name="inherit_id" ref="thirdcode_accounting.view_thirdcode_bank_reconciliation_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_print_monthly_report" type="object" string="Monthly bank-to-ledger report"
+                    groups="thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

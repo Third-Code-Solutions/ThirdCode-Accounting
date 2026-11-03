@@ -2,7 +2,7 @@
 
 Scope: one independent installation per client (`docker-compose.independent.yml`:
 Odoo 18 Community + pinned OCA modules + the `thirdcode_accounting` addon
-18.0.2.16.2, one PostgreSQL 16), operated by the client's IT team with
+18.0.2.17.1, one PostgreSQL 16), operated by the client's IT team with
 [`OPERATOR-RUNBOOK.md`](OPERATOR-RUNBOOK.md). The hosted pilot (Vercel, Railway,
 Supabase) is TCSI's own environment and is not part of the handover.
 

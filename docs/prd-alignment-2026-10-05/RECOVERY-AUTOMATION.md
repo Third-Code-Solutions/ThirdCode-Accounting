@@ -1,6 +1,6 @@
 # Hosted recovery capture and monitoring
 
-`scripts/hosted_backup.py` implements coordinated capture, failed/missed-run monitoring, and decrypted-bundle hash verification. The hosted image includes **opt-in** automatic capture and private S3 delivery; independent installations remain disabled by default. Source availability or a verified one-off backup does not prove an active schedule or close NF-08–10 / AC-09. Record deployed configuration, successful delivery, real failure notifications and restore evidence separately.
+`scripts/hosted_backup.py` implements coordinated capture, failed/missed-run monitoring, and decrypted-bundle hash verification. The hosted image includes **opt-in** automatic capture and private S3 delivery; independent installations remain disabled by default. Source availability or a verified one-off backup does not prove an active schedule or close NF-08–10 / AC-09. Record deployed configuration, successful delivery, real failure notifications and restore evidence separately. Third-party provider adapters and disabled scheduler templates also exist in [RECOVERY-PROVIDER-INTEGRATION.md](RECOVERY-PROVIDER-INTEGRATION.md); proposed engineering defaults do not establish client approval.
 
 ## Opt-in hosted automation
 
@@ -90,7 +90,7 @@ Adapters are explicit executable paths, launched without a shell and with only a
 Delivery receives this JSON on stdin:
 
 ```json
-{"artifact":"/private/staging/recovery.p7m","sha256":"<encrypted artifact hash>","destination":"<approved alias>","run_id":"<UUID>"}
+{"artifact":"/private/staging/recovery.p7m","sha256":"<encrypted artifact hash>","destination":"<approved alias>","run_id":"<UUID>","captured_at":"<manifest UTC capture timestamp>"}
 ```
 
 The adapter must upload outside the live database/volume failure domain, enforce the approved encryption/access/retention policy, verify the remote object's digest, and return:
@@ -99,7 +99,7 @@ The adapter must upload outside the live database/volume failure domain, enforce
 {"durable":true,"sha256":"<same hash>","destination":"<same alias>","receipt_id":"<provider receipt>"}
 ```
 
-An exit code alone is insufficient. The adapter owns provider-specific verification and safe idempotent retry using `run_id`. A timeout has an unknown remote outcome; inspect that run ID at the destination before retrying a side effect. A new capture uses a new run ID. The staging artifact is removed when its synchronous adapter finishes or fails; the adapter must not acknowledge queued/asynchronous upload. Application status preserves the digest, run ID, approved destination alias and opaque receipt ID. Receipt IDs permit only 1–256 alphanumeric or `_.:/-` characters, never signed URLs, query tokens or credentials. Keep complete provider verification evidence in protected operator logs indexed by those identifiers.
+An exit code alone is insufficient. The adapter owns provider-specific verification and safe idempotent retry using `run_id`. `captured_at` is the same conservative capture-start timestamp stored in the encrypted manifest; local last-success age and provider freshness use capture time, so delayed delivery cannot make an older snapshot fresh. Provider adapters must preserve that timestamp. A timeout has an unknown remote outcome; inspect that run ID at the destination before retrying a side effect. A new capture uses a new run ID. The staging artifact is removed when its synchronous adapter finishes or fails; the adapter must not acknowledge queued/asynchronous upload. Application status preserves the digest, run ID, approved destination alias and opaque receipt ID. Receipt IDs permit only 1–256 alphanumeric or `_.:/-` characters, never signed URLs, query tokens or credentials. Keep complete provider verification evidence in protected operator logs indexed by those identifiers.
 
 The alert adapter receives `{"event":"backup_attention","status":"failed or missed","run_id":"UUID or null","at":"UTC timestamp"}` on stdin and must return `{"accepted":true}` only after the agreed notification channel accepts it. It must deduplicate repeated monitor observations as appropriate. Recipient configuration remains outside application source. State-storage failure does not skip the alert attempt. Failure to alert remains a failing command; capture status also records `alert_failed` when its storage remains writable.
 
@@ -138,4 +138,4 @@ Automated production restore is deliberately absent: restoring bytes cannot appr
 
 `python3 scripts/test_backup_automation.py` covers configuration boundaries, daily schedule/retry behavior, remote byte verification, failed delivery, freshness, durable attention acceptance and scoped retention. `python3 scripts/test_hosted_runtime.py` covers optional backup process failure without accounting shutdown. Offline tests do not prove provider notification delivery.
 
-Remaining activation evidence per installation: configured destination/policy/recipients, immutable deployed-image retention, actual scheduler and monitor, remote receipts, representative native restore, contact handover and real failure drill. Same-provider monitoring and single-owner operation remain explicit limits unless independently addressed. None is represented by invented approvals, placeholders or unit-test success.
+Remaining activation evidence per installation: actual provider activation with verified delivery/alert evidence, configured destination/policy/recipients, immutable deployed-image retention, actual scheduler and monitor, remote receipts, representative native restore, contact handover and real failure drill. Same-provider monitoring and single-owner operation remain explicit limits unless independently addressed. None is represented by invented approvals, placeholders or unit-test success.

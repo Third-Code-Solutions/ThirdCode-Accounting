@@ -1,0 +1,10 @@
+[Unit]
+Description=TCSI proposed monthly full restore drill cadence
+
+[Timer]
+OnCalendar=*-*-01 03:00:00 Asia/Manila
+AccuracySec=1min
+Persistent=true
+Unit=tcsi-recovery-drill.service
+
+# Disabled template, engineering proposal only; confirm operator window before install.
