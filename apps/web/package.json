@@ -14,9 +14,9 @@
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
     "@tcsi/contracts": "0.1.0",
-    "@vercel/functions": "^3.9.9",
+    "@vercel/functions": "^3.10.6",
     "lucide-react": "1.47.0",
-    "next": "16.3.8",
+    "next": "16.4.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "ws": "^8.21.3"

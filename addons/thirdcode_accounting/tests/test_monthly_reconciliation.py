@@ -187,9 +187,9 @@ class TestMonthlyBankReconciliation(AccountTestInvoicingCommon):
             "name": "Foreign monthly bank", "code": "MFB", "type": "bank", "company_id": self.company.id,
             "currency_id": foreign.id,
         })
-        foreign_record = self._record(journal_id=foreign_bank.id)
+        # The reconciliation itself refuses a foreign-currency journal, before any report.
         with self.assertRaises(UserError):
-            foreign_record.get_monthly_report_data()
+            self._record(journal_id=foreign_bank.id)
 
     def test_out_of_period_linked_statement_rejected(self):
         record = self._record()
