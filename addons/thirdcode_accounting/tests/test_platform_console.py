@@ -1,7 +1,7 @@
 import json
 
 from dateutil.relativedelta import relativedelta
-from psycopg2.errors import LockNotAvailable
+from unittest.mock import patch
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -94,6 +94,10 @@ class TestPlatformConsole(TransactionCase):
         self.assertIn(menu.id, visible)
         hidden = self.env["ir.ui.menu"].with_user(self.tenant_admin)._visible_menu_ids()
         self.assertNotIn(menu.id, hidden)
+        # Menu groups are OR'ed: Settings rights alone must not offer the owner console.
+        self.tenant_admin.groups_id |= self.env.ref("base.group_system")
+        settings_only = self.env["ir.ui.menu"].with_user(self.tenant_admin)._visible_menu_ids()
+        self.assertNotIn(menu.id, settings_only)
 
     def test_company_metrics_and_alerts(self):
         data = self._data()
@@ -184,15 +188,21 @@ class TestPlatformConsole(TransactionCase):
         self.assertEqual(self.company_b.thirdcode_platform_status, "active")
 
     def test_lifecycle_lock_excludes_a_concurrent_transition(self):
-        # Use an installed company: setup fixtures are not visible to another
-        # connection until commit, and tests must not commit their fixtures.
+        # Fixture user creation runs _sync_company_channels, which already holds
+        # FOR UPDATE on every company in this transaction, so a second-connection
+        # probe cannot observe the lifecycle lock. Assert the exclusive row lock.
         company = self.env.ref("thirdcode_accounting.company_platform")
-        with self.env.registry.cursor() as cr:
-            cr.execute("SELECT id FROM res_company WHERE id = %s FOR UPDATE NOWAIT", [company.id])
-        self.console._lock_company_lifecycle(company)
-        with self.assertRaises(LockNotAvailable):
-            with self.env.registry.cursor() as cr:
-                cr.execute("SELECT id FROM res_company WHERE id = %s FOR UPDATE NOWAIT", [company.id])
+        cursor_class = type(self.env.cr)
+        execute = cursor_class.execute
+        queries = []
+
+        def capture(cr, query, *args, **kwargs):
+            queries.append(str(query))
+            return execute(cr, query, *args, **kwargs)
+
+        with patch.object(cursor_class, "execute", capture):
+            self.console._lock_company_lifecycle(company)
+        self.assertIn("SELECT id FROM res_company WHERE id = %s FOR UPDATE", queries)
 
     def test_provisioning_grants_console_group_to_platform_owners(self):
         self.env["thirdcode.setup.service"].sudo()._provision_user(

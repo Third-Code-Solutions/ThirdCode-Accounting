@@ -68,7 +68,7 @@ export function LoginForm({ pilotPortal }: { pilotPortal: boolean }) {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) {
       setBusy(false);
-      setError("Supabase is not connected in this environment yet. Add the publishable project values, then try again.");
+      setError("Sign-in is not available on this site. Accounting staff sign in through the accounting workspace.");
       return;
     }
 
@@ -137,7 +137,7 @@ export function LoginForm({ pilotPortal }: { pilotPortal: boolean }) {
           </div>
 
           {!configured && (
-            <div className="auth-notice"><Sparkles aria-hidden="true" size={17} /><span>Demo shell ready · connect Supabase to enable sign in.</span></div>
+            <div className="auth-notice"><Sparkles aria-hidden="true" size={17} /><span>Owner sign-in is not configured here. Accounting staff use the <a href="/web/login">accounting workspace</a>.</span></div>
           )}
 
           <form className="auth-form" onSubmit={submit}>
@@ -161,7 +161,7 @@ export function LoginForm({ pilotPortal }: { pilotPortal: boolean }) {
 
           {mode !== "update" && (
             <div className="auth-switch">
-              {mode === "signin" ? pilotPortal ? <>Accounting staff? <Link href="/web/login">Open the customer workspace</Link></> : <>Access is assigned by your administrator.</> : <>Already have access? <a href="#signin" onClick={(event) => { event.preventDefault(); setMode("signin"); setError(""); }}>Return to sign in</a></>}
+              {mode === "signin" ? pilotPortal ? <>Accounting staff? <a href="/web/login">Open the customer workspace</a></> : <>Access is assigned by your administrator.</> : <>Already have access? <a href="#signin" onClick={(event) => { event.preventDefault(); setMode("signin"); setError(""); }}>Return to sign in</a></>}
             </div>
           )}
           <div className="auth-trust"><LockKeyhole aria-hidden="true" size={15} /><span>Protected workspace · access follows your assigned role</span></div>

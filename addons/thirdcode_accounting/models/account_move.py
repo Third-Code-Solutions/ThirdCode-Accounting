@@ -170,6 +170,8 @@ class AccountMove(models.Model):
             "checked", "is_manually_modified", "message_main_attachment_id",
             "message_follower_ids", "message_partner_ids", "made_sequence_gap",
             "needed_terms_dirty",
+            # Send & Print delivery state; no accounting effect.
+            "is_move_sent", "sending_data",
         }
         if self.env.context.get("thirdcode_reconciliation_metadata_token") is _RECONCILIATION_METADATA_TOKEN:
             safe_fields.add("matched_payment_ids")

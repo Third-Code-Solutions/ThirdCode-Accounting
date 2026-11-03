@@ -13,6 +13,7 @@ import json
 import os
 import secrets
 import sys
+import uuid
 import xmlrpc.client
 from datetime import date, timedelta
 from pathlib import Path
@@ -169,6 +170,12 @@ def ensure_document(odoo: Odoo, company_id: int, index: int, kind: str,
 
 def ensure_period(odoo: Odoo, company_id: int, today: date) -> int:
     name = f"DEMO {today.year} open period"
+    current = odoo.first("thirdcode.accounting.period", [
+        ("company_id", "=", company_id), ("state", "=", "open"),
+        ("date_start", "<=", today.isoformat()), ("date_end", ">=", today.isoformat())],
+        ["id"], company_id)
+    if current:
+        return int(current["id"])
     row = odoo.first("thirdcode.accounting.period", [("company_id", "=", company_id),
                                                        ("name", "=", name)], ["id", "state"], company_id)
     if row:
@@ -198,7 +205,7 @@ def ensure_tax_demo(odoo: Odoo, company_id: int, today: date) -> None:
     odoo.call("thirdcode.tax.profile", "action_configure", [[profile_id]], company_id)
 
 
-def ensure_demo_payment(odoo: Odoo, company_id: int, journal_id: int,
+def ensure_demo_payment(odoo: Odoo, approver: Odoo, company_id: int, journal_id: int,
                         invoice_id: int, partner_id: int, amount: float,
                         today: date, name: str, payment_type: str,
                         partner_type: str, instrument_reference: str) -> int:
@@ -221,11 +228,11 @@ def ensure_demo_payment(odoo: Odoo, company_id: int, journal_id: int,
         row = required(odoo.first("thirdcode.payment.batch", [("id", "=", row["id"])],
                                   ["id", "state"], company_id), name)
     if row["state"] == "pending_approval":
-        odoo.call("thirdcode.payment.batch", "action_approve", [[row["id"]]], company_id)
+        approver.call("thirdcode.payment.batch", "action_approve", [[row["id"]]], company_id)
         row = required(odoo.first("thirdcode.payment.batch", [("id", "=", row["id"])],
                                   ["id", "state"], company_id), name)
     if row["state"] == "approved":
-        odoo.call("thirdcode.payment.batch", "action_post", [[row["id"]]], company_id)
+        approver.call("thirdcode.payment.batch", "action_post", [[row["id"]]], company_id)
         row = required(odoo.first("thirdcode.payment.batch", [("id", "=", row["id"])],
                                   ["id", "state"], company_id), name)
     if row["state"] != "posted":
@@ -362,23 +369,22 @@ def ensure_bank_reconciliation(odoo: Odoo, company_id: int, journal_id: int,
         odoo.call("thirdcode.bank.reconciliation", "action_reconcile", [[row["id"]]], company_id)
 
 
-def ensure_company(odoo: Odoo, index: int, currency_id: int, country_id: int) -> int:
+def ensure_organization(owner: Odoo, database: str, index: int) -> tuple[int, str, str]:
+    """Provision through the Platform Console, as an operator would; never join it."""
     name = COMPANIES[index - 1]
-    row = odoo.first("res.company", [("name", "=", name)], ["id"])
-    if row:
-        return int(row["id"])
-    if index == 1:
-        existing = required(odoo.first("res.company", [], ["id", "name"]), "base company")
-        if odoo.call("account.move", "search_count", [[("state", "=", "posted")]]) != 0:
-            raise RuntimeError("The demo base company already has posted entries; refusing to rename it")
-        odoo.call("res.company", "write", [[existing["id"]], {
-            "name": name, "currency_id": currency_id, "country_id": country_id,
-        }])
-        return int(existing["id"])
-    return int(odoo.call("res.company", "create", [{
-        "name": name, "currency_id": currency_id, "country_id": country_id,
-        "email": f"company{index}@example.invalid",
-    }]))
+    login = f"demo.admin{index}@example.invalid"
+    password = secrets.token_urlsafe(24)
+    created = owner.call("thirdcode.platform.console", "create_organization", [{
+        "request_id": str(uuid.uuid5(uuid.NAMESPACE_URL, f"tcsi-demo:{database}:{index}")),
+        "name": name, "country": "PH", "currency": "PHP",
+        "admin_name": f"DEMO | Administrator {index}", "admin_login": login, "admin_password": password,
+    }])
+    # New organizations start as trials; the demo shows the statutory gates of live books.
+    owner.call("thirdcode.platform.console", "convert_to_active", [int(created["id"])])
+    admin = required(owner.first("res.users", [("login", "=", login)], ["id"]), f"{name} administrator")
+    # A rerun reuses the organization, so set the password generated for this run.
+    owner.call("res.users", "write", [[admin["id"]], {"password": password}])
+    return int(created["id"]), login, password
 
 
 def ensure_user(odoo: Odoo, login: str, name: str, company_ids: list[int],
@@ -386,14 +392,18 @@ def ensure_user(odoo: Odoo, login: str, name: str, company_ids: list[int],
     row = odoo.first("res.users", [("login", "=", login)], ["id"])
     values = {"name": name, "login": login, "password": password,
               "company_id": company_ids[0], "company_ids": [[6, 0, company_ids]],
-              "groups_id": [[6, 0, group_ids]]}
+              "groups_id": [[6, 0, group_ids]],
+              # Same home as the product's People flow: the finance overview, not Discuss.
+              "action_id": ref_id(odoo, "thirdcode_accounting.action_tcsi_dashboard")}
     if row:
+        # Replacing groups briefly demotes the user to portal, which hides them from the owner.
+        values["groups_id"] = [[4, gid] for gid in group_ids]
         odoo.call("res.users", "write", [[row["id"]], values])
         return int(row["id"])
     return int(odoo.call("res.users", "create", [values]))
 
 
-def group_id(odoo: Odoo, xml_id: str) -> int:
+def ref_id(odoo: Odoo, xml_id: str) -> int:
     module, name = xml_id.split(".")
     row = required(odoo.first("ir.model.data", [("module", "=", module), ("name", "=", name)],
                               ["res_id"]), xml_id)
@@ -429,27 +439,24 @@ def main() -> int:
     password = os.environ.get("TCSI_DEMO_ADMIN_PASSWORD")
     if not password:
         parser.error("Set TCSI_DEMO_ADMIN_PASSWORD for the isolated local administrator")
-    odoo = Odoo(args.url.rstrip("/"), args.database, args.login, password)
-    currency = required(odoo.first("res.currency", [("name", "=", "PHP")],
-                                   ["id", "active"], include_inactive=True), "PHP currency")
-    country = required(odoo.first("res.country", [("code", "=", "PH")], ["id"]), "Philippines country")
-    if not currency["active"]:
-        odoo.call("res.currency", "write", [[currency["id"]], {"active": True}])
-    administrator_group = group_id(odoo, "thirdcode_accounting.group_thirdcode_administrator")
-    report_layout = group_id(odoo, "web.external_layout_standard")
-    odoo.call("res.users", "write", [[odoo.uid], {"groups_id": [[4, administrator_group]]}])
-    odoo.call("ir.config_parameter", "set_param", ["auth_signup.invitation_scope", "b2b"])
-    odoo.call("ir.config_parameter", "set_param", ["report.url", args.report_url])
+    url = args.url.rstrip("/")
+    owner = Odoo(url, args.database, args.login, password)
+    administrator_group = ref_id(owner, "thirdcode_accounting.group_thirdcode_administrator")
+    owner.call("ir.config_parameter", "set_param", ["auth_signup.invitation_scope", "b2b"])
+    owner.call("ir.config_parameter", "set_param", ["report.url", args.report_url])
     today = date.today()
     company_ids: list[int] = []
+    admin_sessions: list[Odoo] = []
+    credentials: list[dict[str, str]] = []
     summary: list[dict[str, Any]] = []
     for index, name in enumerate(COMPANIES, start=1):
-        company_id = ensure_company(odoo, index, int(currency["id"]), int(country["id"]))
+        company_id, admin_login, admin_password = ensure_organization(owner, args.database, index)
         company_ids.append(company_id)
-        odoo.call("res.users", "write", [[odoo.uid], {"company_ids": [[4, company_id]]}])
-        odoo.call("res.company", "write", [[company_id], {
-            "external_report_layout_id": report_layout,
-        }], company_id)
+        credentials.append({"role": f"administrator_{index}", "login": admin_login,
+                            "password": admin_password})
+        odoo = Odoo(url, args.database, admin_login, admin_password)
+        admin_sessions.append(odoo)
+        # create_organization's baseline already sets the standard report layout.
         accounts = {key: ensure_account(odoo, company_id, index, key, number, label, kind)
                     for key, number, label, kind in ACCOUNT_SPECS}
         journals = {key: ensure_journal(odoo, company_id, index, key, label, kind, accounts)
@@ -465,7 +472,18 @@ def main() -> int:
         summary.append({"company": name, "invoice_id": invoice["id"], "bill_id": bill["id"]})
         print(json.dumps({"seeded_company": name, "index": index}), flush=True)
 
+    accountant_group = ref_id(owner, "thirdcode_accounting.group_thirdcode_accountant")
+    accountant_passwords = [secrets.token_urlsafe(24) for _ in company_ids]
+    for index, company_id in enumerate(company_ids, start=1):
+        login = f"demo.accountant{index}@example.invalid"
+        ensure_user(owner, login, f"DEMO | Accountant {index}", [company_id],
+                    [accountant_group], accountant_passwords[index - 1])
+        credentials.append({"role": f"company_{index}_accountant", "login": login,
+                            "password": accountant_passwords[index - 1]})
+
     first_company = company_ids[0]
+    odoo = admin_sessions[0]
+    preparer = Odoo(url, args.database, "demo.accountant1@example.invalid", accountant_passwords[0])
     first_invoice = required(odoo.first("account.move", [("company_id", "=", first_company),
                                                       ("move_type", "=", "out_invoice"),
                                                       ("ref", "=", "DEMO-01-INVOICE-001")],
@@ -481,7 +499,7 @@ def main() -> int:
             "Fictional demonstration: compare the manually entered statement to posted bank ledger, attach evidence, and sign off.",
     }], first_company)
     expected_payment = round(first_invoice["amount_total"] / 2, 2)
-    ensure_demo_payment(odoo, first_company, int(first_bank["id"]),
+    ensure_demo_payment(preparer, odoo, first_company, int(first_bank["id"]),
                         int(first_invoice["id"]), int(first_invoice["partner_id"][0]),
                         expected_payment, today, "DEMO | Meridian customer receipt",
                         "inbound", "customer", "DEMO-TRANSFER-001")
@@ -496,7 +514,7 @@ def main() -> int:
                                     ["id", "amount_total", "partner_id"], first_company),
                           "Meridian supplier bill")
     expected_supplier_payment = round(first_bill["amount_total"] / 2, 2)
-    ensure_demo_payment(odoo, first_company, int(first_bank["id"]),
+    ensure_demo_payment(preparer, odoo, first_company, int(first_bank["id"]),
                         int(first_bill["id"]), int(first_bill["partner_id"][0]),
                         expected_supplier_payment, today, "DEMO | Meridian supplier settlement",
                         "outbound", "supplier", "DEMO-TRANSFER-002")
@@ -538,22 +556,14 @@ def main() -> int:
     ensure_bank_reconciliation(odoo, first_company, int(first_bank["id"]), today)
 
     presenter_password = secrets.token_urlsafe(24)
-    accountant_passwords = [secrets.token_urlsafe(24) for _ in company_ids]
     presenter_login = "demo.presenter@example.invalid"
-    accountant_group = group_id(odoo, "thirdcode_accounting.group_thirdcode_accountant")
-    settings_group = group_id(odoo, "base.group_system")
-    ensure_user(odoo, presenter_login, "DEMO | Presenter", company_ids,
+    settings_group = ref_id(owner, "base.group_system")
+    ensure_user(owner, presenter_login, "DEMO | Presenter", company_ids,
                 [administrator_group, settings_group], presenter_password)
-    credentials = [{"role": "presenter", "login": presenter_login,
-                    "password": presenter_password}]
-    for index, company_id in enumerate(company_ids, start=1):
-        login = f"demo.accountant{index}@example.invalid"
-        ensure_user(odoo, login, f"DEMO | Accountant {index}", [company_id],
-                    [accountant_group], accountant_passwords[index - 1])
-        credentials.append({"role": f"company_{index}_accountant", "login": login,
-                            "password": accountant_passwords[index - 1]})
+    credentials.append({"role": "presenter", "login": presenter_login,
+                        "password": presenter_password})
     local_admin_password = secrets.token_urlsafe(24)
-    credentials.append({"role": "local_setup_administrator", "login": args.login,
+    credentials.append({"role": "platform_owner", "login": args.login,
                         "password": local_admin_password})
     args.credentials_file.parent.mkdir(parents=True, exist_ok=True)
     temporary_credentials = args.credentials_file.with_suffix(args.credentials_file.suffix + ".tmp")
@@ -564,7 +574,7 @@ def main() -> int:
     except OSError:
         pass
     os.replace(temporary_credentials, args.credentials_file)
-    odoo.call("res.users", "write", [[odoo.uid], {"password": local_admin_password}])
+    owner.call("res.users", "write", [[owner.uid], {"password": local_admin_password}])
     print(json.dumps({"status": "seeded", "database": args.database,
                       "companies": summary, "credentials_file": str(args.credentials_file)}, indent=2))
     return 0

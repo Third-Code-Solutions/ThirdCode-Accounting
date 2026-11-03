@@ -13,6 +13,9 @@ import { isAccountingRoute } from "./lib/accounting-routes";
 /** Next.js stamps this nonce onto the script tags it renders. */
 export const nonceHeader = "x-nonce";
 
+/** Unrouted path used to render `not-found.tsx` for unlisted portal pages. */
+export const portalNotFoundPath = "/_tcsi-not-found";
+
 function supabaseConnectSources(): string[] {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) return [];
@@ -75,7 +78,13 @@ export async function proxy(request: NextRequest) {
     if (isWithheldPortalPage(request.nextUrl.pathname)) {
       return NextResponse.redirect(new URL("/", request.url));
     }
-    return new NextResponse(null, { status: 404 });
+    // Render the branded 404 page; the sentinel path has no route, so unlisted
+    // app routes still fail closed instead of being served.
+    const notFound = NextResponse.rewrite(new URL(portalNotFoundPath, request.url), {
+      request: { headers: requestHeaders },
+    });
+    notFound.headers.set("Content-Security-Policy", policy);
+    return notFound;
   }
   const env = getPublicEnv();
   if (!env.supabaseConfigured) {

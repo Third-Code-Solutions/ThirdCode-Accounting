@@ -9,7 +9,7 @@
  *
  * Requirements:
  *   SUPABASE_ACCESS_TOKEN  a Supabase personal access token (sbp_...)
- *   SUPABASE_PROJECT_REF   optional, defaults to the hosted pilot project
+ *   SUPABASE_PROJECT_REF   the target project ref (required; never defaulted)
  *
  * Password input, in order of precedence:
  *   --password-stdin          read one line from stdin (for scripted runs)
@@ -26,7 +26,7 @@
  */
 import { createInterface } from "node:readline";
 
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF ?? "zcalwevgunkevwzficvm";
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const emailIndex = process.argv.indexOf("--email");
 const email = emailIndex >= 0 ? process.argv[emailIndex + 1] : null;
@@ -34,6 +34,11 @@ const passwordStdin = process.argv.includes("--password-stdin");
 const sendRecovery = process.argv.includes("--send-recovery");
 const portalOrigin = process.env.TCSI_PORTAL_ORIGIN ?? "https://tcsi-accounting-portal.vercel.app";
 
+// Probes and bootstrap write to the project, so the target is never implied.
+if (!PROJECT_REF) {
+  console.error("SUPABASE_PROJECT_REF is required (the target Supabase project ref).");
+  process.exit(2);
+}
 if (!ACCESS_TOKEN) {
   console.error("SUPABASE_ACCESS_TOKEN is required (Supabase personal access token).");
   process.exit(2);

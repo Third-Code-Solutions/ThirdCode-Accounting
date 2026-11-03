@@ -25,7 +25,7 @@ from unittest import mock
 from odoo import SUPERUSER_ID, Command, api, fields
 from odoo.exceptions import AccessDenied, AccessError
 from odoo.tests import TransactionCase, tagged
-from odoo.addons.thirdcode_accounting.controllers import setup
+from odoo.addons.thirdcode_accounting.controllers import setup, webclient
 
 THROTTLE_TABLE = "thirdcode_auth_throttle"
 IP_SCOPE = "login-ip"
@@ -76,6 +76,16 @@ class TestSetupCredentialIsolation(TransactionCase):
                 {"ok": False, "error": "payload too large"}, status=413)
             self.assertEqual(request.httprequest.stream.tell(), setup._MAX_BODY_BYTES + 1)
             request.env.__getitem__.assert_called_once_with("thirdcode.auth.throttle")
+
+    def test_become_superuser_is_refused(self):
+        """``/web/become`` must never turn a Settings session into uid 1."""
+        with mock.patch.object(webclient, "request", new=mock.MagicMock()) as request:
+            request.session.uid = 7
+            # Call the endpoint itself; the route wrapper needs a live dispatcher.
+            result = webclient.TCSIWebClient.switch_to_admin.original_endpoint(webclient.TCSIWebClient())
+        request.not_found.assert_called_once_with()
+        self.assertIs(result, request.not_found.return_value)
+        self.assertEqual(request.session.uid, 7)
 
 
 @tagged("post_install", "-at_install")

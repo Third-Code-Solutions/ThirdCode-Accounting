@@ -106,6 +106,11 @@ class BankReconciliation(models.Model):
                 raise ValidationError(
                     _("The reconciliation journal must belong to the selected company.")
                 )
+            # Balances here are in company currency; a foreign-currency statement would not compare.
+            if record.journal_id.currency_id and record.journal_id.currency_id != record.company_id.currency_id:
+                raise ValidationError(
+                    _("Bank reconciliation supports company-currency journals only.")
+                )
 
     @api.depends("closing_balance", "ledger_balance", "outstanding_deposits", "outstanding_payments")
     def _compute_difference(self):

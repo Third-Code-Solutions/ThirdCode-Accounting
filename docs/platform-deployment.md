@@ -549,7 +549,7 @@ afterwards. Run it after any policy, function, or migration change and before
 onboarding a customer organization.
 
 Platform owner:
-`SUPABASE_ACCESS_TOKEN=... node scripts/bootstrap-platform-owner.mjs --email <approved-address>`
+`SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=<project-ref> node scripts/bootstrap-platform-owner.mjs --email <approved-address>`
 creates or reuses the owner's Supabase Auth user through the supported GoTrue
 admin API, verifies that password sign-in works, and points the single
 `platform_owner_access` row at that user (re-running rotates the assignment).
@@ -779,8 +779,9 @@ After deploying a branding manifest version change, upgrade only
 and filestore snapshots. Verify inherited views, login, menus, and report/email
 templates afterward. A source deployment alone does not apply database view changes.
 To roll back these view-only changes, deactivate the affected `thirdcode_accounting`
-inherited views and redeploy the previous release; do not restore the database over
-new customer transactions. Keep diagnostic error details intact for support.
+inherited views. A previous image refuses a database whose addon version was already
+raised, so redeploying it is not a rollback; ship a forward correction instead, and
+do not restore the database over new customer transactions. Keep diagnostic error details intact for support.
 
 Run `node --test scripts/test-branding.mjs` to check the branding mutation-loop
 regression before deploying. The workspace observer must never rewrite unchanged

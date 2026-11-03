@@ -103,8 +103,9 @@ class RecurringInvoice(models.Model):
         delta = {
             "days": relativedelta(days=self.interval_number),
             "weeks": relativedelta(weeks=self.interval_number),
-            "months": relativedelta(months=self.interval_number),
-            "years": relativedelta(years=self.interval_number),
+            # day= clamps to month end and restores the start day afterwards.
+            "months": relativedelta(months=self.interval_number, day=self.date_start.day),
+            "years": relativedelta(years=self.interval_number, day=self.date_start.day),
         }[self.interval_type]
         return run_date + delta
 
@@ -187,7 +188,14 @@ class RecurringInvoice(models.Model):
         self._check_run_access()
         self.check_access("write")
         for record in self:
-            record._run_one(fields.Date.context_today(record))
+            run_date = fields.Date.context_today(record)
+            if record.next_run and record.next_run < run_date:
+                # Running "now" would advance next_run past the missed periods.
+                raise UserError(_(
+                    "%(name)s has overdue periods from %(date)s. Use Run due periods so none are skipped.",
+                    name=record.name, date=record.next_run,
+                ))
+            record._run_one(run_date)
         return True
 
     def action_run_due(self):

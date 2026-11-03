@@ -12,7 +12,7 @@
  *
  * Requirements:
  *   SUPABASE_ACCESS_TOKEN  a Supabase personal access token (sbp_...)
- *   SUPABASE_PROJECT_REF   optional, defaults to the hosted pilot project
+ *   SUPABASE_PROJECT_REF   the target project ref (required; never defaulted)
  *
  * Usage:
  *   SUPABASE_ACCESS_TOKEN=sbp_... npm run verify:rbac
@@ -20,11 +20,16 @@
  */
 import { writeFile } from "node:fs/promises";
 
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF ?? "zcalwevgunkevwzficvm";
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
 const ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const jsonFlagIndex = process.argv.indexOf("--json");
 const jsonPath = jsonFlagIndex >= 0 ? process.argv[jsonFlagIndex + 1] : null;
 
+// Probes and bootstrap write to the project, so the target is never implied.
+if (!PROJECT_REF) {
+  console.error("SUPABASE_PROJECT_REF is required (the target Supabase project ref).");
+  process.exit(2);
+}
 if (!ACCESS_TOKEN) {
   console.error("SUPABASE_ACCESS_TOKEN is required (Supabase personal access token).");
   process.exit(2);

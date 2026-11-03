@@ -1313,6 +1313,82 @@ class TestFinancialControls(AccountTestInvoicingCommon):
         self.assertIn(b"Operating activities", html)
 
 
+    def test_reversed_year_end_close_can_be_redone(self):
+        invoice = self._posted_invoice()
+        equity = self.env["account.account"].create({
+            "name": "QA Retained earnings redo", "code": "YE9002", "account_type": "equity",
+            "company_ids": [Command.set(self.company.ids)],
+        })
+        values = {
+            "company_id": self.company.id, "date_end": invoice.date,
+            "journal_id": self.company_data["default_journal_misc"].id,
+            "retained_earnings_account_id": equity.id,
+        }
+        closes = self.env["thirdcode.year.end.close"].with_user(self.accountant)
+        close = closes.create(values)
+        close.action_post()
+        with self.assertRaises(UserError), self.cr.savepoint():
+            close.action_cancel()
+        close.move_id._reverse_moves(cancel=True)
+        close.action_cancel()
+        self.assertEqual(close.state, "cancelled")
+        redo = closes.create(values)
+        redo.action_post()
+        self.assertEqual(redo.state, "posted")
+        self.assertEqual(redo.profit_loss, 100.0)
+
+    def test_bank_reconciliation_rejects_foreign_currency_journal(self):
+        foreign = self.env.ref("base.EUR") if self.company.currency_id != self.env.ref("base.EUR") else self.env.ref("base.USD")
+        foreign.active = True
+        journal = self.env["account.journal"].create({
+            "name": "QA FX bank", "code": "QAFX", "type": "bank",
+            "company_id": self.company.id, "currency_id": foreign.id,
+        })
+        with self.assertRaises(ValidationError), self.cr.savepoint():
+            self.env["thirdcode.bank.reconciliation"].with_user(self.accountant).create({
+                "name": "FX reconciliation", "company_id": self.company.id, "journal_id": journal.id,
+                "statement_reference": "FX-STATEMENT", "date_start": fields.Date.today(),
+                "date_end": fields.Date.today(), "closing_balance": 0,
+                "evidence_file": base64.b64encode(b"synthetic statement"), "evidence_filename": "fx.pdf",
+            })
+
+    def test_send_and_print_marks_posted_invoice_sent(self):
+        invoice = self._posted_invoice()
+        self.env["account.move.send"].with_user(self.accountant)._generate_and_send_invoices(
+            invoice, sending_methods=[]
+        )
+        self.assertTrue(invoice.is_move_sent)
+        self.assertTrue(invoice.invoice_pdf_report_id)
+        self.assertEqual(invoice.state, "posted")
+
+    def test_all_entries_reports_exclude_cancelled_moves(self):
+        cash = self.company_data["default_journal_bank"].default_account_id
+        revenue = self.company_data["default_account_revenue"]
+
+        def entry(amount):
+            return self.env["account.move"].create({
+                "company_id": self.company.id, "journal_id": self.company_data["default_journal_misc"].id,
+                "date": fields.Date.today(), "line_ids": [
+                    Command.create({"name": "Cash sale", "account_id": cash.id, "debit": amount}),
+                    Command.create({"name": "Cash sale", "account_id": revenue.id, "credit": amount}),
+                ],
+            })
+
+        entry(40)  # draft: included under "All entries"
+        entry(500).button_cancel()
+        wizard = self.env["thirdcode.financial.report.wizard"].with_user(self.accountant).create({
+            "company_id": self.company.id, "report_type": "cash_flow", "target_move": "all",
+            "date_from": fields.Date.today(), "date_to": fields.Date.today(),
+        })
+        self.assertEqual(float(wizard._account_totals(wizard._move_line_domain())[revenue]), -40.0)
+        self.assertEqual(wizard.get_report_data()["cash_movement"], "40.00")
+
+    def test_receipt_amount_in_words_spells_cents(self):
+        payment = self.env["account.payment"].new({"amount": 1234.56, "currency_id": self.company.currency_id.id})
+        words = payment.thirdcode_amount_in_words
+        self.assertIn("Fifty-Six", words)
+        self.assertNotIn("Point", words)
+
     def test_year_end_transfer_does_not_erase_income_statement(self):
         invoice = self._posted_invoice()
         equity = self.env["account.account"].create({

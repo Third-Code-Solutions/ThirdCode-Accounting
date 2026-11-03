@@ -1,4 +1,3 @@
-from num2words import num2words
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -63,8 +62,7 @@ class AccountPayment(models.Model):
             if not payment.currency_id:
                 payment.thirdcode_amount_in_words = ""
                 continue
-            amount = num2words(payment.amount, lang="en")
-            payment.thirdcode_amount_in_words = f"{amount.title()} {payment.currency_id.name}"
+            payment.thirdcode_amount_in_words = payment.currency_id.amount_to_text(payment.amount)
 
     @api.depends(
         "payment_type",
