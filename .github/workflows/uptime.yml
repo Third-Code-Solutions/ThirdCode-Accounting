@@ -1,0 +1,31 @@
+# Checks the live portal and accounting engine from outside Railway and Vercel,
+# so an outage of either host still raises an alert. A failed run sends GitHub's
+# standard failed-workflow email to whoever last changed this schedule.
+# GitHub pauses scheduled workflows after 60 days without repository activity.
+name: Production uptime
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: production-uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.repository == 'Third-Code-Solutions/ThirdCode-Accounting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PORTAL: https://tcsi-accounting-portal.vercel.app
+      ENGINE: https://tcsi-accounting-production.up.railway.app
+    steps:
+      - name: Portal reports ready (sign-in service and accounting engine)
+        # The endpoint answers 503 unless every dependency is reachable.
+        run: curl -fsS --max-time 20 --retry 3 --retry-delay 30 --retry-all-errors "$PORTAL/api/readiness"
+      - name: Accounting engine answers its health check
+        run: curl -fsS --max-time 20 --retry 3 --retry-delay 30 --retry-all-errors -o /dev/null "$ENGINE/web/health"

@@ -10,7 +10,7 @@ worker are outside this delivery. The earlier hosted pilot below remains a
 separate environment; do not convert or copy its customer books into a demo.
 
 The existing hosted environment was upgraded in November 2026 to addon
-`18.0.2.17.1` after the operator backed up both Railway volumes. Its engine runs
+`18.0.2.17.2` after the operator backed up both Railway volumes. Its engine runs
 the CI-published release image (see "Engine release image" below); the engine's
 `TCSI_RELEASE_SHA` and `TCSI_RELEASE_IMAGE` variables name the serving revision
 and digest. Its
@@ -510,7 +510,11 @@ configure these service settings explicitly. Set `RAILWAY_DOCKERFILE_PATH`,
 The launcher supervises nginx and the Odoo master as one runtime. nginx owns
 the public `PORT`; regular requests go to loopback HTTP port 8068 and
 `/websocket` (including its HTTP subpaths) goes to loopback evented port 8072.
-Keep `TCSI_WORKERS` at least 1 (default 2). The public port must differ from
+Keep `TCSI_WORKERS` at least 1 (default 2; the hosted pilot runs 6). Each
+worker can open `TCSI_DB_MAXCONN` (default 8) database connections, and the
+evented and cron processes add the same again, so keep
+`(TCSI_WORKERS + 2) × TCSI_DB_MAXCONN` below PostgreSQL `max_connections`
+(100 on Railway). The public port must differ from
 8068 and 8072. Forwarded TLS/client headers and the original Host are preserved.
 If either essential process exits, the launcher stops its peer and exits
 nonzero so Railway restarts the complete service. The CI hosted-launcher gate

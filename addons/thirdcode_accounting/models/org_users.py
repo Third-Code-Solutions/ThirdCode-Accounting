@@ -8,7 +8,6 @@ including provisioning new company baselines.
 from odoo import _, fields, models
 from odoo.exceptions import AccessError, UserError
 
-from .setup_service import TRIAL_ROLE_GROUPS
 
 ADMIN_GROUP = "thirdcode_accounting.group_thirdcode_administrator"
 SYSTEM_GROUP = "base.group_system"

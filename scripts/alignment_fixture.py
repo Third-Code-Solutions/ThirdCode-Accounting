@@ -10,7 +10,7 @@ import time
 from datetime import date
 from pathlib import Path
 
-from odoo import Command, fields
+from odoo import Command
 
 if not env.cr.dbname.startswith("tcsi_alignment_"):
     raise RuntimeError("Refusing synthetic operations outside tcsi_alignment_ databases")

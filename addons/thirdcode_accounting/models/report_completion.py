@@ -2,7 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class CashFlowAllocation(models.Model):

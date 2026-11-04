@@ -20,7 +20,7 @@ Three production findings are fixed here:
 import contextlib
 import logging
 
-from odoo import SUPERUSER_ID, _, api, models
+from odoo import SUPERUSER_ID, api, models
 from odoo.exceptions import AccessDenied
 from odoo.http import request
 

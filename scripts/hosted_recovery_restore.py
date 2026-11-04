@@ -35,7 +35,7 @@ def load_policy(path):
     policy = json.loads(capture.private_read(path))
     require(policy.get("format") == 1 and policy.get("isolated_host_confirmed") is True
             and policy.get("egress_isolation_confirmed") is True, "isolated_recovery_host_required")
-    pg = validate_postgres(policy.get("postgres", {}))
+    validate_postgres(policy.get("postgres", {}))
     require(re.fullmatch(r"[0-9a-f]{40}", policy.get("source_revision", "")), "source_revision_required")
     require(re.fullmatch(r"[^\s]+@sha256:[0-9a-f]{64}", policy.get("image_reference", "")), "immutable_image_required")
     require(re.fullmatch(r"18\.0\.[0-9.]+", policy.get("addon_version", "")), "addon_version_required")
