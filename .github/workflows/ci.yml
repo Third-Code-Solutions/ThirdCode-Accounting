@@ -110,6 +110,11 @@ jobs:
       - uses: actions/checkout@v7
       - name: Build production runtime without test helpers
         run: docker build -f docker/odoo/Dockerfile -t tcsi-hosted-ci .
+      - name: Verify the recovery runtime imports only shipped modules
+        # The recovery tests below mount scripts/, which would mask a module the image omits.
+        run: >-
+          docker run --rm --entrypoint python3 tcsi-hosted-ci -I -c
+          "import sys; sys.path[:0] = ['/opt/tcsi']; import hosted_backup, recovery_fingerprint, backup_runtime, backup_store"
       - name: Verify hosted HTTP and evented WebSocket routing
         run: >-
           docker run --rm --network host --entrypoint python3
