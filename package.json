@@ -1,6 +1,7 @@
 {
   "name": "@tcsi/accounting-platform",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "description": "TCSI Accounting platform workspace",
   "workspaces": [

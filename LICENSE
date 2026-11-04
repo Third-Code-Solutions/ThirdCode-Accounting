@@ -1,0 +1,27 @@
+Copyright (c) 2026 Third Code Solutions Inc. All rights reserved.
+
+This repository is proprietary and confidential to Third Code Solutions Inc.
+("TCSI"), except for the parts listed under "Exceptions" below.
+
+No licence is granted to copy, modify, distribute, sublicense, sell, host or
+otherwise use this software, in whole or in part, without TCSI's prior written
+permission. Having access to the source code grants no rights in it. Clients,
+employees and contractors may use it only as their written agreement with TCSI
+allows.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL TCSI BE LIABLE
+FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Exceptions
+
+- addons/thirdcode_accounting/ is licensed under the GNU Affero General Public
+  License, version 3 (AGPL-3.0), as its __manifest__.py declares. It extends
+  AGPL-3.0 modules from the Odoo Community Association, so it cannot be offered
+  under a proprietary licence. Licence text:
+  https://www.gnu.org/licenses/agpl-3.0.txt
+- Third-party software listed in THIRD-PARTY-NOTICES.md stays under its own
+  licence.

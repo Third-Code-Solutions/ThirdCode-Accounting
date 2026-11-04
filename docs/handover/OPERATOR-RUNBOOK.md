@@ -197,15 +197,16 @@ secret store. Do not reuse credentials between installations.
 
 ## 10. Support and escalation
 
-Fill in before go-live and keep with this runbook.
+The client names its two rows at kickoff; TCSI names the deputy before
+go-live. Keep this table with the runbook.
 
 | Role | Name | Contact | Hours |
 | --- | --- | --- | --- |
-| Client system owner | | | |
-| Client accounting lead | | | |
-| Backup and restore owner | | | |
-| Backup and restore deputy | | | |
-| TCSI support | | | |
+| Client system owner | Named by the client at kickoff | | |
+| Client accounting lead | Named by the client at kickoff | | |
+| Backup and restore owner | Kurt Gavin (TCSI) | Through TCSI support | Agreed at kickoff |
+| Backup and restore deputy | Named by TCSI before go-live | Through TCSI support | Agreed at kickoff |
+| TCSI support | Third Code Solutions Inc. | https://www.thirdcodesolutions.com; security issues: security@thirdcodesolutions.com | Agreed at kickoff |
 
 When reporting a problem, include the time, the user and role, the screen URL,
 the exact message, and the incident reference from **Platform Console →
@@ -213,11 +214,10 @@ Sentry** if one exists. Never send passwords, env files or backup keys.
 
 ## 11. Licences
 
-The accounting addon (`addons/thirdcode_accounting`) declares the licence in
-its `__manifest__.py`. The image also contains Odoo Community and pinned OCA
-modules (pinned commits in `docker/odoo/Dockerfile`): `auditlog`,
-`report_xlsx`, `report_xlsx_helper`, `account_financial_report`,
-`partner_statement`, `account_statement_base`, `account_reconcile_model_oca`,
-`account_reconcile_oca` and `account_statement_reconcile_status` are AGPL-3;
-`date_range` is LGPL-3. Review these obligations before redistributing the
-image or offering it as a hosted service.
+TCSI's own code is proprietary; see [LICENSE](../../LICENSE). The accounting
+addon (`addons/thirdcode_accounting`) is the exception: it is AGPL-3, as its
+`__manifest__.py` declares, because it extends AGPL-3 OCA modules. Odoo
+Community, the pinned OCA modules and their licences are listed in
+[THIRD-PARTY-NOTICES.md](../../THIRD-PARTY-NOTICES.md). Review these
+obligations before redistributing the image or offering it as a hosted
+service.
