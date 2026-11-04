@@ -61,7 +61,7 @@ def main() -> int:
     check(origin.startswith(("http://localhost:", "http://127.0.0.1:")) and
           "demo" in database.lower(), "Refusing to inspect a nonlocal or non-demo database")
     accounts = access["accounts"]
-    presenter = accounts[0]
+    presenter = next(account for account in accounts if account["role"] == "presenter")
     admin = Odoo(origin, database, presenter["login"], presenter["password"])
     signup_scope = admin.call("ir.config_parameter", "get_param", ["auth_signup.invitation_scope"])
     check(signup_scope == "b2b", "Public self-signup is enabled")

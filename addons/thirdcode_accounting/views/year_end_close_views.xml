@@ -23,7 +23,7 @@
                 <header>
                     <button name="action_prepare" type="object" string="Prepare" invisible="state != 'draft'"/>
                     <button name="action_post" type="object" string="Post retained earnings close" class="oe_highlight" invisible="state != 'draft'"/>
-                    <button name="action_cancel" type="object" string="Cancel" invisible="state != 'draft'"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state == 'cancelled'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
                 </header>
                 <sheet>

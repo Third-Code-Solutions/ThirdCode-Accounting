@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { config, proxy } from "./proxy";
+import { config, portalNotFoundPath, proxy } from "./proxy";
 import { unstable_doesMiddlewareMatch, unstable_getResponseFromNextConfig, getRewrittenUrl } from "next/experimental/testing/server";
 import nextConfig from "./next.config";
 import { accountingRoutePrefixes } from "./lib/accounting-routes";
@@ -62,8 +62,9 @@ describe("hosted pilot boundary", () => {
   it.each(["/future-ledger", "/unexpected-page/nested"])("rejects unlisted portal page %s", async (path) => {
     vi.stubEnv("TCSI_PORTAL_ONLY", "true");
     const response = await proxy(new NextRequest(`https://portal.example${path}`));
-    expect(response.status).toBe(404);
     expect(response.headers.get("x-middleware-next")).toBeNull();
+    expect(response.headers.get("x-middleware-rewrite")).toBe(`https://portal.example${portalNotFoundPath}`);
+    expect(response.headers.get("content-security-policy")).toContain("'strict-dynamic'");
   });
 
   it.each(["/api/workspaces", "/api/dashboard"])("blocks unreleased endpoint %s", async (path) => {

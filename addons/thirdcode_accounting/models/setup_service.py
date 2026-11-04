@@ -516,15 +516,8 @@ class ThirdCodeSetupService(models.AbstractModel):
             lambda period: period.date_start <= end and period.date_end >= start
         )
         if overlapping:
-            for period in overlapping:
-                period.sudo().write(
-                    {
-                        "state": "open",
-                        "reopened_by": self.env.uid,
-                        "reopened_at": fields.Datetime.now(),
-                    }
-                )
-            return ["reopened overlapping period: %s" % overlapping[0].name]
+            # Closed books reopen only through the audited Accounting periods action.
+            return ["closed period kept closed: %s (reopen it from Accounting periods if needed)" % overlapping[0].name]
         period = self.env["thirdcode.accounting.period"].sudo().create(
             {
                 "name": name,

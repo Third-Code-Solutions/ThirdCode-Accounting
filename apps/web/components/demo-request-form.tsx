@@ -74,7 +74,7 @@ export function DemoRequestForm() {
   }
 
   return (
-    <form className="demo-form" onSubmit={submit} noValidate>
+    <form className="demo-form" onSubmit={submit}>
       <div className="demo-form-grid">
         <label className="demo-field">Company name<input value={form.companyName} onChange={(event) => update("companyName", event.target.value)} autoComplete="organization" placeholder="Your legal company name" minLength={2} maxLength={160} required /></label>
         <label className="demo-field">Your name<input value={form.contactName} onChange={(event) => update("contactName", event.target.value)} autoComplete="name" placeholder="Finance or operations lead" minLength={2} maxLength={120} required /></label>

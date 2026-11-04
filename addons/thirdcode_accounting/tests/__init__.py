@@ -15,6 +15,8 @@ from . import test_monthly_reconciliation
 
 
 from . import test_platform_operations
+from . import test_platform_console
+from . import test_branding
 
 from . import test_contact_isolation
 from . import test_discuss_isolation

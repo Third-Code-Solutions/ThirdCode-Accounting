@@ -9,7 +9,7 @@
                     <button name="action_export_pdf" type="object" string="Export PDF" class="oe_highlight" groups="base.group_system,thirdcode_accounting.group_thirdcode_readonly,thirdcode_accounting.group_thirdcode_accountant,thirdcode_accounting.group_thirdcode_administrator"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-warning" role="alert">Trial layout. Attach and approve the client report sample to finalize this report.</div>
+                    <div class="alert alert-warning" role="alert" invisible="report_status == 'approved'">Attach and approve the client report sample to finalize this report.</div>
                     <div class="tcsi-form-sections">
                         <group string="Report parameters" class="tcsi-form-section">
                             <field name="report_type"/>

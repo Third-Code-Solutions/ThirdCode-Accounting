@@ -1,0 +1,79 @@
+# Reference host TLS proxy for one independent TCSI Accounting installation.
+# Copy to /etc/nginx/sites-available/, replace every <...> value, enable, then
+# run `nginx -t` before reloading. The engine listens only on 127.0.0.1 at the
+# ODOO_PORT from the installation's private env file.
+#
+# This proxy is the trust boundary: it must REPLACE the forwarded headers that
+# the engine trusts (proxy_mode). Never pass client-supplied X-Forwarded-*
+# values through.
+
+upstream tcsi_accounting {
+    server 127.0.0.1:<ODOO_PORT>;   # e.g. 127.0.0.1:18069
+    keepalive 16;
+}
+
+map $http_upgrade $tcsi_connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name <accounting.example.com>;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name <accounting.example.com>;
+
+    ssl_certificate     </etc/letsencrypt/live/accounting.example.com/fullchain.pem>;
+    ssl_certificate_key </etc/letsencrypt/live/accounting.example.com/privkey.pem>;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:tcsi_tls:10m;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # Attachments and imports; raise only if the client approves larger files.
+    client_max_body_size 100m;
+    # Keep nginx's default request buffering ON and drop slow uploads, so a
+    # client dribbling a request body cannot hold the engine's few workers.
+    client_body_timeout 15s;
+    proxy_request_buffering on;
+    # Match TCSI_LIMIT_TIME_REAL (default 600 s) so long reports are not cut off.
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+    proxy_http_version 1.1;
+
+    # Each location below overwrites (never appends) every header the engine
+    # trusts: Host, X-Forwarded-Host/Proto/For.
+
+    # Database-service RPC (create/drop/backup databases) is guarded only by the
+    # master password and nothing in this product uses it: deny it here.
+    location = /jsonrpc { return 404; }
+    location ~ ^/xmlrpc/(2/)?db { return 404; }
+
+    location /websocket {
+        proxy_pass http://tcsi_accounting;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection $tcsi_connection_upgrade;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_buffering off;
+    }
+
+    # A location that sets any header inherits none, so repeat them all.
+    location / {
+        proxy_pass http://tcsi_accounting;
+        proxy_set_header Connection "";
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_set_header X-Real-IP         $remote_addr;
+    }
+}

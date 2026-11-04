@@ -5,6 +5,7 @@ from odoo.exceptions import AccessError, UserError
 from odoo.service.model import get_public_method
 from odoo.tests import tagged
 from .common import AccountTestInvoicingCommon
+from ..models.accounting_period import _PERIOD_TRANSITION_TOKEN
 
 from odoo.addons.thirdcode_accounting.models.setup_service import (
     SETUP_ENTRY_CONTEXT_KEY,
@@ -258,6 +259,12 @@ class TestTrialMode(AccountTestInvoicingCommon):
 
         rerun_steps = service._ensure_period(company, {})
         self.assertTrue(any("reused" in step for step in rerun_steps))
+
+        period = self.env["thirdcode.accounting.period"].sudo().search([("company_id", "=", company.id)])
+        period.with_context(thirdcode_period_transition_token=_PERIOD_TRANSITION_TOKEN).write({"state": "closed"})
+        closed_steps = service._ensure_period(company, {})
+        self.assertTrue(any("kept closed" in step for step in closed_steps))
+        self.assertEqual(period.state, "closed")
 
     def test_setup_service_enables_only_company_bank_suspense_reconciliation(self):
         service = self.env["thirdcode.setup.service"].with_user(SUPERUSER_ID)

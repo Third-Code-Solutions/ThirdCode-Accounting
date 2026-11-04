@@ -1,7 +1,15 @@
 name: ${COMPOSE_PROJECT_NAME:?Set a unique Compose project name for this company}
 
+# Bounded container logs so a busy installation cannot fill the host disk.
+x-logging: &bounded-logs
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   db:
+    logging: *bounded-logs
     image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     restart: unless-stopped
     environment:
@@ -20,6 +28,7 @@ services:
       start_period: 300s
 
   db-init:
+    logging: *bounded-logs
     image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     restart: "no"
     depends_on:
@@ -40,6 +49,7 @@ services:
     entrypoint: ["/bin/sh", "/usr/local/bin/init-independent.sh"]
 
   odoo:
+    logging: *bounded-logs
     image: ${TCSI_ODOO_IMAGE:?Set the immutable Odoo image built from docker/odoo/Dockerfile}
     restart: unless-stopped
     depends_on:

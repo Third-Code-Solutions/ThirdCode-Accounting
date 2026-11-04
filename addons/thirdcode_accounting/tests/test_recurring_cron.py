@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from psycopg2.errors import SerializationFailure
@@ -92,6 +92,30 @@ class TestRecurringCron(AccountTestInvoicingCommon):
                 record.action_run_now()
                 self.assertEqual(record.generated_move_ids.state, "posted")
                 self.assertAlmostEqual(record.generated_move_ids.amount_total, 11.20, places=2)
+
+    def test_monthly_schedule_keeps_month_end_anchor(self):
+        for make in (self._journal, self._invoice):
+            with self.subTest(model=make.__name__):
+                record = make("MONTH-END-%s" % make.__name__, interval_type="months",
+                              date_start=date(2025, 1, 31), next_run=self.today)
+                self.assertEqual(record._next_date(date(2025, 1, 31)), date(2025, 2, 28))
+                self.assertEqual(record._next_date(date(2025, 2, 28)), date(2025, 3, 31))
+
+    def test_run_now_refuses_to_skip_overdue_periods(self):
+        for make in (self._journal, self._invoice):
+            with self.subTest(model=make.__name__):
+                record = make("OVERDUE-%s" % make.__name__, interval_type="days",
+                              next_run=self.today - timedelta(days=1))
+                with self.assertRaises(UserError), self.cr.savepoint():
+                    record.action_run_now()
+                self.assertFalse(record.generated_move_ids)
+                self.assertEqual(record.next_run, self.today - timedelta(days=1))
+                record.action_run_due()
+                self.assertEqual(
+                    sorted(record.generated_move_ids.mapped("date")),
+                    [self.today - timedelta(days=1), self.today],
+                )
+                self.assertEqual(record.next_run, self.today + timedelta(days=1))
 
     def _run_cron(self):
         cron = self.env.ref("thirdcode_accounting.ir_cron_thirdcode_recurring_journals").sudo()

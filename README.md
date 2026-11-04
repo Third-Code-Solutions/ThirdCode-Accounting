@@ -2,7 +2,9 @@
 
 Current delivery target: one independent TCSI demonstration, then fresh copies
 in each signed client's hosting account. See the
-[independent deployment procedure](docs/platform-deployment.md#independent-tcsi-demonstration-and-future-client-copies).
+[independent deployment procedure](docs/platform-deployment.md#independent-tcsi-demonstration-and-future-client-copies)
+and the client operator's [runbook](docs/handover/OPERATOR-RUNBOOK.md) (install,
+TLS proxy, backup schedule, upgrade, rollback, recovery, credential rotation).
 This does not require a shared SaaS platform, Supabase, the Next.js marketing
 portal or the optional Node worker. Do not clone demo financial data or secrets
 into client installations.
@@ -63,7 +65,11 @@ compose database: `auditlog`, `date_range`, `report_xlsx`,
 `account_statement_base`, `account_reconcile_model_oca`, `account_reconcile_oca`,
 and `account_statement_reconcile_status`.
 
-## Start the local stack
+## Start the local development stack
+
+Development only: this stack uses fixed local passwords and listens on
+127.0.0.1. Client installations use `docker-compose.independent.yml` and the
+operator runbook instead.
 
 Prerequisite: Docker Desktop with the Linux engine running.
 

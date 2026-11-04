@@ -44,8 +44,9 @@ class YearEndClose(models.Model):
     _sql_constraints = [
         (
             "thirdcode_year_end_company_date_unique",
-            "unique(company_id, date_end)",
-            "Only one year-end retained-earnings close may exist for a company and date.",
+            # Cancelled closes free the date so a reversed close can be redone.
+            "EXCLUDE USING btree (company_id WITH =, date_end WITH =) WHERE (state != 'cancelled')",
+            "Only one active year-end retained-earnings close may exist for a company and date.",
         )
     ]
 
@@ -181,7 +182,10 @@ class YearEndClose(models.Model):
     def action_cancel(self):
         self._check_thirdcode_access()
         self.check_access("write")
-        self.filtered(lambda close: close.state == "draft").sudo().write(
+        for close in self.filtered(lambda close: close.state == "posted"):
+            if not close.move_id.reversal_move_ids.filtered(lambda move: move.state == "posted"):
+                raise UserError(_("Reverse the year-end journal entry before cancelling this close."))
+        self.filtered(lambda close: close.state in ("draft", "posted")).sudo().write(
             {"state": "cancelled"}
         )
         return True

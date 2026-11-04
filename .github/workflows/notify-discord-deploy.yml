@@ -13,10 +13,11 @@ permissions: {}
 jobs:
   discord:
     if: >
+      github.repository == 'Third-Code-Solutions/ThirdCode-Accounting' && (
       github.event_name == 'workflow_dispatch' ||
       github.event.deployment_status.state == 'success' ||
       github.event.deployment_status.state == 'failure' ||
-      github.event.deployment_status.state == 'error'
+      github.event.deployment_status.state == 'error')
     runs-on: ubuntu-latest
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_DEPLOY_WEBHOOK }}

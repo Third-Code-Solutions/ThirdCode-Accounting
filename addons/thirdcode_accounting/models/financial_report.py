@@ -103,9 +103,13 @@ class FinancialReportWizard(models.TransientModel):
                 ]).move_id
                 reversals = self.env["account.move"].search([("reversed_entry_id", "in", closings.ids)])
                 domain.append(("move_id", "not in", (closings | reversals).ids))
+        return domain + self._state_domain()
+
+    def _state_domain(self):
+        """"All entries" means posted and draft; cancelled moves never count."""
         if self.target_move == "posted":
-            domain.append(("parent_state", "=", "posted"))
-        return domain
+            return [("parent_state", "=", "posted")]
+        return [("parent_state", "!=", "cancel")]
 
     def _account_totals(self, domain):
         totals = defaultdict(lambda: Decimal("0"))
@@ -178,8 +182,7 @@ class FinancialReportWizard(models.TransientModel):
             groups[category].append({"code": move.name, "name": move.ref or move.name, "amount": self._amount(amount)})
         opening_domain = [("company_id", "=", self.company_id.id), ("date", "<", self.date_from),
                           ("account_id", "in", cash_accounts.ids)]
-        if self.target_move == "posted":
-            opening_domain.append(("parent_state", "=", "posted"))
+        opening_domain += self._state_domain()
         opening = sum(self._account_totals(opening_domain).values(), Decimal("0"))
         closing_domain = self._move_line_domain(balance_sheet=True) + [("account_id", "in", cash_accounts.ids)]
         closing = sum(self._account_totals(closing_domain).values(), Decimal("0"))

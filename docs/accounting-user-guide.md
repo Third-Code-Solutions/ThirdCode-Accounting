@@ -58,8 +58,9 @@ it changes presentation only and does not affect company data or permissions.
    only their own company assigned. Do not use the presenter login as proof of
    restricted employee access.
 
-On this workstation, `scripts/seed_client_demo.py` provisions the isolated
-records and `scripts/check_client_demo.py` checks the five companies, named
+On this workstation, `scripts/seed_client_demo.py` creates each company through
+the Platform Console (with its own Administrator login; the platform owner is
+never a member) and provisions the isolated records and `scripts/check_client_demo.py` checks the five companies, named
 accountant isolation, payment, reconciliation, and report totals. The seeder
 requires an explicit `--apply`, a database name containing `demo`, a loopback
 HTTP URL, and a credential file outside the checkout. Re-running it is
