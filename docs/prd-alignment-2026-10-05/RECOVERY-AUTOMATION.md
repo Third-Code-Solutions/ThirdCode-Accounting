@@ -132,6 +132,16 @@ SIGTERM follows cleanup; SIGKILL causes watchdog resume and leaves running state
 5. Disable HTTP/customer access, cron, outgoing mail and external integrations in the copy before loading Odoo. Use existing accounting recovery comparisons in `scripts/alignment_snapshot.py` and the procedure in `HOSTED-OPERATIONS.md` to compare original IDs, names, balances, residuals, audit actors/times/old/new values and attachment bytes. Measure restore time and compare with approved RTO. Rehearse the candidate module upgrade there before release.
 6. Record operator/deputy execution, receipts, comparison results, failure exercise and restore cadence. After customer writes resume, preserve those new transactions and prefer forward correction; never blindly replace live books with an older bundle.
 
+The restore target must run the production PostgreSQL major version (18). Production dumps use PostgreSQL 18 syntax, and PostgreSQL 17's `pg_restore` stops at the first inherited table.
+
+### Rehearsal record
+
+| Date | Backup | Steps covered | Result | Time |
+| --- | --- | --- | --- | --- |
+| 2026-11-04 | Automatic capture of 2026-11-04 09:30 UTC (74 MB encrypted) | 1–4, plus the `recovery_fingerprint` comparison from step 5, on a disposable `postgres:18.6` copy | Pass. Size and SHA-256 matched the receipt, 516 bundle files verified, `pg_restore --exit-on-error` clean, and every accounting table, posted balance and all 512 attachment files identical to the capture baseline. | About 25 s from download to comparison |
+
+Not yet covered by a rehearsal: loading Odoo on the restored copy, the candidate module upgrade, and a deputy-run drill.
+
 Automated production restore is deliberately absent: restoring bytes cannot approve company scope, customer transaction preservation, integrations, acceptance or reopening access.
 
 ## Verification and remaining activation gates

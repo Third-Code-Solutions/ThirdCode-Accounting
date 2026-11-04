@@ -1,6 +1,7 @@
 {
   "name": "@tcsi/worker",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "description": "TCSI Accounting Railway worker",
   "type": "module",
