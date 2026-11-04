@@ -11,7 +11,6 @@ import argparse
 import csv
 import hashlib
 import json
-import sys
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal, InvalidOperation

@@ -13,7 +13,6 @@ import base64
 import json
 import os
 import sys
-import xmlrpc.client
 from decimal import Decimal
 from typing import Any, Callable
 

@@ -281,7 +281,7 @@
   .landing-header-cta { min-height: 38px; padding: 0 12px; font-size: 10px; }
   .landing-header-cta svg { display: none; }
   .landing-nav { gap: 23px; padding: 12px 0; }
-  .landing-nav .marketing-mobile-signin { display: block; }
+  .landing-nav .marketing-mobile-signin { display: flex; align-items: center; }
   .landing-nav a { font-size: 11px; }
   .home-hero { padding: 48px 0 38px; }
   .home-hero .home-eyebrow { font-size: 8px; letter-spacing: .09em; margin-bottom: 21px; }

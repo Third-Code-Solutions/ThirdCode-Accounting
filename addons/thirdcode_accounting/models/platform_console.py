@@ -5,7 +5,7 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models, Command
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import UserError
 
 from .platform_access import require_platform_owner
 
@@ -73,7 +73,6 @@ class PlatformConsole(models.TransientModel):
         """Backfill missing trial dates for organisations on a trial window."""
         if (company.thirdcode_platform_status or "trial") != "trial":
             return
-        today = fields.Date.context_today(self)
         updates = {}
         if not company.thirdcode_trial_start:
             start = (company.create_date or fields.Datetime.now()).date()
@@ -142,7 +141,6 @@ class PlatformConsole(models.TransientModel):
 
     @api.model
     def _alerts(self, rows):
-        today = fields.Date.context_today(self)
         alerts = []
         for row in rows:
             if row["status"] == "trial" and row["days_left"] is not None:

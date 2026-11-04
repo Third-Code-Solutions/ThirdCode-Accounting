@@ -1,9 +1,7 @@
 """Recovery guards plus opt-in real PG18/Odoo fixture restore; no real books."""
-import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import sys
 import tempfile
 import time

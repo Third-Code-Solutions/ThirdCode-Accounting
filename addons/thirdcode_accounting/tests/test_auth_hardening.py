@@ -384,7 +384,6 @@ class TestSessionCookiePolicy(TransactionCase):
         self.assertEqual(seen[0], {})
 
     def test_request_secure_helper_is_shared_with_ir_http(self):
-        from odoo.addons.thirdcode_accounting.models import ir_http
 
         with mock.patch.object(self.policy, "_tcsi_request_is_secure", return_value=True) as helper:
             self.assertTrue(self.env["ir.http"]._tcsi_is_secure())

@@ -1,4 +1,9 @@
+import re
+
+from lxml import etree
+
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import file_open
 
 
 @tagged("post_install", "-at_install")
@@ -60,3 +65,14 @@ class TestChatBranding(TransactionCase):
     def test_unrelated_bodies_are_untouched(self):
         body = "<p>Receipt RCPT/2026/0001 was paid in full.</p>"
         self.assertEqual(self._post(body).body, body)
+
+
+@tagged("post_install", "-at_install")
+class TestThemeBeforePaint(TransactionCase):
+    def test_layout_head_applies_the_theme_key_used_by_the_toggle(self):
+        with file_open("thirdcode_accounting/static/src/js/tcsi_theme.js") as script:
+            key = re.search(r'STORAGE_KEY = "([^"]+)"', script.read()).group(1)
+        arch = self.env.ref("web.layout")._get_combined_arch()
+        head = etree.tostring(arch.find(".//head"), encoding="unicode")
+        self.assertIn(f'localStorage.getItem("{key}")', head)
+        self.assertIn("dataset.tcsiTheme = tcsiTheme", head)

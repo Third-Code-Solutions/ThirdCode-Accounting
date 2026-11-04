@@ -10,7 +10,6 @@ import http.cookiejar
 import urllib.parse
 import urllib.request
 import xmlrpc.client
-from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
