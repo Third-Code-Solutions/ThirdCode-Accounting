@@ -163,14 +163,38 @@ def error_text(exc: Exception, password: str) -> str:
 
 
 def run_probe(args: argparse.Namespace, fixture: dict[str, int], iteration: int, run_id: str,
-              client_factory: Callable[..., OdooHttp] = OdooHttp) -> dict[str, Any]:
+              client_factory: Callable[..., OdooHttp] = OdooHttp, submitted_at: float | None = None,
+              timeline_origin: float | None = None) -> dict[str, Any]:
+    worker_started = time.perf_counter()
+    origin = worker_started if timeline_origin is None else timeline_origin
     reference = f"TC-BENCH-{run_id}-{iteration}"
-    result: dict[str, Any] = {"reference": reference, "create_ms": None, "post_ms": None, "error": None, "cleanup_errors": []}
+    result: dict[str, Any] = {
+        "reference": reference, "iteration": iteration, "create_ms": None, "post_ms": None,
+        "error": None, "cleanup_errors": [], "rpc_intervals": [],
+        "client_executor_wait_ms": (worker_started - submitted_at) * 1000 if submitted_at is not None else None,
+        "authentication_scope_ms": None, "session_cleanup_ms": None,
+    }
     client = None
     move_id = None
+
+    def timed_call(phase: str, method: str, values: list[Any]) -> Any:
+        started = time.perf_counter()
+        succeeded = False
+        try:
+            response = client.call("account.move", method, values)
+            succeeded = True
+            return response
+        finally:
+            ended = time.perf_counter()
+            result["rpc_intervals"].append({"phase": phase, "start_s": started - origin,
+                                            "end_s": ended - origin, "succeeded": succeeded})
+            if succeeded:
+                result[f"{phase}_ms"] = (ended - started) * 1000
+
     try:
         client = client_factory(args.url, args.database, args.login, args.password)
         client.bind_company(args.company_id)
+        result["authentication_scope_ms"] = (time.perf_counter() - worker_started) * 1000
         values = {
             "company_id": args.company_id, "move_type": "out_invoice", "partner_id": fixture["partner_id"],
             "journal_id": fixture["journal_id"], "invoice_date": date.today().isoformat(), "ref": reference,
@@ -179,13 +203,9 @@ def run_probe(args: argparse.Namespace, fixture: dict[str, int], iteration: int,
                 "account_id": fixture["income_id"], "tax_ids": [[6, 0, []]],
             }]],
         }
-        started = time.perf_counter()
-        move_id = int(client.call("account.move", "create", [values]))
-        result["create_ms"] = (time.perf_counter() - started) * 1000
+        move_id = int(timed_call("create", "create", [values]))
         if args.post:
-            started = time.perf_counter()
-            client.call("account.move", "action_post", [[move_id]])
-            result["post_ms"] = (time.perf_counter() - started) * 1000
+            timed_call("post", "action_post", [[move_id]])
         else:
             client.call("account.move", "unlink", [[move_id]])
             move_id = None
@@ -200,11 +220,29 @@ def run_probe(args: argparse.Namespace, fixture: dict[str, int], iteration: int,
                 result["cleanup_errors"].append(error_text(cleanup_exc, args.password))
     finally:
         if client is not None:
+            cleanup_started = time.perf_counter()
             try:
                 client.close()
             except Exception as cleanup_exc:
                 result["cleanup_errors"].append(error_text(cleanup_exc, args.password))
+            finally:
+                result["session_cleanup_ms"] = (time.perf_counter() - cleanup_started) * 1000
+        result["worker_total_ms"] = (time.perf_counter() - worker_started) * 1000
     return result
+
+
+def peak_rpc_overlap(results: list[dict[str, Any]]) -> int:
+    """Observed overlapping client RPC intervals; never server queue depth."""
+    events = []
+    for item in results:
+        for interval in item.get("rpc_intervals", []):
+            if interval["end_s"] > interval["start_s"]:
+                events.extend(((interval["start_s"], 1), (interval["end_s"], -1)))
+    active = peak = 0
+    for _, delta in sorted(events):  # End before start at the same instant.
+        active += delta
+        peak = max(peak, active)
+    return peak
 
 
 def build_report(args: argparse.Namespace, results: list[dict[str, Any]], errors: list[str]) -> dict[str, Any]:
@@ -233,6 +271,11 @@ def build_report(args: argparse.Namespace, results: list[dict[str, Any]], errors
         "save": summary(saves), "post": summary(posts), "target_observed": target_observed,
         "percentile_method": "nearest rank: ceil(n * 0.95)", "minimum_samples": args.min_samples,
         "sufficient_samples": sufficient, "errors": errors, "failed_probes": failures,
+        "samples": sorted(results, key=lambda item: item.get("iteration", 0)),
+        "client_executor_wait": summary([item["client_executor_wait_ms"] for item in results if item.get("client_executor_wait_ms") is not None]),
+        "maximum_simultaneous_save_post_calls": peak_rpc_overlap(results),
+        "server_queue_measurement": None,
+        "timeline_scope": "RPC intervals are seconds from this run's monotonic origin. Executor wait is local client backlog, excluded from save/post latency. RPC latency includes transport, server admission and execution; their individual contributions are not measured.",
         "measurement_scope": "Per-call invoice create/post RPC, one authenticated account across independent sessions; authentication, fixture setup and cleanup excluded from timings but contribute concurrent server load. Cold/warm calls are not separated.",
         "note": "Synthetic isolated timing only. A 20-sample p95 is directional; agree larger samples and representative annual volume. No browser/network path, role-mix or client acceptance is implied.",
     }
@@ -241,6 +284,7 @@ def build_report(args: argparse.Namespace, results: list[dict[str, Any]], errors
 def run_benchmark(args: argparse.Namespace, client_factory: Callable[..., OdooHttp] = OdooHttp) -> dict[str, Any]:
     run_id = uuid.uuid4().hex[:12]
     started_at = datetime.now(timezone.utc).isoformat()
+    timeline_origin = time.perf_counter()
     setup = None
     errors: list[str] = []
     results: list[dict[str, Any]] = []
@@ -259,7 +303,8 @@ def run_benchmark(args: argparse.Namespace, client_factory: Callable[..., OdooHt
                 errors.append("Setup session teardown: " + error_text(exc, args.password))
     if not errors and fixture:
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
-            futures = [executor.submit(run_probe, args, fixture, index, run_id, client_factory) for index in range(args.iterations)]
+            futures = [executor.submit(run_probe, args, fixture, index, run_id, client_factory,
+                                       time.perf_counter(), timeline_origin) for index in range(args.iterations)]
             for future in as_completed(futures):
                 results.append(future.result())
     return {**build_report(args, results, errors), "run_id": run_id, "actor_uid": setup.uid if setup is not None else None,

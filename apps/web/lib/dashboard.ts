@@ -14,13 +14,14 @@ type InvoiceRow = {
   invoice_number: string;
   status: string;
   balance_due: string | number;
+  currency: string;
   created_at: string;
 };
 
-function currency(value: number): string {
+function currency(value: number, currencyCode = "PHP"): string {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
-    currency: "PHP",
+    currency: currencyCode,
     maximumFractionDigits: 2,
   }).format(value);
 }
@@ -90,18 +91,12 @@ export async function loadDashboardSummary(): Promise<DashboardSummary> {
   }
 
   const workspaceId = membership.workspace_id;
-  const [accounts, invoices, periods, entries, activity] = await Promise.all([
+  const [accounts, receivables, periods, entries, activity] = await Promise.all([
     supabase
       .from("accounts")
       .select("id", { count: "exact", head: true })
       .eq("workspace_id", workspaceId),
-    supabase
-      .from("invoices")
-      .select("id, invoice_number, status, balance_due, created_at")
-      .eq("workspace_id", workspaceId)
-      .neq("status", "void")
-      .order("created_at", { ascending: false })
-      .limit(50),
+    supabase.rpc("get_workspace_receivables_due", { target_workspace_id: workspaceId }),
     supabase
       .from("accounting_periods")
       .select("id", { count: "exact", head: true })
@@ -114,13 +109,13 @@ export async function loadDashboardSummary(): Promise<DashboardSummary> {
       .eq("status", "draft"),
     supabase
       .from("invoices")
-      .select("id, invoice_number, status, balance_due, created_at")
+      .select("id, invoice_number, status, balance_due, currency, created_at")
       .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false })
       .limit(4),
   ]);
 
-  const queryError = [accounts.error, invoices.error, periods.error, entries.error, activity.error].find(
+  const queryError = [accounts.error, receivables.error, periods.error, entries.error, activity.error].find(
     Boolean,
   );
   if (queryError) {
@@ -130,16 +125,18 @@ export async function loadDashboardSummary(): Promise<DashboardSummary> {
     };
   }
 
-  const invoiceRows = (invoices.data ?? []) as InvoiceRow[];
-  const outstanding = invoiceRows.reduce((sum, invoice) => {
-    const balance = Number(invoice.balance_due);
-    return Number.isFinite(balance) ? sum + balance : sum;
-  }, 0);
+  const outstanding = Number(receivables.data);
+  if (!Number.isFinite(outstanding) || outstanding < 0) {
+    return {
+      ...setupSummary("Live workspace data is temporarily unavailable."),
+      state: "unavailable",
+    };
+  }
   const draftCount = entries.count ?? 0;
   const activities = ((activity.data ?? []) as InvoiceRow[]).map((invoice) => ({
     id: invoice.id,
     title: `Invoice ${invoice.invoice_number}`,
-    detail: `${invoice.status.replaceAll("_", " ")} · ${currency(Number(invoice.balance_due) || 0)} due`,
+    detail: `${invoice.status.replaceAll("_", " ")} · ${currency(Number(invoice.balance_due) || 0, invoice.currency)} due`,
     timestamp: invoice.created_at,
     tone: invoice.status === "paid" ? ("positive" as const) : ("accent" as const),
   }));
@@ -157,9 +154,9 @@ export async function loadDashboardSummary(): Promise<DashboardSummary> {
         tone: "neutral",
       },
       {
-        label: "Open receivables",
+        label: "Open sales invoices (PHP)",
         value: currency(outstanding),
-        helper: "Outstanding invoice balances",
+        helper: "Issued/partially paid customer invoice balances in PHP",
         tone: outstanding > 0 ? "attention" : "positive",
       },
       {

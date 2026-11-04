@@ -2503,6 +2503,19 @@ body.tcsi-shell-active .o_main_navbar {
     }
 }
 
+// Phones leave the title a few pixels beside the systray; the page heading
+// already names the screen, so keep the title for screen readers only.
+@media (max-width: 420px) {
+    body.tcsi-shell-active .o_main_navbar .tcsi-navbar-context-copy {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
+
 // TCSI light navigation rail -----------------------------------------------
 // Cloud infrastructure consoles work best with a quiet navigation plane:
 // clear grouping, restrained borders, and a single active-state signal.

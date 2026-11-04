@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import vm from "node:vm";
 import test from "node:test";
+import { webcrypto } from "node:crypto";
 
 // Execute the production controller with service doubles; native rendering is
 // covered separately. Deferred requests reproduce real cross-editor races.
 const source = fs.readFileSync("addons/thirdcode_accounting/static/src/js/tcsi_console.js", "utf8")
-  .replace(/^import .*;\n/gm, "");
+  .replace(/^import .*;\r?\n/gm, "");
 let Console;
 vm.runInNewContext(source, {
   Component: class {}, Dialog: class {}, ConfirmationDialog: class {},
@@ -20,6 +21,7 @@ function makeConsole() {
     draft: {}, publicationPage: 0, publications: [a] };
   app.editPublication(a);
   app.notification = { add() {} };
+  app.navigation = { notify() {} };
   app.loadTab = async () => {};
   return app;
 }
@@ -132,4 +134,147 @@ test("Business validation failure keeps owner editor and exposes error", async (
   assert.equal(app.state.error, "Revision changed");
   assert.ok(app.state.data);
   assert.equal(app.state.draft.title, a.title);
+});
+
+function passwordDialog(crypto = webcrypto) {
+  const context = {
+    crypto, Component: class {}, Dialog: class {}, useState: state => state,
+  };
+  vm.runInNewContext(source.slice(0, source.indexOf("class PlatformConsole")) +
+    ";this.CreateDialog = CreateOrganizationDialog;", context);
+  const dialog = new context.CreateDialog();
+  dialog.props = { controller: { state: { busy: false, org: { admin_password: "" } } } };
+  dialog.setup();
+  return dialog;
+}
+
+test("Generated credentials meet initial-password policy and can be revealed or hidden", () => {
+  const dialog = passwordDialog();
+  const passwords = new Set();
+  assert.equal(dialog.password.visible, false);
+  for (let i = 0; i < 100; i++) {
+    dialog.generatePassword();
+    const value = dialog.state.org.admin_password;
+    assert.equal(value.length, 24);
+    for (const pattern of [/^[A-Za-z0-9_-]+$/, /[A-Z]/, /[a-z]/, /[0-9]/, /[-_]/]) assert.match(value, pattern);
+    passwords.add(value);
+  }
+  assert.equal(passwords.size, 100);
+  assert.equal(dialog.password.visible, true);
+  const value = dialog.state.org.admin_password;
+  dialog.togglePassword();
+  assert.equal(dialog.password.visible, false);
+  assert.equal(dialog.state.org.admin_password, value);
+});
+
+test("Generation cannot replace credentials during submission", () => {
+  const dialog = passwordDialog({ getRandomValues() { assert.fail("Must not generate while busy"); } });
+  dialog.state.org.admin_password = "Manually-entered-secret";
+  dialog.state.busy = true;
+  dialog.generatePassword();
+  assert.equal(dialog.state.org.admin_password, "Manually-entered-secret");
+});
+
+test("Unavailable cryptographic randomness preserves manual input and reports failure", () => {
+  const dialog = passwordDialog({ getRandomValues() { throw new Error("unavailable"); } });
+  dialog.state.org.admin_password = "Manually-entered-secret";
+  dialog.generatePassword();
+  assert.equal(dialog.state.org.admin_password, "Manually-entered-secret");
+  assert.match(dialog.password.error, /Secure password generation is unavailable/);
+  assert.equal(dialog.password.visible, false);
+});
+
+const navigationSource = fs.readFileSync("addons/thirdcode_accounting/static/src/js/tcsi_console_navigation.js", "utf8")
+  .replace(/^import .*;\r?\n/gm, "").replace(/^export /gm, "");
+function makeNavigation(owner = true, select = async () => {}) {
+  let definition;
+  const events = [];
+  vm.runInNewContext(navigationSource, {
+    session: { tcsi_platform_owner: owner },
+    registry: { category: () => ({ add: (_name, service) => { definition = service; } }) },
+  });
+  const menu = {
+    getApps: () => [{ id: 10, xmlid: "thirdcode_accounting.menu_thirdcode_accounting_root" }],
+    getMenuAsTree: () => ({ childrenTree: [{ id: 20, xmlid: "thirdcode_accounting.menu_thirdcode_platform_console" }] }),
+    selectMenu: select,
+  };
+  return { service: definition.start({ bus: { trigger: (_name, detail) => events.push(detail) } }, { menu }), events, menu };
+}
+
+test("Owner Dashboard opens the native console menu; customer navigation cannot open it", async () => {
+  const selected = [];
+  for (const owner of [true, false, null]) {
+    const { service } = makeNavigation(owner, async menu => selected.push(menu.id));
+    await service.open();
+  }
+  assert.deepEqual(selected, [20]);
+});
+
+test("Opening a sidebar section carries its tab through console mount and blocks duplicate navigation", async () => {
+  let finish;
+  let navigation;
+  let calls = 0;
+  const { service } = makeNavigation(true, async () => {
+    calls++;
+    assert.equal(navigation.takeInitialTab(), "audit");
+    await new Promise(resolve => { finish = resolve; });
+  });
+  navigation = service;
+  const opening = service.open("audit");
+  assert.equal(service.busy, true);
+  await service.open("people");
+  assert.equal(calls, 1);
+  finish();
+  await opening;
+  assert.equal(service.busy, false);
+  assert.equal(service.takeInitialTab(), "overview");
+});
+
+test("Mounted console switches sections in place and respects a pending operation", async () => {
+  const { service } = makeNavigation();
+  const current = { state: { tab: "overview" }, busy: false, async selectTab(tab) { this.state.tab = tab; } };
+  service.attach(current);
+  await service.open("people");
+  assert.equal(service.activeTab, "people");
+  current.busy = true;
+  await service.open("audit");
+  assert.equal(service.activeTab, "people");
+  current.busy = false;
+  await service.open("invalid");
+  assert.equal(service.activeTab, "people");
+  service.detach({});
+  assert.equal(service.active, true);
+  current.state.denied = true;
+  assert.equal(service.activeTab, null);
+  service.detach(current);
+  assert.equal(service.active, false);
+});
+
+test("Failed menu navigation clears the pending tab and releases its lock", async () => {
+  const { service } = makeNavigation(true, async () => { throw new Error("navigation failed"); });
+  await assert.rejects(service.open("sentry"), /navigation failed/);
+  assert.equal(service.busy, false);
+  assert.equal(service.takeInitialTab(), "overview");
+});
+
+
+test("user creation requires an organization and passes its scope to the native wizard", async () => {
+  const app = makeConsole();
+  const calls = [];
+  app.action = { doAction: async (...args) => calls.push(args) };
+  app.state.companyId = false;
+  await app.createPerson();
+  assert.equal(calls.length, 0);
+  app.state.companyId = "42";
+  app.state.loading = true;
+  await app.createPerson();
+  assert.equal(calls.length, 0);
+  app.state.loading = false;
+  await app.createPerson();
+  assert.equal(calls[0][0], "thirdcode_accounting.action_thirdcode_employee_wizard");
+  assert.equal(calls[0][1].additionalContext.default_company_id, 42);
+  let reloads = 0;
+  app.load = async () => { reloads++; };
+  await calls[0][1].onClose();
+  assert.equal(reloads, 1);
 });

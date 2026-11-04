@@ -72,9 +72,10 @@ http {{
 '''
 
 
-def serve(commands):
+def serve(commands, optional_commands=()):
     """Stop the entire runtime if either essential process exits or we receive SIGTERM."""
     children = []
+    optional = []
     stopped = []
     previous = {}
     try:
@@ -84,10 +85,29 @@ def serve(commands):
             if stopped:
                 break
             children.append(subprocess.Popen(command, start_new_session=True))
+        for command in optional_commands:
+            optional.append([command, None, 0])
         while not stopped and all(child.poll() is None for child in children):
+            for entry in optional:
+                command, child, retry_at = entry
+                if child is not None and child.poll() is not None:
+                    # Kill orphaned capture descendants before restarting its scheduler.
+                    try:
+                        os.killpg(child.pid, signal.SIGTERM)
+                    except ProcessLookupError:
+                        pass
+                    entry[1], entry[2] = None, time.monotonic() + 60
+                    print("Optional backup process exited; restart scheduled", flush=True)
+                elif child is None and time.monotonic() >= retry_at:
+                    try:
+                        entry[1] = subprocess.Popen(command, start_new_session=True)
+                    except OSError:
+                        entry[2] = time.monotonic() + 60
+                        print("Optional backup process unavailable; restart scheduled", flush=True)
             time.sleep(0.2)
         return 128 + stopped[0] if stopped else next(child.returncode or 1 for child in children if child.returncode is not None)
     finally:
+        children.extend(entry[1] for entry in optional if entry[1] is not None)
         for child in children:
             try:
                 os.killpg(child.pid, signal.SIGTERM)

@@ -9,6 +9,7 @@ const publicPortalPages = new Set([
   "/controls",
   "/pilot",
   "/contact",
+  "/updates",
   "/owner",
   "/login",
   "/auth/confirm",
@@ -16,6 +17,7 @@ const publicPortalPages = new Set([
   "/robots.txt",
   "/sitemap.xml",
   "/apple-touch-icon.png",
+  "/logos/tcsi-logo.png",
 ]);
 const publicPortalApis = new Set(["/api/demo-requests", "/api/platform/analytics"]);
 

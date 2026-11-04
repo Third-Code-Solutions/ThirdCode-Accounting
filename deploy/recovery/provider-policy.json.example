@@ -1,0 +1,41 @@
+{
+  "enabled": false,
+  "approval_reference": "",
+  "operator": "",
+  "deputy": "",
+  "independent_destination_confirmed": false,
+  "private_bucket_confirmed": false,
+  "destination": "tcsi-recovery-pilot",
+  "bucket": "",
+  "prefix": "tcsi/production/",
+  "region": "",
+  "endpoint_url": null,
+  "credentials_file": "/etc/tcsi/recovery-s3-credentials.json",
+  "artifact_root": "/var/lib/odoo/recovery-state",
+  "maximum_success_age_seconds": 86400,
+  "rpo_seconds": 86400,
+  "rto_seconds": 14400,
+  "operation_timeout_seconds": 900,
+  "maximum_artifact_bytes": 5368709120,
+  "retention": {
+    "approval_reference": "",
+    "days": 35,
+    "keep_minimum": 2,
+    "apply_enabled": false
+  },
+  "alert": {
+    "enabled": false,
+    "approval_reference": "",
+    "recipient": "",
+    "url": "",
+    "token_file": "/etc/tcsi/recovery-alert-token",
+    "deduplication_seconds": 3600
+  },
+  "engineering_proposal": {
+    "schedule": "02:00 daily Asia/Manila",
+    "restore_drill": "monthly",
+    "rpo_hours": 24,
+    "rto_hours": 4,
+    "status": "Engineering proposal; client Owner decision and Technical Adviser recommendation pending"
+  }
+}

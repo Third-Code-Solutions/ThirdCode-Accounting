@@ -35,8 +35,8 @@
                             <field name="vat_registered"/>
                         </group>
                         <group string="Approved native tax mappings" class="tcsi-form-section">
-                            <field name="output_vat_tax_id"/>
-                            <field name="input_vat_tax_id"/>
+                            <field name="output_vat_tax_id" domain="[('company_id', '=', company_id), ('type_tax_use', '=', 'sale')]" options="{'no_create': True}"/>
+                            <field name="input_vat_tax_id" domain="[('company_id', '=', company_id), ('type_tax_use', '=', 'purchase')]" options="{'no_create': True}"/>
                             <field name="withholding_tax_ids" widget="many2many_tags"/>
                         </group>
                         <group string="Notes" class="tcsi-form-section tcsi-form-section-wide">

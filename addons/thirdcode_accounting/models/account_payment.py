@@ -1,4 +1,3 @@
-from num2words import num2words
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -63,8 +62,7 @@ class AccountPayment(models.Model):
             if not payment.currency_id:
                 payment.thirdcode_amount_in_words = ""
                 continue
-            amount = num2words(payment.amount, lang="en")
-            payment.thirdcode_amount_in_words = f"{amount.title()} {payment.currency_id.name}"
+            payment.thirdcode_amount_in_words = payment.currency_id.amount_to_text(payment.amount)
 
     @api.depends(
         "payment_type",
@@ -231,12 +229,11 @@ class AccountPayment(models.Model):
         """Server-side controls that must hold for every payment posting path.
 
         * A payment above the company approval threshold only passes through a
-          batch an administrator approved (finding H3); the batch enters with
-          an unforgeable in-process token.
+          batch an administrator approved; the batch enters with an
+          unforgeable in-process token.
         * An outbound bank payment may only reach a bank account an
           administrator has verified (``allow_out_payment``), so changing a
-          vendor's bank details alone can no longer divert a payment
-          (finding H2).
+          vendor's bank details alone can no longer divert a payment.
         """
         if self.env.su:
             return

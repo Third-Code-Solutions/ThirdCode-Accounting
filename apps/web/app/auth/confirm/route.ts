@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getPublicEnv } from "../../../lib/env";
+import { safeNextUrl } from "../../../lib/auth-redirect";
 
 /**
  * Consumes `{{ .TokenHash }}` email links (recovery, invite) server-side.
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
   const target =
     error ? invalid
       : type === "recovery" || type === "invite" ? new URL("/login?mode=update", origin)
-        : next.startsWith("/") ? new URL(next, origin) : new URL("/", origin);
+        : safeNextUrl(next, origin);
 
   const response = NextResponse.redirect(target);
   pendingCookies.forEach(({ name, value, options }) => {

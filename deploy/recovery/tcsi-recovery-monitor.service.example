@@ -1,0 +1,19 @@
+# Install outside Railway and the capture scheduler's host/failure domain.
+[Unit]
+Description=TCSI independent object-store recovery freshness check
+Wants=network-online.target
+After=network-online.target
+OnFailure=tcsi-recovery-failed.service
+
+[Service]
+Type=oneshot
+User=tcsi-recovery
+UMask=0077
+ExecStart=/opt/tcsi-recovery/venv/bin/python /opt/tcsi-recovery/scripts/hosted_recovery_provider.py monitor --config /etc/tcsi/recovery-provider.json
+TimeoutStartSec=960
+TimeoutStopSec=30
+KillMode=control-group
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

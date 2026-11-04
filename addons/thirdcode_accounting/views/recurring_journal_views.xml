@@ -2,7 +2,7 @@
 <odoo>
     <record id="view_thirdcode_recurring_journal_tree" model="ir.ui.view">
         <field name="name">thirdcode.recurring.journal.tree</field><field name="model">thirdcode.recurring.journal</field>
-        <field name="arch" type="xml"><list string="Recurring journals"><field name="name"/><field name="reference"/><field name="journal_id"/><field name="next_run"/><field name="interval_number"/><field name="interval_type"/><field name="active"/></list></field>
+        <field name="arch" type="xml"><list string="Recurring journals"><field name="name"/><field name="reference"/><field name="journal_id"/><field name="next_run"/><field name="interval_number"/><field name="interval_type"/><field name="active"/><field name="last_cron_error_at" optional="show"/></list></field>
     </record>
     <record id="view_thirdcode_recurring_journal_form" model="ir.ui.view">
         <field name="name">thirdcode.recurring.journal.form</field><field name="model">thirdcode.recurring.journal</field>
@@ -23,6 +23,8 @@
                             <field name="interval_number"/>
                             <field name="interval_type"/>
                             <field name="last_run"/>
+                            <field name="last_cron_error_at" invisible="not last_cron_error"/>
+                            <field name="last_cron_error" invisible="not last_cron_error"/>
                             <field name="narration"/>
                         </group>
                     </div>

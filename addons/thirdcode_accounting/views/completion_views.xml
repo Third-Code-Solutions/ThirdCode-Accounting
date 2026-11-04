@@ -136,7 +136,7 @@
         <field name="line_ids" invisible="reverse_only">
           <list editable="bottom">
             <field name="company_id" column_invisible="True"/>
-            <field name="move_line_id"/>
+            <field name="move_line_id" domain="[('company_id', '=', parent.company_id), ('parent_state', '=', 'posted'), ('account_id.reconcile', '=', True), ('reconciled', '=', False)]" options="{'no_create': True}"/>
             <field name="amount"/>
           </list>
         </field>

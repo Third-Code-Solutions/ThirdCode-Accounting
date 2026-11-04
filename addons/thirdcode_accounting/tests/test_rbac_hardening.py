@@ -1,9 +1,11 @@
-"""Server-side guards added by the 2026-10-06 RBAC audit remediation.
+"""Server-side guards for the live-line RBAC remediation (2026-10-13).
 
 Covers the audit-log tenant boundary and session digests (C2), the Encoder
 auto-post control (C3), vendor-bank verification before payment (H2), payment
-batch approval separation and threshold enforcement (H3), and organization
-user-management scoping (H7). The setup-service entry gate (C1) is exercised in
+batch approval separation and threshold enforcement (H3), organization user
+management scoping (H7), the attachment download boundary (F1), the
+administrator-only export capability (F9) and the role send/official-document
+guards (F7). The setup-service entry gate (C1) is exercised in
 ``test_trial_mode`` and ``test_platform_operations``.
 """
 from odoo import Command, fields
@@ -85,6 +87,25 @@ class TestRbacHardening(AccountTestInvoicingCommon):
                 ):
                     with self.assertRaises(AccessError), self.cr.savepoint():
                         self.env[model].with_user(user).search([], limit=1)
+
+    def test_role_definitions_never_imply_native_audit_group(self):
+        """Role records must not re-link the native audit group on updates."""
+        oca_group = self.env.ref("auditlog.group_auditlog_user")
+        reader_group = self.env.ref("thirdcode_accounting.group_thirdcode_audit_reader")
+        for role in ("administrator", "accountant", "encoder", "readonly"):
+            with self.subTest(role=role):
+                group = self.env.ref("thirdcode_accounting.group_thirdcode_" + role)
+                self.assertNotIn(oca_group, group.trans_implied_ids)
+                self.assertIn(reader_group, group.trans_implied_ids)
+        # The definitions must also be update-proof: every role record clears
+        # previously linked groups before setting its own (see the security
+        # XML); assert the intended set is stable.
+        for role in ("readonly", "encoder"):
+            group = self.env.ref("thirdcode_accounting.group_thirdcode_" + role)
+            self.assertNotIn(
+                self.env.ref("auditlog.group_auditlog_manager", False),
+                group.trans_implied_ids,
+            )
 
     def test_session_digest_never_keeps_the_raw_secret(self):
         from odoo.addons.thirdcode_accounting.models.auditlog import session_digest
@@ -302,3 +323,85 @@ class TestRbacHardening(AccountTestInvoicingCommon):
             shared.with_user(administrator).action_thirdcode_toggle_active()
         accountant.with_user(administrator).action_thirdcode_toggle_active()
         self.assertFalse(accountant.active)
+
+    # ------------------------------------------------------------------
+    # F1: attachment download boundary (live-line remediation)
+    # ------------------------------------------------------------------
+    def test_attachments_follow_the_tenant_boundary(self):
+        attachment = self.env["ir.attachment"].create({
+            "name": "tenant-boundary.txt",
+            "raw": b"tenant-boundary-payload",
+            "company_id": self.company.id,
+        })
+        accountant = self.roles["accountant"]
+        # Same company: the stock gate and the tenant checks both pass.
+        result = attachment.with_user(accountant).validate_access(None)
+        self.assertEqual(result.id, attachment.id)
+        # Anonymous visitors never receive a non-public attachment.
+        public_user = self.env.ref("base.public_user")
+        with self.assertRaises(UserError), self.cr.savepoint():
+            attachment.with_user(public_user).validate_access(None)
+        public_attachment = self.env["ir.attachment"].create({
+            "name": "tenant-boundary-public.txt",
+            "raw": b"public-payload",
+            "public": True,
+        })
+        self.assertEqual(
+            public_attachment.with_user(public_user).validate_access(None).id,
+            public_attachment.id,
+        )
+        # Another organization is denied, over the download route and over
+        # plain ORM reads.
+        other_company = self.env["res.company"].sudo().create({"name": "Attachment foreign org"})
+        foreign_user = self.env["res.users"].sudo().create({
+            "name": "Attachment foreign user",
+            "login": "hardening-attachment-foreign",
+            "company_id": other_company.id,
+            "company_ids": [Command.set(other_company.ids)],
+            "groups_id": [
+                Command.set(
+                    [self.env.ref("thirdcode_accounting.group_thirdcode_accountant").id]
+                )
+            ],
+        })
+        with self.assertRaises(UserError), self.cr.savepoint():
+            attachment.with_user(foreign_user).validate_access(None)
+        self.assertFalse(
+            self.env["ir.attachment"].with_user(foreign_user).search(
+                [("id", "=", attachment.id)]
+            )
+        )
+
+    # ------------------------------------------------------------------
+    # F9: exports stay with the platform and the Administrator
+    # ------------------------------------------------------------------
+    def test_export_capability_stays_with_the_administrator(self):
+        self.assertTrue(
+            self.roles["administrator"].has_group("base.group_allow_export")
+        )
+        for role in ("accountant", "encoder", "readonly"):
+            with self.subTest(role=role):
+                self.assertFalse(
+                    self.roles[role].has_group("base.group_allow_export"),
+                    "%s must not hold the export capability" % role,
+                )
+
+    # ------------------------------------------------------------------
+    # F7: data-entry and read-only roles cannot send or issue documents
+    # ------------------------------------------------------------------
+    def test_encoder_and_readonly_cannot_send_or_issue_customer_documents(self):
+        accountant = self.roles["accountant"]
+        invoice = self.env["account.move"].create(self._invoice_values("out_invoice"))
+        invoice.with_user(accountant).action_post()
+        self.assertEqual(invoice.state, "posted")
+        for role in ("encoder", "readonly"):
+            with self.subTest(role=role):
+                with self.assertRaises(AccessError), self.cr.savepoint():
+                    invoice.with_user(self.roles[role]).action_invoice_sent()
+                with self.assertRaises(AccessError), self.cr.savepoint():
+                    invoice.with_user(self.roles[role]).action_print_thirdcode_invoice()
+
+    def test_move_form_hides_forbidden_buttons_from_data_entry_roles(self):
+        arch = self.env.ref("thirdcode_accounting.view_move_form_thirdcode").arch
+        self.assertIn("!thirdcode_accounting.group_thirdcode_encoder", arch)
+        self.assertIn("!thirdcode_accounting.group_thirdcode_readonly", arch)

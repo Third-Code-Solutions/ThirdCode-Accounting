@@ -2,6 +2,7 @@
 
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
+import { Domain } from "@web/core/domain";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -97,7 +98,15 @@ class TCSIDashboard extends Component {
 
     async openModel(model, actionName, domain = []) {
         if (actionName) {
-            await this.action.doAction(actionName);
+            if (domain.length) {
+                const action = await rpc("/web/action/load", { action_id: actionName });
+                await this.action.doAction({
+                    ...action,
+                    domain: Domain.and([action.domain || [], domain]).toString(),
+                });
+            } else {
+                await this.action.doAction(actionName);
+            }
             return;
         }
         await this.action.doAction({

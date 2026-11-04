@@ -77,8 +77,7 @@ class ResUsers(models.Model):
             return False
         return self._tcsi_client_ip() in entries
 
-    @contextlib.contextmanager
-    def _assert_can_auth(self, user=None):
+    def _tcsi_check_cooldown(self, user=None):
         limiter = self.env["thirdcode.auth.throttle"].sudo()
         ip = self._tcsi_client_ip()
         login_key = self._tcsi_login_key(user)
@@ -95,6 +94,13 @@ class ResUsers(models.Model):
                 raise
             except Exception:  # noqa: BLE001 - fail open, never lock the pilot out
                 _logger.exception("TCSI auth throttle: cooldown check failed")
+
+    @contextlib.contextmanager
+    def _assert_can_auth(self, user=None):
+        limiter = self.env["thirdcode.auth.throttle"].sudo()
+        ip = self._tcsi_client_ip()
+        login_key = self._tcsi_login_key(user)
+        self._tcsi_check_cooldown(user)
         try:
             with super()._assert_can_auth(user=user):
                 yield
@@ -171,6 +177,10 @@ class ResUsers(models.Model):
     @classmethod
     def _login(cls, db, credential, user_agent_env):
         login = (credential or {}).get("login")
+        # Reject blocked requests before the enumeration-defense hash. Keep the
+        # native authentication check too, since other credential paths use it.
+        with cls.pool.cursor() as cr:
+            api.Environment(cr, SUPERUSER_ID, {})[cls._name]._tcsi_check_cooldown(login)
         if login and not cls._tcsi_login_exists(db, login):
             # Unknown account: upstream would return after a single SELECT.
             # Burn a hash so the response time matches the known-account path.

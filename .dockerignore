@@ -2,7 +2,8 @@
 .gitignore
 .env
 docs
-scripts
+scripts/*
+!scripts/hosted_backup.py
 tmp
 *.md
 node_modules

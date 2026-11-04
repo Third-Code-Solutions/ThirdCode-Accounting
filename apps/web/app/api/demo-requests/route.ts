@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
 import { NextResponse } from "next/server";
 
 import { demoRequestSchema } from "@tcsi/contracts";
@@ -54,24 +56,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ data: { accepted: true } }, { status: 201 });
   }
 
-  const supabase = await getSupabaseServerClient();
-  if (!supabase) {
+  const ingestionSecret = process.env.TCSI_DEMO_INTAKE_SECRET ?? "";
+  if (!/^[0-9a-f]{64}$/.test(ingestionSecret)) {
     return NextResponse.json({ error: { code: "configuration_required", message: "The request service is not configured yet." } }, { status: 503 });
   }
 
-  const { error } = await supabase.from("demo_requests").insert({
-    company_name: input.data.companyName,
-    contact_name: input.data.contactName,
-    email: input.data.email.toLowerCase(),
-    phone: input.data.phone || null,
-    team_size: input.data.teamSize,
-    accounting_stack: input.data.accountingStack || null,
-    message: input.data.message,
-    source: "website",
-    status: "new",
-  });
+  // Only Vercel's overwritten header is trusted. Other hosts share a bounded
+  // bucket until they provide a verified ingress; arbitrary forwarding headers
+  // must never let callers select a fresh rate-limit identity.
+  const address = process.env.VERCEL === "1" ? request.headers.get("x-vercel-forwarded-for")?.trim() ?? "" : "";
+  const addressVersion = address.includes("%") ? 0 : isIP(address);
+  const clientAddress = addressVersion === 6 ? new URL(`http://[${address}]/`).hostname : addressVersion === 4 ? address : "unknown";
+  const clientHash = createHmac("sha256", ingestionSecret).update(`demo-intake:${clientAddress}`).digest("hex");
 
-  if (error) {
+  try {
+    const supabase = await getSupabaseServerClient();
+    if (!supabase) {
+      return NextResponse.json({ error: { code: "configuration_required", message: "The request service is not configured yet." } }, { status: 503 });
+    }
+    const { error } = await supabase.rpc("submit_demo_request", {
+      ingestion_secret: ingestionSecret,
+      client_hash: clientHash,
+      details: {
+        company_name: input.data.companyName,
+        contact_name: input.data.contactName,
+        email: input.data.email.toLowerCase(),
+        phone: input.data.phone || null,
+        team_size: input.data.teamSize,
+        accounting_stack: input.data.accountingStack || null,
+        message: input.data.message,
+      },
+    }).abortSignal(AbortSignal.timeout(5_000));
+
+    if (error?.code === "PT429" || (error?.code === "P0001" && error.message === "Demo request rate limit exceeded")) {
+      return NextResponse.json({ error: { code: "rate_limited", message: "Too many requests. Please try again in an hour." } }, { status: 429, headers: { "Retry-After": "3600" } });
+    }
+    if (error) {
+      return NextResponse.json({ error: { code: "request_failed", message: "We could not save the request. Please try again." } }, { status: 503 });
+    }
+  } catch {
     return NextResponse.json({ error: { code: "request_failed", message: "We could not save the request. Please try again." } }, { status: 503 });
   }
 

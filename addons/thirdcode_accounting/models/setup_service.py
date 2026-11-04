@@ -473,7 +473,7 @@ class ThirdCodeSetupService(models.AbstractModel):
             while candidate in used_codes:
                 candidate = "%s%d" % (code, suffix)
                 suffix += 1
-            self.env["account.journal"].sudo().create(
+            existing |= self.env["account.journal"].sudo().create(
                 {
                     "name": name,
                     "code": candidate,
@@ -484,9 +484,15 @@ class ThirdCodeSetupService(models.AbstractModel):
             used_codes.add(candidate)
             have_types.add(journal_type)
             created.append("%s:%s" % (journal_type, candidate))
-        if created:
-            return ["journals created: %s" % ", ".join(created)]
-        return ["journals already complete"]
+        steps = ["journals created: %s" % ", ".join(created)] if created else ["journals already complete"]
+        suspense_accounts = existing.filtered(lambda journal: journal.type in ("bank", "cash")).suspense_account_id.filtered(
+            lambda account: account.company_ids == company
+            and account.account_type == "asset_current" and not account.reconcile
+        )
+        if suspense_accounts:
+            suspense_accounts.write({"reconcile": True})
+            steps.append("enabled statement matching on bank/cash suspense accounts")
+        return steps
 
     def _ensure_period(self, company, payload):
         today = fields.Date.context_today(self)
@@ -510,15 +516,8 @@ class ThirdCodeSetupService(models.AbstractModel):
             lambda period: period.date_start <= end and period.date_end >= start
         )
         if overlapping:
-            for period in overlapping:
-                period.sudo().write(
-                    {
-                        "state": "open",
-                        "reopened_by": self.env.uid,
-                        "reopened_at": fields.Datetime.now(),
-                    }
-                )
-            return ["reopened overlapping period: %s" % overlapping[0].name]
+            # Closed books reopen only through the audited Accounting periods action.
+            return ["closed period kept closed: %s (reopen it from Accounting periods if needed)" % overlapping[0].name]
         period = self.env["thirdcode.accounting.period"].sudo().create(
             {
                 "name": name,

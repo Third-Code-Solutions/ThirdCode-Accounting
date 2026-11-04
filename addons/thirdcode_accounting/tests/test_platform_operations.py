@@ -54,6 +54,8 @@ class TestPlatformOperations(TransactionCase):
             if sudo:service=service.sudo()
             with self.assertRaises(AccessError):
                 service.with_context(tcsi_setup_token_ok=True).dispatch("status")
+
+    def test_owner_without_controller_entry_cannot_dispatch_setup_service(self):
         # The entry sentinel is an in-process object: importing it is not
         # enough. Only the token-checked controller enters inside the
         # superuser environment, so even a genuine owner session cannot call
@@ -124,6 +126,21 @@ class TestPlatformOperations(TransactionCase):
             with patch.object(service,"_action_ensure_baseline",side_effect=UserError("Synthetic baseline failure")):
                 self.console.create_organization(failure)
         self.assertFalse(self.env["res.company"].search([("name","=",failure["name"])]))
+
+    def test_owner_creates_user_in_selected_customer_from_console(self):
+        wizard = self.env["thirdcode.employee.wizard"].with_user(self.owner).with_context(
+            default_company_id=self.company.id,
+        ).create({
+            "name": "Console customer user", "login": "console-customer-user@example.invalid",
+            "password": "Synthetic-user-password", "role": "accountant",
+        })
+        self.assertEqual(wizard.company_id, self.company)
+        wizard.action_create_employee()
+        user = self.env["res.users"].search([("login", "=", "console-customer-user@example.invalid")])
+        self.assertEqual(user.company_ids, self.company)
+        self.assertTrue(user.has_group("thirdcode_accounting.group_thirdcode_accountant"))
+        self.assertFalse(user.has_group("base.group_system"))
+        self.assertEqual(self.owner.company_ids, self.home)
 
     def test_publications_hold_public_snapshot_until_explicit_publish(self):
         values={"kind":"seo","title":"Original title","description":"Reviewed description","version":"","category":"improvement"}

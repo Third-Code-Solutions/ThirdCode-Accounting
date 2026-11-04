@@ -21,7 +21,8 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${ODOO_PORT:-8069}:8069"
+      # Local development only (fixed passwords in config/odoo.conf): loopback bind.
+      - "127.0.0.1:${ODOO_PORT:-8069}:8069"
     volumes:
       - odoo-data:/var/lib/odoo
       - ./config/odoo.conf:/etc/odoo/odoo.conf:ro

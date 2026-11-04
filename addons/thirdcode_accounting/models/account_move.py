@@ -1,9 +1,15 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
+from .write_tokens import RECURRING_MOVE_TOKEN
+
 _RECONCILIATION_METADATA_TOKEN = object()
 _REVERSAL_METADATA_TOKEN = object()
 _POSTING_TOKEN = object()
+_RECURRING_PROVENANCE_FIELDS = frozenset({
+    "thirdcode_recurring_journal_id", "thirdcode_recurring_run_date",
+    "thirdcode_recurring_invoice_id", "thirdcode_recurring_invoice_run_date",
+})
 
 
 class AccountMove(models.Model):
@@ -33,11 +39,11 @@ class AccountMove(models.Model):
     )
     thirdcode_is_opening_balance = fields.Boolean(copy=False)
     thirdcode_recurring_journal_id = fields.Many2one(
-        "thirdcode.recurring.journal", readonly=True, copy=False, index=True
+        "thirdcode.recurring.journal", readonly=True, copy=False, index=True, check_company=True
     )
     thirdcode_recurring_run_date = fields.Date(readonly=True, copy=False, index=True)
     thirdcode_recurring_invoice_id = fields.Many2one(
-        "thirdcode.recurring.invoice", readonly=True, copy=False, index=True
+        "thirdcode.recurring.invoice", readonly=True, copy=False, index=True, check_company=True
     )
     thirdcode_recurring_invoice_run_date = fields.Date(readonly=True, copy=False, index=True)
     thirdcode_bir_ack_control_number = fields.Char(
@@ -121,6 +127,10 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if self.env.context.get("thirdcode_recurring_move_token") is not RECURRING_MOVE_TOKEN:
+            defaults = self.default_get(list(_RECURRING_PROVENANCE_FIELDS))
+            if any(values.get(field, defaults.get(field)) for values in vals_list for field in _RECURRING_PROVENANCE_FIELDS):
+                raise AccessError(_("Recurring source links are assigned only by the recurring generation action."))
         if any(values.get("state", self.env.context.get("default_state")) == "posted" for values in vals_list):
             raise UserError(_("Create a draft and use the native posting action."))
         if any(values.get("posted_before", self.env.context.get("default_posted_before")) for values in vals_list):
@@ -137,6 +147,8 @@ class AccountMove(models.Model):
         return moves
 
     def write(self, vals):
+        if _RECURRING_PROVENANCE_FIELDS.intersection(vals):
+            raise AccessError(_("Recurring source links cannot be changed."))
         posting = self.env.context.get("thirdcode_posting_token") is _POSTING_TOKEN
         if self._thirdcode_is_encoder_writer() and self._thirdcode_autopost_values_blocked(vals):
             raise AccessError(
@@ -158,6 +170,8 @@ class AccountMove(models.Model):
             "checked", "is_manually_modified", "message_main_attachment_id",
             "message_follower_ids", "message_partner_ids", "made_sequence_gap",
             "needed_terms_dirty",
+            # Send & Print delivery state; no accounting effect.
+            "is_move_sent", "sending_data",
         }
         if self.env.context.get("thirdcode_reconciliation_metadata_token") is _RECONCILIATION_METADATA_TOKEN:
             safe_fields.add("matched_payment_ids")
@@ -242,7 +256,26 @@ class AccountMove(models.Model):
             )
         return super()._autopost_draft_entries()
 
+    def action_invoice_sent(self):
+        # Data-entry and read-only roles may not initiate outbound
+        # communication to customers; the server refuses what the view hides.
+        if not self.env.su and (
+            self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder")
+            or self.env.user.has_group("thirdcode_accounting.group_thirdcode_readonly")
+        ):
+            raise AccessError(
+                _("This role may not send documents to customers; ask an Accountant or Administrator.")
+            )
+        return super().action_invoice_sent()
+
     def action_print_thirdcode_invoice(self):
+        if not self.env.su and (
+            self.env.user.has_group("thirdcode_accounting.group_thirdcode_encoder")
+            or self.env.user.has_group("thirdcode_accounting.group_thirdcode_readonly")
+        ):
+            raise AccessError(
+                _("This role may not issue the official invoice document; ask an Accountant or Administrator.")
+            )
         for move in self:
             if move.state != "posted":
                 raise UserError(_("Only posted invoices may be printed."))

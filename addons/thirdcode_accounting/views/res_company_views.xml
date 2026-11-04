@@ -1,5 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="view_company_controls_form" model="ir.ui.view">
+        <field name="name">res.company.form.thirdcode.controls</field>
+        <field name="model">res.company</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Company controls" create="0" delete="0" duplicate="0">
+                <header>
+                    <button name="action_validate_thirdcode_configuration" type="object" string="Validate configuration" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <field name="currency_id" invisible="1"/>
+                    <div class="tcsi-form-sections">
+                        <group string="Regulatory configuration" class="tcsi-form-section">
+                            <field name="thirdcode_bir_ack_control_number" string="BIR control number"/>
+                            <field name="thirdcode_bir_ack_approved" string="Control number approved"/>
+                            <field name="thirdcode_eis_status" string="EIS status"/>
+                        </group>
+                        <group string="Report layouts" class="tcsi-form-section">
+                            <field name="thirdcode_report_samples_approved" string="Client samples approved"/>
+                            <field name="thirdcode_invoice_layout_revision" string="Invoice revision"/>
+                            <field name="thirdcode_statement_layout_revision" string="Statement revision"/>
+                            <field name="thirdcode_financial_statement_layout_revision" string="Financial statement revision"/>
+                            <field name="thirdcode_receipt_layout_revision" string="Receipt revision"/>
+                            <field name="thirdcode_reconciliation_layout_revision" string="Reconciliation revision"/>
+                        </group>
+                        <group string="Receipt signatory" class="tcsi-form-section">
+                            <field name="thirdcode_receipt_signatory_name" string="Signatory name"/>
+                            <field name="thirdcode_receipt_signatory_title" string="Signatory title"/>
+                        </group>
+                        <group string="Payment approval" class="tcsi-form-section">
+                            <field name="thirdcode_payment_approval_enabled" string="Approval enabled"/>
+                            <field name="thirdcode_payment_approval_threshold" string="Approval threshold"/>
+                        </group>
+                        <group string="Ledger controls" class="tcsi-form-section">
+                            <field name="thirdcode_numbering_owner" string="Numbering owner"/>
+                            <field name="thirdcode_retained_earnings_account_id" string="Retained earnings account"/>
+                            <field name="thirdcode_year_end_journal_id" string="Year-end journal"/>
+                            <field name="thirdcode_reconciliation_definition" string="Reconciliation definition"/>
+                        </group>
+                        <group string="Data and operations" class="tcsi-form-section">
+                            <field name="thirdcode_live_history_policy" string="Live history policy"/>
+                            <field name="thirdcode_statutory_retention_years" string="Retention years"/>
+                            <field name="thirdcode_backup_owner" string="Backup owner"/>
+                            <field name="thirdcode_restore_owner" string="Restore owner"/>
+                        </group>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_company_controls_form" model="ir.actions.act_window">
+        <field name="name">Company controls</field>
+        <field name="res_model">res.company</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_company_controls_form"/>
+        <field name="groups_id" eval="[Command.set([ref('group_thirdcode_administrator')])]"/>
+    </record>
+
+    <record id="action_company_controls" model="ir.actions.server">
+        <field name="name">Company controls</field>
+        <field name="model_id" ref="base.model_res_company"/>
+        <field name="state">code</field>
+        <field name="groups_id" eval="[Command.set([ref('group_thirdcode_administrator')])]"/>
+        <field name="code">
+company = env.company
+company.check_access('write')
+if company.sudo().thirdcode_is_platform:
+    raise UserError('Select a customer company to edit its accounting controls.')
+action = {
+    'id': env.ref('thirdcode_accounting.action_company_controls_form').id,
+    'type': 'ir.actions.act_window',
+    'name': 'Company controls',
+    'res_model': 'res.company',
+    'res_id': company.id,
+    'view_mode': 'form',
+    'views': [(env.ref('thirdcode_accounting.view_company_controls_form').id, 'form')],
+    'target': 'current',
+    'context': {'allowed_company_ids': [company.id]},
+}
+        </field>
+    </record>
+
     <record id="view_company_form_thirdcode" model="ir.ui.view">
         <field name="name">res.company.form.thirdcode.accounting</field>
         <field name="model">res.company</field>
@@ -9,7 +93,7 @@
                 <page string="Third Code Accounting" groups="thirdcode_accounting.group_thirdcode_administrator,thirdcode_accounting.group_thirdcode_accountant">
                     <div class="tcsi-form-sections">
                         <group string="Regulatory configuration" class="tcsi-form-section">
-                            <field name="thirdcode_trial_mode" string="Trial mode"/>
+                            <field name="thirdcode_trial_mode" string="Trial mode" groups="base.group_system"/>
                             <field name="thirdcode_bir_ack_control_number" string="BIR control number"/>
                             <field name="thirdcode_bir_ack_approved" string="Control number approved"/>
                             <field name="thirdcode_eis_status" string="EIS status"/>

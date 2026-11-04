@@ -13,6 +13,9 @@ import { isAccountingRoute } from "./lib/accounting-routes";
 /** Next.js stamps this nonce onto the script tags it renders. */
 export const nonceHeader = "x-nonce";
 
+/** Unrouted path used to render `not-found.tsx` for unlisted portal pages. */
+export const portalNotFoundPath = "/_tcsi-not-found";
+
 function supabaseConnectSources(): string[] {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) return [];
@@ -75,8 +78,13 @@ export async function proxy(request: NextRequest) {
     if (isWithheldPortalPage(request.nextUrl.pathname)) {
       return NextResponse.redirect(new URL("/", request.url));
     }
-    // Anything else is not a page: fall through so Next answers 404.
-    return portalResponse();
+    // Render the branded 404 page; the sentinel path has no route, so unlisted
+    // app routes still fail closed instead of being served.
+    const notFound = NextResponse.rewrite(new URL(portalNotFoundPath, request.url), {
+      request: { headers: requestHeaders },
+    });
+    notFound.headers.set("Content-Security-Policy", policy);
+    return notFound;
   }
   const env = getPublicEnv();
   if (!env.supabaseConfigured) {
@@ -108,5 +116,5 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Engine requests go directly through CDN rewrites, avoiding middleware body
   // buffering for accounting attachments and preserving upgrade requests.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/readiness|(?:web|workspace|odoo|mail|bus|websocket|report|account|payment|portal|my|digest|auth_totp|thirdcode_accounting|discuss|hr_expense|spreadsheet|website|web_editor|html_editor)(?:/|$)|[a-zA-Z0-9_]+/static/|logo\\.png$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|api/readiness|(?:web|workspace|odoo|mail|bus|websocket|report|account|payment|portal|my|digest|auth_totp|thirdcode_accounting|discuss|hr_expense|spreadsheet|website|web_editor|html_editor|base_setup)(?:/|$)|[a-zA-Z0-9_]+/static/|logo\\.png$).*)"],
 };

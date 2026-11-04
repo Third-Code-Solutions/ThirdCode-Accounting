@@ -12,7 +12,7 @@ The owner flag, system administrator group and dedicated console group must all 
 
 1. Open **Platform Console → Create organization**.
 2. Enter legal company name, Philippines, approved book currency, first administrator name, work email and an initial password of 12–256 characters.
-3. Select **Create organization & administrator**. One transaction creates the company, Philippine chart baseline, journals, current annual period and first Administrator. A retry of the same request does not create another company.
+3. Select **Create organization & administrator**. One transaction creates the company, Philippine chart baseline, journals, current annual period and first Administrator. Baseline setup enables reconciliation on the company's bank/cash suspense accounts when they are current-asset accounts owned only by that company, so statement matching can clear them. A retry of the same request does not create another company.
 4. Give the administrator their credentials privately. This flow does not send email. They sign in at `/web/login` and receive only their company membership.
 5. Use **Organizations → employees** or **People**, select the company, then **Create employee** for each accountant, encoder or read-only user. Use one account per person. Existing employee access and role can be changed here.
 6. The client's accountant must verify legal/tax details, chart, currency, tax profile, controls, opening balances and document samples before posting live entries. Automatic baseline setup is not financial acceptance. Other countries need an approved localization before automatic onboarding is extended.

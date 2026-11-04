@@ -20,7 +20,7 @@ def branded_workspace_url(url):
         return url
     branded = re.sub(r"^/odoo(?=[/?#]|$)", "/workspace", url)
     branded = re.sub(r"^(/workspace)/?(?=[?#]|$)", r"\1", branded)
-    return branded[:-1] if branded.endswith("?") else branded
+    return branded[:-1] if branded.startswith("/workspace") and branded.endswith("?") else branded
 
 
 def _workspace_action_url():
@@ -63,6 +63,16 @@ class TCSIWebClient(Home):
 
     def _login_redirect(self, uid, redirect=None):
         return branded_workspace_url(super()._login_redirect(uid, redirect))
+
+    @http.route()
+    def switch_to_admin(self):
+        """Refuse ``/web/become``: a superuser session bypasses every company rule.
+
+        Any Settings (system) user could otherwise turn their session into uid 1,
+        which ``is_platform_owner`` and the record rules treat as the trusted
+        installer. Platform and company work never needs it.
+        """
+        return request.not_found()
 
     @http.route(
         ["/workspace", "/workspace/<path:subpath>"],

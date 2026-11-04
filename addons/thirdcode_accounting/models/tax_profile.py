@@ -43,6 +43,10 @@ class TaxProfile(models.Model):
     @api.constrains("vat_registered", "output_vat_tax_id", "input_vat_tax_id")
     def _check_vat_mapping(self):
         for profile in self:
+            if profile.output_vat_tax_id and profile.output_vat_tax_id.type_tax_use != "sale":
+                raise ValidationError(_("Output VAT must use a sales tax."))
+            if profile.input_vat_tax_id and profile.input_vat_tax_id.type_tax_use != "purchase":
+                raise ValidationError(_("Input VAT must use a purchase tax."))
             if profile.vat_registered and (
                 not profile.output_vat_tax_id or not profile.input_vat_tax_id
             ):
@@ -57,6 +61,7 @@ class TaxProfile(models.Model):
         ):
             raise AccessError(_("Only an Accountant or Administrator may configure tax profiles."))
         self.check_access("write")
+        self._check_vat_mapping()
         for profile in self:
             if profile.status != "assessment_required":
                 raise UserError(

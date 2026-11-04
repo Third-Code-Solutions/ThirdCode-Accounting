@@ -443,6 +443,9 @@ class PlatformConsole(models.TransientModel):
     def suspend_company(self, company_id):
         self._check_console_access()
         company = self._get_company(company_id)
+        self._lock_company_lifecycle(company)
+        if company.thirdcode_platform_status == "suspended":
+            return {"company": company.name, "deactivated": 0}
         users = (
             self.env["res.users"]
             .sudo()
@@ -468,6 +471,9 @@ class PlatformConsole(models.TransientModel):
     def resume_company(self, company_id):
         self._check_console_access()
         company = self._get_company(company_id)
+        self._lock_company_lifecycle(company)
+        if company.thirdcode_platform_status != "suspended":
+            return {"company": company.name, "restored": 0, "status": company.thirdcode_platform_status}
         ids = json.loads(company.thirdcode_suspended_user_ids or "[]")
         users = (
             self.env["res.users"].sudo().with_context(active_test=False).browse([int(uid) for uid in ids])
@@ -485,6 +491,13 @@ class PlatformConsole(models.TransientModel):
         )
         self._event("organization.resumed", company)
         return {"company": company.name, "restored": len(ids), "status": restored}
+
+    def _lock_company_lifecycle(self, company):
+        # Under REPEATABLE READ a concurrent transition raises a serialization
+        # failure; Odoo retries with a fresh snapshot before checking the state.
+        company.flush_recordset()
+        self.env.cr.execute("SELECT id FROM res_company WHERE id = %s FOR UPDATE", [company.id])
+        company.invalidate_recordset()
 
     @api.model
     def provision_baseline(self, company_id):

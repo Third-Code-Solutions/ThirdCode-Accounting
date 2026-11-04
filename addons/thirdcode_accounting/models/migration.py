@@ -60,7 +60,7 @@ class MigrationBatch(models.Model):
     )
     cutover_date = fields.Date(copy=False)
     retention_policy = fields.Selection(
-        related="company_id.thirdcode_live_history_policy", readonly=False
+        related="company_id.thirdcode_live_history_policy", readonly=True
     )
     state = fields.Selection(
         [
@@ -94,8 +94,16 @@ class MigrationBatch(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].next_by_code("thirdcode.migration.batch") or "New"
-        return super().create(vals_list)
+                company = self.env["res.company"].browse(
+                    vals.get("company_id") or self.env.company.id
+                )
+                vals["name"] = self.env["ir.sequence"].with_company(company).next_by_code(
+                    "thirdcode.migration.batch"
+                ) or "New"
+        batches = super().create(vals_list)
+        for batch in batches.filtered(lambda record: record.name == "New"):
+            batch.name = f"MIG/{batch.company_id.id}/{batch.id:06d}"
+        return batches
 
     @api.depends("row_ids", "row_ids.state")
     def _compute_counts(self):
@@ -207,8 +215,9 @@ class MigrationRow(models.Model):
         [("pending", "Pending"), ("matched", "Matched"), ("error", "Error")],
         default="pending",
         required=True,
+        readonly=True,
     )
-    error_message = fields.Text()
+    error_message = fields.Text(readonly=True)
 
     _sql_constraints = [
         (

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_monthly_bank_reconciliation" model="ir.actions.report">
+        <field name="name">Monthly bank-to-ledger report</field>
+        <field name="model">thirdcode.bank.reconciliation</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">thirdcode_accounting.report_monthly_bank_reconciliation</field>
+        <field name="report_file">thirdcode_accounting.report_monthly_bank_reconciliation</field>
+        <field name="groups_id" eval="[(4, ref('thirdcode_accounting.group_thirdcode_readonly')), (4, ref('thirdcode_accounting.group_thirdcode_accountant')), (4, ref('thirdcode_accounting.group_thirdcode_administrator'))]"/>
+    </record>
+
+    <template id="report_monthly_bank_reconciliation">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="data" t-value="monthly_data[o.id]"/>
+                <t t-set="ledger" t-value="data['ledger']"/>
+                <t t-set="statement" t-value="data['statement']"/>
+                <t t-set="money" t-value="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Monthly bank-to-ledger report</h2>
+                        <p><strong>Generic review format — client-specific definition and sample approval pending.</strong></p>
+                        <p>
+                            <strong t-field="o.company_id.name"/> · <span t-field="o.journal_id.name"/><br/>
+                            Month: <span t-field="o.date_start"/> to <span t-field="o.date_end"/>
+                            · Currency: <span t-field="o.currency_id.name"/><br/>
+                            Reconciliation: <span t-field="o.name"/> · Statement: <span t-field="o.statement_reference"/><br/>
+                            Source file: <span t-field="o.evidence_filename"/> · Owner: <span t-field="o.owner_id.name"/><br/>
+                            Record status: <span t-field="o.state"/>
+                            <t t-if="o.reconciled_by"> · Signed by <span t-field="o.reconciled_by.name"/> at <span t-field="o.reconciled_at"/></t><br/>
+                            Generated: <span t-out="data['generated_at']"/> UTC
+                        </p>
+                        <p>Ledger balances use all posted entries on the bank account through the selected dates, including entries in other journals. Statement balances and reconciling totals are values recorded by the operator. Matching status is current at generation time, not a historical month-end snapshot.</p>
+                        <div t-if="data['warnings']" class="alert alert-warning">
+                            <strong>Review exceptions</strong>
+                            <ul><li t-foreach="data['warnings']" t-as="warning" t-out="warning"/></ul>
+                        </div>
+
+                        <h3>1. Statement activity</h3>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr><td>Recorded statement opening balance</td><td class="text-end"><span t-field="o.opening_balance"/></td></tr>
+                                <tr><td>Linked statement receipts</td><td class="text-end"><span t-out="statement['receipts']" t-options="money"/></td></tr>
+                                <tr><td>Less linked statement payments</td><td class="text-end"><span t-out="statement['payments']" t-options="money"/></td></tr>
+                                <tr><td>Opening plus linked activity</td><td class="text-end"><span t-out="statement['calculated_closing']" t-options="money"/></td></tr>
+                                <tr><td>Recorded statement closing balance</td><td class="text-end"><span t-field="o.closing_balance"/></td></tr>
+                                <tr><th>Unexplained statement activity difference</th><th class="text-end"><span t-out="statement['activity_difference']" t-options="money"/></th></tr>
+                            </tbody>
+                        </table>
+
+                        <h3>2. Bank ledger and reconciliation</h3>
+                        <p>Account: <span t-field="ledger['account'].code"/> — <span t-field="ledger['account'].name"/></p>
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr><td>Posted ledger opening balance</td><td class="text-end"><span t-out="ledger['opening']" t-options="money"/></td></tr>
+                                <tr><td>Month's debits</td><td class="text-end"><span t-out="ledger['debit']" t-options="money"/></td></tr>
+                                <tr><td>Less month's credits</td><td class="text-end"><span t-out="ledger['credit']" t-options="money"/></td></tr>
+                                <tr><th>Posted ledger closing balance</th><th class="text-end"><span t-out="ledger['closing']" t-options="money"/></th></tr>
+                                <tr><td>Less recorded deposits in transit</td><td class="text-end"><span t-field="o.outstanding_deposits"/></td></tr>
+                                <tr><td>Add recorded outstanding payments</td><td class="text-end"><span t-field="o.outstanding_payments"/></td></tr>
+                                <tr><td>Expected statement closing balance</td><td class="text-end"><span t-out="data['expected_statement_closing']" t-options="money"/></td></tr>
+                                <tr><td>Recorded statement closing balance</td><td class="text-end"><span t-field="o.closing_balance"/></td></tr>
+                                <tr><th>Unresolved bank-to-ledger difference</th><th class="text-end"><span t-out="data['difference']" t-options="money"/></th></tr>
+                                <tr><td>Stored ledger balance at last computation</td><td class="text-end"><span t-field="o.ledger_balance"/></td></tr>
+                            </tbody>
+                        </table>
+                        <p>Deposits in transit and outstanding payments above are operator-recorded totals. This record has no individual reconciling-item schedule; these totals are not independently verified by matching status. Supporting evidence and review are required. No additional adjustment is assumed.</p>
+
+                        <h3>3. Linked statement detail</h3>
+                        <p><span t-out="statement['matched_count']"/> matched · <span t-out="statement['unmatched_count']"/> unmatched at generation time.<br/>
+                            Unmatched bank receipts: <span t-out="statement['unmatched_receipts']" t-options="money"/> · Unmatched bank payments: <span t-out="statement['unmatched_payments']" t-options="money"/>.
+                            These are bank transactions awaiting matching, not automatically book-side outstanding items.</p>
+                        <table class="table table-sm" t-if="statement['rows']">
+                            <thead><tr><th>Date</th><th>Bank reference / entry</th><th class="text-end">Amount</th><th class="text-end">Running statement balance</th><th>Current status</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="statement['rows']" t-as="row">
+                                    <t t-set="line" t-value="row['line']"/>
+                                    <td><span t-field="line.date"/></td>
+                                    <td><span t-field="line.payment_ref"/><br/><small t-field="line.move_id.name"/></td>
+                                    <td class="text-end"><span t-field="line.amount"/></td>
+                                    <td class="text-end"><span t-out="row['running_balance']" t-options="money"/></td>
+                                    <td><span t-out="'Matched' if row['matched'] else 'Unmatched'"/> / <span t-field="line.state"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="">No linked statement detail; activity completeness is unverified.</p>
+
+                        <h3>4. Posted bank ledger detail</h3>
+                        <table class="table table-sm" t-if="ledger['rows']">
+                            <thead><tr><th>Date</th><th>Document / journal</th><th>Description / partner</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th class="text-end">Running ledger balance</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="ledger['rows']" t-as="row">
+                                    <t t-set="line" t-value="row['line']"/>
+                                    <td><span t-field="line.date"/></td>
+                                    <td><span t-field="line.move_id.name"/><br/><small t-field="line.journal_id.name"/></td>
+                                    <td><span t-field="line.name"/><br/><small t-field="line.partner_id.name"/></td>
+                                    <td class="text-end"><span t-field="line.debit"/></td>
+                                    <td class="text-end"><span t-field="line.credit"/></td>
+                                    <td class="text-end"><span t-out="row['running_balance']" t-options="money"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="">No posted bank-account entries in this month. Opening balance is carried forward.</p>
+
+                        <h3>5. Recorded matching adjustments and reversals</h3>
+                        <p>Posted matching adjustments linked to the selected statement rows, including later reversals, appear below. Bank-account impact is already included in the ledger when its posting date falls in this month; do not add it again.</p>
+                        <table class="table table-sm" t-if="data['adjustments']">
+                            <thead><tr><th>Date</th><th>Entry / reference</th><th>Reversal of</th><th>In month?</th><th class="text-end">Bank-account impact</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="data['adjustments']" t-as="row">
+                                    <t t-set="move" t-value="row['move']"/>
+                                    <td><span t-field="move.date"/></td>
+                                    <td><span t-field="move.name"/><br/><span t-field="move.ref"/></td>
+                                    <td><span t-field="move.reversed_entry_id.name"/></td>
+                                    <td><span t-out="'Yes' if row['in_period'] else 'No'"/></td>
+                                    <td class="text-end"><span t-out="row['bank_impact']" t-options="money"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-else="">No posted matching adjustments are linked. Other bank-account adjustments, if any, appear in ledger detail.</p>
+
+                        <h3>6. Statement coverage review</h3>
+                        <p>Other statement rows in the same journal and month, excluded from section 1:</p>
+                        <table class="table table-sm" t-if="statement['other_lines']">
+                            <thead><tr><th>Date</th><th>Bank reference</th><th>Reconciliation record</th><th class="text-end">Amount</th><th>Entry state</th></tr></thead>
+                            <tbody><tr t-foreach="statement['other_lines']" t-as="line">
+                                <td><span t-field="line.date"/></td><td><span t-field="line.payment_ref"/></td>
+                                <td><span t-field="line.thirdcode_reconciliation_id.name"/><span t-if="not line.thirdcode_reconciliation_id">Unassigned</span></td>
+                                <td class="text-end"><span t-field="line.amount"/></td><td><span t-field="line.state"/></td>
+                            </tr></tbody>
+                        </table>
+                        <p t-else="">No other statement rows found in this journal and month. This does not prove the external bank statement was imported completely.</p>
+                        <p t-if="o.definition or o.company_id.thirdcode_reconciliation_definition"><strong>Recorded procedure:</strong> <span t-out="o.definition or o.company_id.thirdcode_reconciliation_definition"/></p>
+                        <p><em>Generating this report does not post entries, match transactions, recompute stored balances, or sign off a reconciliation. A zero difference is arithmetic evidence only; source completeness and client acceptance require separate review.</em></p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

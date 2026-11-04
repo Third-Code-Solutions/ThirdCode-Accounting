@@ -100,9 +100,11 @@ def main():
         manifest = ast.literal_eval(pathlib.Path("/opt/extra-addons/thirdcode_accounting/__manifest__.py").read_text())
         deployed_version = tuple(map(int, manifest["version"].split(".")))
         installed_version = tuple(map(int, (module[1] or "0").split(".")))
+        if installed_version > deployed_version:
+            raise RuntimeError("Database addon version is newer than this image; refusing unsafe downgrade")
         if installed_version < deployed_version:
             # Additive schema changes must finish before serving requests with new code.
-            # A failed upgrade prevents readiness; rollback keeps the previous schema.
+            # A failed upgrade prevents readiness; older images refuse newer databases.
             subprocess.run(base + ["-u", "thirdcode_accounting", "--without-demo=all", "--no-http", "--stop-after-init"], check=True)
     # Persist the first-admin marker in the database, so restarts and restores
     # never reset an existing administrator's credentials.
@@ -120,11 +122,22 @@ if not params.get_param('tcsi.cloud_bootstrapped'):
     env.cr.commit()
 '''
     subprocess.run(["odoo", "shell", "-c", config_path, "-d", database, "--no-http"], input=bootstrap, text=True, check=True)
+    backup_commands = []
+    if os.environ.get("TCSI_BACKUP_ENABLED") == "1":
+        try:
+            from backup_runtime import prepare
+            command = prepare(os.environ)
+            if command:
+                backup_commands.append(command)
+        except Exception:
+            # Configuration/capture failures must not take accounting offline.
+            # The independent monitor observes the absent or stale durable receipt.
+            print("Automatic paired backup disabled: invalid configuration", flush=True)
     with tempfile.TemporaryDirectory(prefix="tcsi-proxy-") as directory:
         proxy_path = pathlib.Path(directory) / "nginx.conf"
         proxy_path.write_text(proxy_config(directory, os.environ.get("PORT", "8069")))
         subprocess.run(["nginx", "-t", "-c", str(proxy_path)], check=True)
-        raise SystemExit(serve([base, ["nginx", "-c", str(proxy_path)]]))
+        raise SystemExit(serve([base, ["nginx", "-c", str(proxy_path)]], optional_commands=backup_commands))
 
 
 if __name__ == "__main__":

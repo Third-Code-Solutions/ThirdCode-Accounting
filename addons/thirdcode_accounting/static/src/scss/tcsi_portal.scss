@@ -1,6 +1,19 @@
 // Accounting customer portal. Selectors follow Odoo 18 portal/account templates.
 // Screen-only: invoice report iframes, PDF assets and print layouts stay native.
 @media screen {
+    .tcsi-login-shell .oe_login_form .list-group-item {
+        color: var(--tcsi-color-ink);
+        background-color: var(--tcsi-color-surface);
+        border-color: var(--tcsi-color-line);
+
+        &:hover,
+        &:focus,
+        &:active {
+            color: var(--tcsi-color-ink);
+            background-color: var(--tcsi-color-surface-hover);
+        }
+    }
+
     #wrapwrap:is(.o_portal, :has(.o_portal_wrap, #o_payment_portal_home)) {
         --tcsi-portal-page: #fbfbfd;
         --tcsi-portal-surface: #ffffff;

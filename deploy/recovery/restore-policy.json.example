@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "isolated_host_confirmed": false,
+  "egress_isolation_confirmed": false,
+  "postgres": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "",
+    "password": ""
+  },
+  "source_revision": "REPLACE_WITH_CAPTURED_COMMIT_SHA",
+  "image_reference": "REPLACE_WITH_RETAINED_IMAGE_DIGEST",
+  "addon_version": "18.0.2.13.3",
+  "timeout_seconds": 14400,
+  "addons_path": ["/opt/extra-addons", "/usr/lib/python3/dist-packages/odoo/addons"]
+}

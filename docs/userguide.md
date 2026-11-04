@@ -1,9 +1,9 @@
 # TCSI Accounting
 ## Simple user guide
 
-Manage customer invoices, supplier bills, payments, and reports in one company workspace. This guide follows the hosted accounting workspace reviewed on **3 October 2026**.
+Manage customer invoices, supplier bills, payments, and reports in one company workspace. This guide follows the accounting workspace reviewed on **3 October 2026**.
 
-**Sign in:** https://tcsi-accounting-portal.vercel.app/web/login
+**Sign in:** your company's workspace address + `/web/login`; ask your administrator.
 
 ### Start here
 
@@ -122,7 +122,7 @@ An invoice records a customer sale. A supplier bill records a purchase you owe. 
 
 ### Send documents
 
-The current hosted trial does not have outgoing email configured. Download and check PDFs, then share them through your usual approved email or messaging channel. Trial receipt output remains a **TRIAL COPY**, even though the button is named **Official Receipt**.
+Unless your administrator has set up outgoing email, none is sent. Download and check PDFs, then share them through your usual approved email or messaging channel. Trial receipt output remains a **TRIAL COPY**, even though the button is named **Official Receipt**.
 
 ---
 
@@ -232,7 +232,7 @@ Your Administrator manages the company's employee logins and restricted approval
 
 1. Open **TCSI Accounting › Organization › New Employee Account**.
 2. Enter **Full name**, **Login email**, password, and the appropriate role. Check the spelling of the login before creating it.
-3. Select **Create Account**. Give the employee the sign-in URL and credentials privately; the hosted trial does not send account emails.
+3. Select **Create Account**. Give the employee the sign-in URL and credentials privately; the workspace does not send account emails by default.
 4. Have the employee sign in and confirm the correct company and available menus. An Encoder should prepare drafts; an Accountant should finalize them.
 
 ### Reset or disable access

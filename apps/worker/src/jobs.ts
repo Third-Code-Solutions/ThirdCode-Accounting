@@ -4,8 +4,8 @@ import { workerJobSchema, type WorkerJob } from "@tcsi/contracts";
 
 type JobState = "running" | "succeeded" | "failed";
 
-export function makeRunKey(jobName: string, scheduledFor: string): string {
-  return `${jobName}:${scheduledFor}`;
+export function makeRunKey(jobName: string, scheduledFor: string, workspaceId?: string): string {
+  return `${workspaceId ? `${workspaceId}:` : ""}${jobName}:${scheduledFor}`;
 }
 
 export async function claimJob(

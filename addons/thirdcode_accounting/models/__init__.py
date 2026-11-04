@@ -23,6 +23,7 @@ from . import orvexa
 from . import org_users
 from . import platform_console
 from . import ir_http
+from . import ir_attachment
 from . import res_users
 from . import tcsi_auth_throttle
 from . import tcsi_cookie_policy
@@ -34,6 +35,10 @@ from . import cutover
 from . import report_completion
 from . import migration_archive
 from . import trial_balance
+from . import monthly_reconciliation
+
+
+from . import settings
 
 from . import platform_access
 from . import platform_event
@@ -42,3 +47,4 @@ from . import platform_incident
 from . import platform_publication
 
 from . import contact_isolation
+from . import discuss_isolation

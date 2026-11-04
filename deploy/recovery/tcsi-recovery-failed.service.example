@@ -1,0 +1,18 @@
+[Unit]
+Description=TCSI recovery scheduler failure notification
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tcsi-recovery
+UMask=0077
+ExecStart=/opt/tcsi-recovery/venv/bin/python /opt/tcsi-recovery/scripts/hosted_recovery_alert.py --config /etc/tcsi/recovery-provider.json --status failed
+TimeoutStartSec=60
+KillMode=control-group
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+# Nonzero exit/missed execution must also alert through the independent control plane.

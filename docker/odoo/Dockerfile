@@ -47,6 +47,13 @@ RUN apt-get update \
 COPY --chown=odoo:odoo addons /opt/extra-addons
 COPY docker/odoo/cloud_start.py /opt/tcsi/cloud_start.py
 COPY docker/odoo/hosted_runtime.py /opt/tcsi/hosted_runtime.py
+COPY scripts/hosted_backup.py docker/odoo/backup_runtime.py docker/odoo/backup_store.py /opt/tcsi/
+COPY docker/odoo/backup-requirements.txt /tmp/tcsi-backup-requirements.txt
+RUN python3 -m pip install --disable-pip-version-check --no-cache-dir --no-deps --require-hashes --target /opt/tcsi-backup-deps -r /tmp/tcsi-backup-requirements.txt \
+    && chmod 755 /opt/tcsi/backup_store.py \
+    && cp /opt/tcsi/backup_store.py /opt/tcsi/backup-delivery \
+    && cp /opt/tcsi/backup_store.py /opt/tcsi/backup-attention \
+    && rm -f /tmp/tcsi-backup-requirements.txt
 
 COPY docker/odoo/test-requirements.txt /tmp/tcsi-odoo-test-requirements.txt
 RUN if [ "$INSTALL_ODOO_TEST_HELPER" = "true" ]; then \

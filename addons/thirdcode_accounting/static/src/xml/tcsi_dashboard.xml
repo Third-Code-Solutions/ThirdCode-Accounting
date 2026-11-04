@@ -59,7 +59,7 @@
                         </header>
                         <strong class="tcsi-balance-value"><t t-esc="this.formatMoney(state.data.kpis.cash)"/></strong>
                         <p>Available balance across posted cash accounts.</p>
-                        <footer class="tcsi-balance-footer"><span>Account balances</span><button class="tcsi-panel-link" type="button" t-on-click="() => this.openModel('account.move', null, [['company_id', '=', state.data.company_id]])">Open ledger <span aria-hidden="true">→</span></button></footer>
+                        <footer class="tcsi-balance-footer"><span>Account balances</span><button class="tcsi-panel-link" type="button" t-on-click="() => this.openModel('account.move', 'account.action_move_journal_line', [['company_id', '=', state.data.company_id]])">Open ledger <span aria-hidden="true">→</span></button></footer>
                     </article>
 
                     <article class="tcsi-dashboard-panel tcsi-snapshot-panel">
@@ -95,7 +95,7 @@
                         </article>
 
                         <article class="tcsi-dashboard-panel tcsi-recent-panel">
-                            <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Ledger activity</span><h2>Recent entries</h2></div><button class="tcsi-text-button" type="button" t-on-click="() => this.openModel('account.move', null, [['company_id', '=', state.data.company_id]])">View ledger <span>→</span></button></header>
+                            <header class="tcsi-panel-header"><div><span class="tcsi-panel-eyebrow">Ledger activity</span><h2>Recent entries</h2></div><button class="tcsi-text-button" type="button" t-on-click="() => this.openModel('account.move', 'account.action_move_journal_line', [['company_id', '=', state.data.company_id]])">View ledger <span>→</span></button></header>
                             <div t-if="state.data.recent.length" class="tcsi-recent-table-head" aria-hidden="true"><span>Entry</span><span>Date</span><span>Amount</span></div>
                             <div t-if="state.data.recent.length" class="tcsi-recent-list">
                                 <t t-foreach="state.data.recent" t-as="item" t-key="item.id">

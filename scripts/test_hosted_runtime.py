@@ -1,14 +1,91 @@
 """Exercise runtime shutdown using real disposable processes, without Odoo or credentials."""
 import importlib.util
+from contextlib import ExitStack
 import pathlib
 import signal
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 SPEC = importlib.util.spec_from_file_location("hosted_runtime", pathlib.Path(__file__).resolve().parents[1] / "docker/odoo/hosted_runtime.py")
 runtime = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(runtime)
+
+START_SPEC = importlib.util.spec_from_file_location("cloud_start", pathlib.Path(__file__).resolve().parents[1] / "docker/odoo/cloud_start.py")
+launcher = importlib.util.module_from_spec(START_SPEC)
+with mock.patch.dict(sys.modules, {"hosted_runtime": runtime, "psycopg2": mock.MagicMock()}):
+    START_SPEC.loader.exec_module(launcher)
+
+
+class HostedStartupVersionTests(unittest.TestCase):
+    def setUp(self):
+        patches = self.enterContext(ExitStack())
+        patches.enter_context(mock.patch.dict(launcher.os.environ, {
+            "PGDATABASE": "tcsi_test", "PGHOST": "test-db", "PGUSER": "test-user",
+            "PGPASSWORD": "test-only", "TCSI_ADMIN_LOGIN": "test@example.invalid",
+            "TCSI_ADMIN_PASSWORD": "test-only-admin-password-1234",
+            "TCSI_MASTER_PASSWORD": "test-only-master-password-1234",
+        }, clear=True))
+        patches.enter_context(mock.patch.object(launcher.os, "getuid", return_value=1000))
+        patches.enter_context(mock.patch.object(launcher.os, "chmod"))
+        patches.enter_context(mock.patch.object(launcher.pathlib.Path, "mkdir"))
+        patches.enter_context(mock.patch.object(launcher.pathlib.Path, "write_text"))
+        patches.enter_context(mock.patch.object(launcher.pathlib.Path, "read_text", return_value="{'version': '18.0.2.15.5'}"))
+        config = patches.enter_context(mock.patch.object(launcher.tempfile, "NamedTemporaryFile"))
+        config.return_value.__enter__.return_value.name = "/private/test-runtime.conf"
+        directory = patches.enter_context(mock.patch.object(launcher.tempfile, "TemporaryDirectory"))
+        directory.return_value.__enter__.return_value = "/private/test-proxy"
+        connection = patches.enter_context(mock.patch.object(launcher.psycopg2, "connect"))
+        self.cursor = connection.return_value.cursor.return_value.__enter__.return_value
+        self.run = patches.enter_context(mock.patch.object(launcher.subprocess, "run"))
+        self.serve = patches.enter_context(mock.patch.object(launcher, "serve", return_value=0))
+
+    def start(self, version):
+        self.cursor.fetchone.side_effect = [(None,)] if version is None else [
+            ("ir_module_module",), ("installed", version),
+        ]
+        launcher.main()
+
+    def test_newer_database_refuses_before_bootstrap_or_runtime_start(self):
+        with self.assertRaisesRegex(RuntimeError, "refusing unsafe downgrade"):
+            self.start("18.0.2.15.6")
+        self.run.assert_not_called()
+        self.serve.assert_not_called()
+
+    def test_fresh_equal_and_older_databases_keep_expected_startup(self):
+        for version, operation in ((None, "-i"), ("18.0.2.15.5", None), ("18.0.2.15.4", "-u")):
+            with self.subTest(version=version):
+                self.run.reset_mock()
+                self.serve.reset_mock()
+                with self.assertRaises(SystemExit) as result:
+                    self.start(version)
+                self.assertEqual(result.exception.code, 0)
+                module_commands = [call.args[0] for call in self.run.call_args_list
+                                   if "-i" in call.args[0] or "-u" in call.args[0]]
+                self.assertEqual(len(module_commands), int(operation is not None))
+                if operation:
+                    self.assertIn(operation, module_commands[0])
+                    self.assertIn("--stop-after-init", module_commands[0])
+                self.assertTrue(any("shell" in call.args[0] for call in self.run.call_args_list))
+                self.serve.assert_called_once()
+
+    def test_invalid_backup_configuration_does_not_stop_accounting(self):
+        module = mock.Mock()
+        module.prepare.side_effect = RuntimeError("private-secret")
+        with mock.patch.dict(sys.modules, {"backup_runtime": module}), mock.patch.dict(launcher.os.environ, {"TCSI_BACKUP_ENABLED": "1"}), mock.patch("builtins.print") as printed:
+            with self.assertRaises(SystemExit):
+                self.start("18.0.2.15.5")
+        self.assertEqual(self.serve.call_args.kwargs["optional_commands"], [])
+        self.assertNotIn("private-secret", str(printed.call_args_list))
+
+    def test_enabled_backup_is_separate_optional_command(self):
+        module = mock.Mock()
+        module.prepare.return_value = ["python3", "/opt/tcsi/backup_runtime.py", "schedule"]
+        with mock.patch.dict(sys.modules, {"backup_runtime": module}), mock.patch.dict(launcher.os.environ, {"TCSI_BACKUP_ENABLED": "1"}):
+            with self.assertRaises(SystemExit):
+                self.start("18.0.2.15.5")
+        self.assertEqual(self.serve.call_args.kwargs["optional_commands"], [module.prepare.return_value])
 
 
 class HostedRuntimeTests(unittest.TestCase):
@@ -33,6 +110,19 @@ class HostedRuntimeTests(unittest.TestCase):
     def test_failed_spawn_stops_already_started_peer(self):
         with self.assertRaises(FileNotFoundError):
             runtime.serve([[sys.executable, "-c", "import time; time.sleep(30)"], ["/no-such-tcsi-process"]])
+
+    def test_optional_backup_failure_does_not_stop_required_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            done = pathlib.Path(directory) / "accounting-stayed-up"
+            required = [sys.executable, "-c", "import time,sys; time.sleep(0.8); open(sys.argv[1], 'w').write('done'); raise SystemExit(9)", str(done)]
+            status = runtime.serve([required], optional_commands=[[sys.executable, "-c", "raise SystemExit(7)"]])
+            self.assertEqual(status, 9)
+            self.assertEqual(done.read_text(), "done")
+
+    def test_optional_spawn_failure_does_not_stop_required_process(self):
+        status = runtime.serve([[sys.executable, "-c", "import time; time.sleep(0.3); raise SystemExit(9)"]],
+                               optional_commands=[["/no-such-backup-command"]])
+        self.assertEqual(status, 9)
 
 
 if __name__ == "__main__":

@@ -106,6 +106,11 @@ class BankReconciliation(models.Model):
                 raise ValidationError(
                     _("The reconciliation journal must belong to the selected company.")
                 )
+            # Balances here are in company currency; a foreign-currency statement would not compare.
+            if record.journal_id.currency_id and record.journal_id.currency_id != record.company_id.currency_id:
+                raise ValidationError(
+                    _("Bank reconciliation supports company-currency journals only.")
+                )
 
     @api.depends("closing_balance", "ledger_balance", "outstanding_deposits", "outstanding_payments")
     def _compute_difference(self):
@@ -164,6 +169,8 @@ class BankReconciliation(models.Model):
                 raise UserError(_("Attach the paper/PDF statement before sign-off."))
             if not record.definition and not record.company_id.thirdcode_reconciliation_definition:
                 raise UserError(_("Define the approved monthly reconciliation procedure before sign-off."))
+            if any(not line.is_reconciled for line in record.bank_statement_line_ids):
+                raise UserError(_("Match every attached bank statement line before sign-off."))
             if record.currency_id.compare_amounts(
                 record.ledger_balance, record._posted_ledger_balance()
             ) != 0:

@@ -1,5 +1,14 @@
 # TCSI Accounting Workspace
 
+Current delivery target: one independent TCSI demonstration, then fresh copies
+in each signed client's hosting account. See the
+[independent deployment procedure](docs/platform-deployment.md#independent-tcsi-demonstration-and-future-client-copies)
+and the client operator's [runbook](docs/handover/OPERATOR-RUNBOOK.md) (install,
+TLS proxy, backup schedule, upgrade, rollback, recovery, credential rotation).
+This does not require a shared SaaS platform, Supabase, the Next.js marketing
+portal or the optional Node worker. Do not clone demo financial data or secrets
+into client installations.
+
 For the current client-facing guide, use [User Guide (PDF)](docs/userguide.pdf)
 ([editable source](docs/userguide.md)), reviewed against the hosted workspace on
 3 October 2026. Historical setup and operator notes remain in
@@ -56,7 +65,11 @@ compose database: `auditlog`, `date_range`, `report_xlsx`,
 `account_statement_base`, `account_reconcile_model_oca`, `account_reconcile_oca`,
 and `account_statement_reconcile_status`.
 
-## Start the local stack
+## Start the local development stack
+
+Development only: this stack uses fixed local passwords and listens on
+127.0.0.1. Client installations use `docker-compose.independent.yml` and the
+operator runbook instead.
 
 Prerequisite: Docker Desktop with the Linux engine running.
 
@@ -97,7 +110,7 @@ records in the disposable database because posted accounting records are not
 deleted.
 
 The latest results and exact evidence states are recorded in
-[`docs/verification.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/verification.md).
+[`docs/verification.md`](docs/verification.md).
 
 ## Migration tooling
 
@@ -119,10 +132,17 @@ loads skip already-created records. A real MYOB export, mapping approval,
 opening-balance owner, history/archive decision, and parallel month are still
 client-gated.
 
-## Backup, restore, and performance
+## Legacy local backup, restore, and performance
 
-Back up the database, Odoo filestore, read-only configuration, image metadata,
-and hashes to an explicit directory:
+These PowerShell commands target the disposable development Compose stack and
+its default `odoo` database role. They are not valid for
+`docker-compose.independent.yml`. Use the coordinated independent backup and
+isolated restore procedure in
+[`docs/platform-deployment.md`](docs/platform-deployment.md#coordinated-independent-backup-and-isolated-restore)
+for the TCSI demonstration or a future client installation.
+
+For the legacy development stack, back up the database, Odoo filestore,
+read-only configuration, image metadata, and hashes to an explicit directory:
 
 ```powershell
 .\scripts\backup.ps1 -Database thirdcode_accounting -OutputRoot D:\backups\thirdcode-accounting
@@ -146,12 +166,12 @@ client's on-premise hardware, data volume, browser, or network.
 
 ## Repository status and boundaries
 
-- The source of truth is `main` on GitHub. Pushes deploy through the Vercel
+- The existing hosted pilot uses `main` on GitHub and deploys through its Vercel
   and Railway Git integrations: the portal at
   <https://tcsi-accounting-portal.vercel.app>, the engine on Railway, and the
   Supabase project `zcalwevgunkevwzficvm` for portal leads and the hardened
-  standalone schema. Verify tenant isolation and the role matrix with
-  `npm run verify:rbac` before onboarding a new organization.
+  standalone schema. That pilot is separate from the independent TCSI demo and
+  is not the deployment target for future client-owned copies.
 - Client-specific report samples, BIR acknowledgement/control values, tax and
   withholding rates, EIS classification, MYOB extraction/mapping, live-history
   policy, parallel run, production roles, infrastructure, and statutory/legal
@@ -164,7 +184,7 @@ client's on-premise hardware, data volume, browser, or network.
   purchasing system, bank feed, EIS transmission, or external integration was
   introduced.
 
-See [`docs/prd-traceability.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/prd-traceability.md),
-[`docs/decisions-and-blockers.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/decisions-and-blockers.md),
-[`docs/implementation-plan.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/implementation-plan.md),
-and [`docs/verification.md`](/D:/thirdcode/accounting-system/ThirdCode-Accounting/docs/verification.md).
+See [`docs/prd-traceability.md`](docs/prd-traceability.md),
+[`docs/decisions-and-blockers.md`](docs/decisions-and-blockers.md),
+[`docs/implementation-plan.md`](docs/implementation-plan.md),
+and [`docs/verification.md`](docs/verification.md).

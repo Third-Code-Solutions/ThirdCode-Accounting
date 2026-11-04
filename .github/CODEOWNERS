@@ -1,0 +1,21 @@
+# Code owners for ThirdCode-Accounting.
+# Owners are requested for review on pull requests touching matched paths.
+# Syntax: <pattern> <owner> [...]
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Repository default.
+*                                   @kurtgav
+
+# Odoo addon: accounting logic, security model, migrations, reports.
+/addons/thirdcode_accounting/       @kurtgav
+
+# Portal, worker and shared contracts.
+/apps/                              @kurtgav
+/packages/                          @kurtgav
+
+# CI, deployment and repository governance.
+/.github/                           @kurtgav
+
+# Security policy, threat model and recovery/backup runbooks.
+/SECURITY.md                        @kurtgav
+/docs/                              @kurtgav
