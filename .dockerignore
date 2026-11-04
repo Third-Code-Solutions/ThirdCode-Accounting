@@ -4,6 +4,7 @@
 docs
 scripts/*
 !scripts/hosted_backup.py
+!scripts/recovery_fingerprint.py
 tmp
 *.md
 node_modules
