@@ -9,9 +9,11 @@ White-label SaaS, shared customer hosting, subscriptions and the optional Node
 worker are outside this delivery. The earlier hosted pilot below remains a
 separate environment; do not convert or copy its customer books into a demo.
 
-The existing hosted environment was upgraded on 12 October 2026 to application
-revision `f8c23ef`, addon `18.0.2.15.5`, using a coordinated backup, isolated
-production-copy upgrade rehearsal and post-release conservation checks. Its
+The existing hosted environment was upgraded in November 2026 to addon
+`18.0.2.17.1` after the operator backed up both Railway volumes. Its engine runs
+the CI-published release image (see "Engine release image" below); the engine's
+`TCSI_RELEASE_SHA` and `TCSI_RELEASE_IMAGE` variables name the serving revision
+and digest. Its
 public workspace remains `https://tcsi-accounting-portal.vercel.app/workspace`.
 The local independent demo uses the same release source. This does not make
 the hosted pilot's existing companies separate client installations. See
@@ -679,10 +681,10 @@ Supabase values in the Vercel environment settings. Preview and production
 should use separate Supabase projects or explicit isolated environments.
 Do not add `SUPABASE_SERVICE_ROLE_KEY` to Vercel. Attach the approved custom
 domain so Vercel terminates HTTPS, then verify `/api/health` and
-`/api/readiness` after each promotion. Pushes to `main` deploy through the
-provider Git integrations: every commit produces a Vercel Production
-deployment and a Railway engine deployment, both reported on the commit's
-status. `/api/health` returns the deployed `commit` (the first 12 characters
+`/api/readiness` after each promotion. Pushes to `main` do not release:
+Vercel builds each commit, but an operator promotes it with
+`vercel promote <deployment-url>`, and the Railway engine deploys only the
+release image named below. `/api/health` returns the deployed `commit` (the first 12 characters
 of `VERCEL_GIT_COMMIT_SHA`), so an operator can confirm which revision is
 serving without provider access; after a promotion, compare it with `git
 rev-parse main`.
@@ -718,6 +720,28 @@ Job claims use unique `(workspace_id, job_name, run_key)` values, with NULL
 workspace IDs treated as one global scope. Retries must treat a duplicate key
 in the same scope as an already-claimed run. Apply the job-claim migration
 before deploying any future worker that uses this contract.
+
+### Engine release image
+
+Each push to `main` that passes every CI gate publishes
+`ghcr.io/third-code-solutions/tcsi-accounting-engine:<commit>`. The
+`release-image` job summary prints the two values the backup provenance
+requires. To release that commit:
+
+1. If the addon version changes, back up both Railway volumes first.
+2. Set `TCSI_RELEASE_SHA` and `TCSI_RELEASE_IMAGE` on the engine service from
+   the summary, without deploying.
+3. Point the engine service source at the exact `...@sha256:<digest>`
+   reference. `railway.json` applies only to repository sources, so the
+   service itself keeps start command `python3 /opt/tcsi/cloud_start.py` and
+   healthcheck `/web/login`.
+4. Point `tcsi-recovery-monitor` at the same reference.
+5. Confirm the deploy log does not contain
+   `Automatic paired backup disabled`.
+
+The package must stay pullable by Railway, and every image still referenced by
+a backup inside the 30-day retention window must be kept; restores refuse a
+different image.
 
 ### Automation ownership for the current pilot
 

@@ -236,3 +236,43 @@ jobs:
         run: |
           node --test scripts/test-audit-development-dependencies.mjs
           node scripts/audit-development-dependencies.mjs
+
+  release-image:
+    # Publish the hosted runtime only for main commits that passed every gate.
+    # The digest is the release identity the backup provenance and restores require.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [orvexa-integration, hosted-runtime, verify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Sign in to GitHub Container Registry
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish the release image
+        shell: bash
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tcsi-accounting-engine"
+          docker build -f docker/odoo/Dockerfile \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            -t "${image}:${GITHUB_SHA}" .
+          docker push "${image}:${GITHUB_SHA}"
+          # Ask the registry, not the local store, for the digest Railway will pull.
+          digest=$(docker buildx imagetools inspect "${image}:${GITHUB_SHA}" --format '{{.Manifest.Digest}}')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "Unexpected image digest: $digest"; exit 1; }
+          reference="${image}@${digest}"
+          {
+            echo "### Release image"
+            echo
+            echo "Deploy this exact reference and set both variables on the engine service:"
+            echo
+            echo '```'
+            echo "TCSI_RELEASE_SHA=${GITHUB_SHA}"
+            echo "TCSI_RELEASE_IMAGE=${reference}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
